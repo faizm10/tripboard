@@ -17,6 +17,10 @@ const nextConfig: NextConfig = {
         hostname: "api.mapbox.com",
         pathname: "/styles/v1/**",
       },
+      {
+        protocol: "https",
+        hostname: "flagcdn.com",
+      },
     ],
   },
 };
