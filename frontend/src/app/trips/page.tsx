@@ -20,11 +20,11 @@ export default async function TripsPage() {
 
   return (
     <main className="app-page">
-      <AppHeader image={viewer.image} name={viewer.name ?? firstName} />
+      <AppHeader demo={viewer.demo} email={viewer.email} image={viewer.image} name={viewer.name ?? firstName} />
       <section className="trips-shell">
         <div className="trips-heading">
           <div>
-            <p className="eyebrow">Your trips</p>
+            <p className="eyebrow">your trips</p>
             <h1>
               Where to next,
               <br />
