@@ -58,24 +58,16 @@ import { FlightPlanDialog, type FlightDraft } from "@/components/flight-plan-dia
 import { HotelStayDialog, type HotelStayDraft } from "@/components/hotel-stay-dialog";
 import { InviteDialog } from "@/components/invite-dialog";
 import { PlacePhoto } from "@/components/place-photo";
-import { ProfileAvatar } from "@/components/profile-avatar";
 import { TripLogisticsDialog, type TripDetails } from "@/components/trip-logistics-dialog";
 import { TripMap } from "@/components/trip-map";
 import { countryFromDestination } from "@/lib/dates";
 import { buildAppleMapsUrl, buildGoogleMapsDirectionsUrl, buildGoogleMapsPlaceUrl, buildGoogleMapsUrl } from "@/lib/navigation";
-import { PLACE_CATEGORIES, categoryClass, isPersistedTripId, type CityStop, type Collaborator, type DayNote, type Flight, type HotelStay, type Place, type PlaceCategory, type RouteStop, type TravelMode, type Trip, type TripViewer } from "@/lib/types";
+import { PLACE_CATEGORIES, categoryClass, isPersistedTripId, type CityStop, type DayNote, type Flight, type HotelStay, type Place, type PlaceCategory, type RouteStop, type TravelMode, type Trip, type TripViewer } from "@/lib/types";
 
 type RouteStats = { durationSeconds: number; distanceMeters: number };
 type MobileView = "list" | "map";
 type SaveState = "idle" | "saving" | "saved" | "error";
 type WorkspaceMode = "saved" | "day" | "agenda";
-
-function plannersFor(collaborators: Collaborator[], viewer?: TripViewer): Collaborator[] {
-  const self = viewer ? { id: viewer.id, name: viewer.name, image: viewer.image } : null;
-  const others = collaborators.filter((person) => person.id && person.id !== self?.id);
-  if (self) return [self, ...others];
-  return collaborators;
-}
 
 const categoryIcons = {
   Eat: Utensils,
@@ -190,7 +182,6 @@ export function TripWorkspace({
       .catch(() => setSaveState("error"));
   }
 
-  const planners = useMemo(() => plannersFor(trip.collaborators, viewer), [trip.collaborators, viewer]);
   const itineraryDates = useMemo(() => tripDates(details.startDate, details.endDate), [details.startDate, details.endDate]);
   const planDates = useMemo(
     () => Array.from(new Set([...itineraryDates, ...flights.flatMap((flight) => [flight.plannedDate, flight.arrivalDate]), ...hotels.flatMap((hotel) => [hotel.startDate, hotel.endDate])])).sort(),
@@ -664,30 +655,6 @@ export function TripWorkspace({
             <button role="tab" aria-selected={workspaceMode === "day"} className={workspaceMode === "day" ? "active" : ""} onClick={() => { setWorkspaceMode("day"); setActiveDate((current) => current ?? planDates[0] ?? null); }} type="button"><CalendarDays size={14} /> Day plan</button>
             <button role="tab" aria-selected={workspaceMode === "agenda"} className={workspaceMode === "agenda" ? "active" : ""} onClick={() => setWorkspaceMode("agenda")} type="button"><FileText size={14} /> Agenda</button>
           </div>
-          <div className="city-strip" aria-label="City stops">
-            <button className={activeCityId === "all" ? "active" : ""} onClick={() => setActiveCityId("all")} type="button">All stops</button>
-            {cities.map((city) => (
-              <span className={`city-chip${activeCityId === city.id ? " active" : ""}`} key={city.id}>
-                <button onClick={() => setActiveCityId(city.id)} type="button">{city.name}</button>
-                {cities.length > 1 ? <button aria-label={`Remove ${city.name}`} onClick={() => removeCity(city.id)} type="button"><X size={12} /></button> : null}
-              </span>
-            ))}
-            <button className="city-add" onClick={() => { setNewCityForPlace(false); setCityOpen(true); }} type="button"><Plus size={13} /> Stop</button>
-          </div>
-          <div className="collab-row">
-            <div className="mini-avatars">
-              {planners.map((person) => (
-                <ProfileAvatar image={person.image} key={person.id ?? person.name} name={person.name} size="xs" />
-              ))}
-            </div>
-            <span className="planning-count">{planners.length} {planners.length === 1 ? "planner" : "planners"}</span>
-            {saveState !== "idle" ? (
-              <span className={`save-status${saveState === "error" ? " error" : ""}`} aria-live="polite">
-                {saveState === "saving" ? "Saving" : saveState === "saved" ? "Saved" : "Couldn’t save"}
-              </span>
-            ) : null}
-            <button onClick={() => setInviteOpen(true)} type="button"><Share2 size={14} /> Invite</button>
-          </div>
           {workspaceMode !== "agenda" ? <div className="filter-scroll" aria-label="Filter places">
             <button className={`filter-pill filter-all${filter === "All" ? " active" : ""}`} onClick={() => setFilter("All")} type="button">All</button>
             {PLACE_CATEGORIES.map((item) => {
@@ -784,6 +751,28 @@ export function TripWorkspace({
           )}
           {workspaceMode === "saved" && !visiblePlaces.length ? <div className="empty-filter"><p>No {filter.toLowerCase()} places yet.</p><button onClick={() => setAddOpen(true)} type="button">Add the first one <Plus size={15} /></button></div> : null}
           {workspaceMode === "saved" ? <button className="add-place-row" onClick={() => setAddOpen(true)} type="button"><span><Plus size={18} /></span><div><strong>Add another place</strong><small>Search {selectedCity?.name ?? details.destination}</small></div></button> : null}
+        </div>
+        <div className="places-panel-logistics">
+          <div className="city-strip" aria-label="City stops">
+            <button className={activeCityId === "all" ? "active" : ""} onClick={() => setActiveCityId("all")} type="button">All stops</button>
+            {cities.map((city) => (
+              <span className={`city-chip${activeCityId === city.id ? " active" : ""}`} key={city.id}>
+                <button onClick={() => setActiveCityId(city.id)} type="button">{city.name}</button>
+                {cities.length > 1 ? <button aria-label={`Remove ${city.name}`} onClick={() => removeCity(city.id)} type="button"><X size={12} /></button> : null}
+              </span>
+            ))}
+            <button className="city-add" onClick={() => { setNewCityForPlace(false); setCityOpen(true); }} type="button"><Plus size={13} /> Stop</button>
+          </div>
+          <div className="places-panel-logistics-row">
+            {saveState !== "idle" ? (
+              <span className={`save-status${saveState === "error" ? " error" : ""}`} aria-live="polite">
+                {saveState === "saving" ? "Saving" : saveState === "saved" ? "Saved" : "Couldn’t save"}
+              </span>
+            ) : (
+              <span className="places-panel-logistics-meta">{details.destination} · {details.dateLabel}</span>
+            )}
+            <button onClick={() => setInviteOpen(true)} type="button"><Share2 size={14} /> Invite</button>
+          </div>
         </div>
       </aside>
 
@@ -1036,18 +1025,6 @@ function DayPlan({
               <button onClick={showCurrentDateOnMap} type="button">{activeDate === currentDate ? "Showing" : "Map this day"}</button>
             </div>
           </header>
-          {dayHotel ? <article className="hotel-strip"><button className="hotel-strip-copy" onClick={() => onEditHotel(dayHotel)} type="button"><span className="hotel-strip-icon"><BedDouble size={16} /></span><span><small>Home base · {dayHotel.startDate === dayHotel.endDate ? "Today" : `${formatDayHeading(dayHotel.startDate).date} — ${formatDayHeading(dayHotel.endDate).date}`}</small><strong>{dayHotel.name}</strong><em>{dayHotel.address || "Pinned on the map"}</em></span><span className="hotel-strip-route">Route starts here</span></button><a className="hotel-map-link" href={buildGoogleMapsDirectionsUrl(dayHotel)} rel="noreferrer" target="_blank">Google Maps <ExternalLink size={13} /></a></article> : null}
-          {dayFlights.length ? (
-            <div className="flight-list" aria-label="Flights for this day">
-              {dayFlights.map(({ flight, moment }) => (
-                <button className="flight-strip" key={`${flight.id}-${moment}`} onClick={() => onEditFlight(flight)} type="button">
-                  <span className="flight-strip-icon"><Plane size={16} /></span>
-                  <span className="flight-strip-route"><small>{moment === "departing" ? "Departs today" : "Arrives today"} · {[flight.airline, flight.flightNumber].filter(Boolean).join(" · ") || "Flight"}</small><strong>{flight.departureAirport}<ArrowRight size={14} />{flight.arrivalAirport}</strong></span>
-                  <span className="flight-strip-times"><strong>{flight.departureTime} <span>→</span> {flight.arrivalTime}</strong><small>{flight.plannedDate === flight.arrivalDate ? "Same day" : `Lands ${formatDayHeading(flight.arrivalDate).date}`}</small></span>
-                </button>
-              ))}
-            </div>
-          ) : null}
           <div className="day-notes">
             {notes.map((note) => (
               <DayNoteRow key={note.id} note={note} onRemove={onRemoveNote} onUpdate={onUpdateNote} />
@@ -1085,6 +1062,22 @@ function DayPlan({
             })}
             {!dayPlaces.length ? <p className="day-empty">No places planned for this day yet.</p> : null}
           </div>
+          {dayHotel || dayFlights.length ? (
+            <div className="day-logistics">
+              {dayHotel ? <article className="hotel-strip"><button className="hotel-strip-copy" onClick={() => onEditHotel(dayHotel)} type="button"><span className="hotel-strip-icon"><BedDouble size={16} /></span><span><small>Home base · {dayHotel.startDate === dayHotel.endDate ? "Today" : `${formatDayHeading(dayHotel.startDate).date} — ${formatDayHeading(dayHotel.endDate).date}`}</small><strong>{dayHotel.name}</strong><em>{dayHotel.address || "Pinned on the map"}</em></span><span className="hotel-strip-route">Route starts here</span></button><a className="hotel-map-link" href={buildGoogleMapsDirectionsUrl(dayHotel)} rel="noreferrer" target="_blank">Google Maps <ExternalLink size={13} /></a></article> : null}
+              {dayFlights.length ? (
+                <div className="flight-list" aria-label="Flights for this day">
+                  {dayFlights.map(({ flight, moment }) => (
+                    <button className="flight-strip" key={`${flight.id}-${moment}`} onClick={() => onEditFlight(flight)} type="button">
+                      <span className="flight-strip-icon"><Plane size={16} /></span>
+                      <span className="flight-strip-route"><small>{moment === "departing" ? "Departs today" : "Arrives today"} · {[flight.airline, flight.flightNumber].filter(Boolean).join(" · ") || "Flight"}</small><strong>{flight.departureAirport}<ArrowRight size={14} />{flight.arrivalAirport}</strong></span>
+                      <span className="flight-strip-times"><strong>{flight.departureTime} <span>→</span> {flight.arrivalTime}</strong><small>{flight.plannedDate === flight.arrivalDate ? "Same day" : `Lands ${formatDayHeading(flight.arrivalDate).date}`}</small></span>
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
         </section>
       ) : null}
       {!currentDate && hasUnplannedPage ? (
