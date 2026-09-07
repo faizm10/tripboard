@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { LogOut, Map, UserRound } from "lucide-react";
+import { LayoutDashboard, LogOut, Map, UserRound } from "lucide-react";
 import { initialsFromName } from "@/components/profile-avatar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -17,11 +17,13 @@ import {
 import { signOut } from "@/lib/auth-actions";
 
 export function AccountMenu({
+  admin = false,
   demo = false,
   email,
   image,
   name,
 }: {
+  admin?: boolean;
   demo?: boolean;
   email?: string | null;
   image?: string | null;
@@ -69,6 +71,14 @@ export function AccountMenu({
               Account
             </Link>
           </DropdownMenuItem>
+          {admin ? (
+            <DropdownMenuItem asChild>
+              <Link href="/admin">
+                <LayoutDashboard />
+                Admin
+              </Link>
+            </DropdownMenuItem>
+          ) : null}
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem
