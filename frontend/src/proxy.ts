@@ -14,14 +14,16 @@ export async function proxy(request: NextRequest) {
   if (!auth) return NextResponse.next();
 
   const publicPath = isPublicAuthPath(request.nextUrl.pathname);
-  if (publicPath && !request.nextUrl.searchParams.has(SESSION_VERIFIER_PARAM)) {
+  const home = request.nextUrl.pathname === "/";
+  if (publicPath && !home && !request.nextUrl.searchParams.has(SESSION_VERIFIER_PARAM)) {
     return NextResponse.next();
   }
 
   const response = await auth.middleware({ loginUrl: LOGIN_URL })(request);
   if (!publicPath || !isLoginRedirect(response)) return response;
 
-  // The exchange did not produce a session, but a public page still renders.
+  // Public pages still render. Copy any session refresh cookies first so
+  // Server Components can read the session without writing cookies themselves.
   const passthrough = NextResponse.next();
   for (const cookie of response.headers.getSetCookie()) {
     passthrough.headers.append("set-cookie", cookie);
@@ -31,6 +33,7 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
+    "/",
     "/trips",
     "/trips/new",
     "/trips/:path*",
