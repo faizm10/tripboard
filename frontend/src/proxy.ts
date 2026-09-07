@@ -39,6 +39,8 @@ export const config = {
     "/trips/:path*",
     "/account",
     "/account/:path*",
+    "/admin",
+    "/admin/:path*",
     "/invite/:path*",
     "/auth/callback",
   ],
