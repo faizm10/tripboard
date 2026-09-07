@@ -17,6 +17,7 @@ Copy `.env.example` to `.env.local` to connect live services:
 
 - `DATABASE_URL`: Neon Postgres for user-owned trip data.
 - `NEON_AUTH_BASE_URL` and `NEON_AUTH_COOKIE_SECRET`: Neon Auth. Configure Google as the only social provider in the Neon console.
+- `ADMIN_EMAIL`: server-only email allowed to use the `/admin` control tower. Set it to the verified Tripboard administrator email.
 - `NEXT_PUBLIC_MAPBOX_TOKEN` and `MAPBOX_ACCESS_TOKEN`: Mapbox map rendering and Directions.
 - `GOOGLE_MAPS_API_KEY`: Google Places (New) and Geocoding for city search, place search, and photos. Server-only.
 - `FOURSQUARE_API_KEY`: Fallback place search if the Google key is missing.
@@ -24,6 +25,10 @@ Copy `.env.example` to `.env.local` to connect live services:
 Create the Google key in [Google Cloud Console](https://console.cloud.google.com/google/maps-apis). Enable **Places API (New)** and **Geocoding API**, restrict the key to those APIs, and paste it into `frontend/.env.local` as `GOOGLE_MAPS_API_KEY`. Do not prefix it with `NEXT_PUBLIC_`. Restart `npm run dev` after adding it.
 
 For a linked Vercel project, `vercel env pull .env.local` is the quickest setup path. Secrets stay server-only; the only browser-exposed value is the intentionally public `NEXT_PUBLIC_MAPBOX_TOKEN`. Drizzle loads `.env.local` for its CLI commands.
+
+## Administration
+
+`/admin` is a first-party operations dashboard for the email in `ADMIN_EMAIL`. It reads aggregated account, session, trip, place, and invitation data from Neon, and lets the administrator restrict or restore a user’s access with an audit trail. It does not include third-party tracking, trip notes, source URLs, or deletion controls.
 
 ## Data boundaries
 
