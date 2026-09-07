@@ -42,13 +42,13 @@ export default function Home() {
 
       <footer className="site-footer">
         <div>
-          <strong>roamboard</strong>
+          <strong>tripboard</strong>
           <span>© 2026</span>
         </div>
         <a
-          aria-label="Roamboard on GitHub"
+          aria-label="Tripboard on GitHub"
           className="site-footer-github"
-          href="https://github.com/faizm10/roomly"
+          href="https://github.com/faizm10/tripboard"
           rel="noreferrer"
           target="_blank"
         >

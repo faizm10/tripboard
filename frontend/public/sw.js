@@ -1,5 +1,5 @@
-const CACHE = "roamboard-shell-v2";
-const SHELL = ["/", "/roamboard-mark.svg"];
+const CACHE = "tripboard-shell-v2";
+const SHELL = ["/", "/tripboard-mark.svg"];
 
 // Pages behind or around sign-in render per viewer, so they are never cached
 // and never replayed. The auth round-trip also has to reach the network so the

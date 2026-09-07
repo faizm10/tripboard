@@ -1,4 +1,4 @@
-# Roamboard — Project Overview (AI handoff doc)
+# Tripboard — Project Overview (AI handoff doc)
 
 A context dump for an AI assistant that has never seen this repo. Everything below is derived from the actual source, not aspiration.
 
@@ -8,7 +8,7 @@ Live: https://room-design-lovat.vercel.app
 
 ## 1. What the app does
 
-**Roamboard is a shared visual trip board.** People collect travel recommendations in scattered places — Instagram saves, TikToks, articles, group chats, notes apps — and lose them. Roamboard is where those saves become a usable plan.
+**Tripboard is a shared visual trip board.** People collect travel recommendations in scattered places — Instagram saves, TikToks, articles, group chats, notes apps — and lose them. Tripboard is where those saves become a usable plan.
 
 The loop is:
 
@@ -51,7 +51,7 @@ frontend/
 ├── drizzle.config.ts
 ├── public/
 │   ├── sw.js                    # hand-written service worker (app shell cache)
-│   └── roamboard-mark.svg
+│   └── tripboard-mark.svg
 ├── src/
 │   ├── proxy.ts                 # Next.js middleware (named `proxy` in Next 16)
 │   ├── app/
@@ -180,7 +180,7 @@ With **no environment variables at all**, the app runs fully interactively:
 
 ## 9. Data-handling policy (deliberate, keep it)
 
-- Roamboard persists a **provider place ID** plus **user-authored** content (category, note, source link, ordering, collaborator metadata) and a light cached name/address/coords snapshot for map rendering.
+- Tripboard persists a **provider place ID** plus **user-authored** content (category, note, source link, ordering, collaborator metadata) and a light cached name/address/coords snapshot for map rendering.
 - Live provider fields — ratings, hours, photos — are fetched per request with `Cache-Control: no-store` and are **never written to Postgres**.
 - The service worker (`public/sw.js`) explicitly **skips** `/api/*`, Mapbox, Google, and Foursquare requests; it caches only the app shell and same-origin static assets, network-first with a cache fallback.
 - Only `NEXT_PUBLIC_MAPBOX_TOKEN` is browser-exposed; the Google key is server-only and must never get a `NEXT_PUBLIC_` prefix.

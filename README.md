@@ -1,4 +1,4 @@
-# Roamboard
+# Tripboard
 
 A shared visual trip board. Save places from notes and links, see them on a map, and turn the shortlist into a route.
 

@@ -166,7 +166,7 @@ export function AuthForm({
           </>
         ) : (
           <>
-            New to Roamboard? <Link href={`/sign-up?returnTo=${encodeURIComponent(returnTo)}`}>Create an account</Link>
+            New to Tripboard? <Link href={`/sign-up?returnTo=${encodeURIComponent(returnTo)}`}>Create an account</Link>
           </>
         )}
       </p>
@@ -178,7 +178,7 @@ export function AuthForm({
       ) : null}
 
       <p className="form-footnote">
-        By continuing, you agree to Roamboard saving the trips and places you add to your account.
+        By continuing, you agree to Tripboard saving the trips and places you add to your account.
       </p>
     </div>
   );

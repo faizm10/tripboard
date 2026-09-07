@@ -1,6 +1,6 @@
-# Roamboard
+# Tripboard
 
-Roamboard turns travel finds from social posts, articles, notes, and group chats into a shared visual trip board with route previews.
+Tripboard turns travel finds from social posts, articles, notes, and group chats into a shared visual trip board with route previews.
 
 ## Start locally
 
@@ -27,7 +27,7 @@ For a linked Vercel project, `vercel env pull .env.local` is the quickest setup 
 
 Provider data is treated deliberately:
 
-- Roamboard persists a provider place ID plus user-authored category, note, source link, ordering, and collaborator metadata.
+- Tripboard persists a provider place ID plus user-authored category, note, source link, ordering, and collaborator metadata.
 - Place search/details routes use `Cache-Control: no-store`; names, addresses, ratings, hours, and coordinates are fetched live and are not stored in Postgres.
 - The PWA service worker excludes `/api`, Mapbox, Google, and Foursquare requests. It caches only the app shell and same-origin static assets.
 - Mapbox Directions is used for planning previews. Google Maps and Apple Maps are external navigation handoffs for live guidance.

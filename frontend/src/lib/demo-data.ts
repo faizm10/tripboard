@@ -119,9 +119,9 @@ export const demoTrips: Trip[] = [
     },
     places: demoPlaces,
     collaborators: [
-      { id: "demo-user", name: "Faiz", email: "demo@roamboard.app" },
-      { id: "demo-ana", name: "Ana", email: "ana@roamboard.app" },
-      { id: "demo-jon", name: "Jon", email: "jon@roamboard.app" },
+      { id: "demo-user", name: "Faiz", email: "demo@tripboard.app" },
+      { id: "demo-ana", name: "Ana", email: "ana@tripboard.app" },
+      { id: "demo-jon", name: "Jon", email: "jon@tripboard.app" },
     ],
   },
   {
@@ -138,7 +138,7 @@ export const demoTrips: Trip[] = [
     hotels: [],
     agenda: { brief: "", dayNotes: [], items: [] },
     places: demoPlaces.slice(0, 3),
-    collaborators: [{ id: "demo-user", name: "Faiz", email: "demo@roamboard.app" }],
+    collaborators: [{ id: "demo-user", name: "Faiz", email: "demo@tripboard.app" }],
   },
   {
     id: "montreal-summer",
@@ -155,8 +155,8 @@ export const demoTrips: Trip[] = [
     agenda: { brief: "", dayNotes: [], items: [] },
     places: demoPlaces.slice(0, 4),
     collaborators: [
-      { id: "demo-user", name: "Faiz", email: "demo@roamboard.app" },
-      { id: "demo-rae", name: "Rae", email: "rae@roamboard.app" },
+      { id: "demo-user", name: "Faiz", email: "demo@tripboard.app" },
+      { id: "demo-rae", name: "Rae", email: "rae@tripboard.app" },
     ],
   },
 ];

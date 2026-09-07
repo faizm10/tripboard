@@ -73,7 +73,7 @@ export function GoogleSignInButton({
       return;
     }
 
-    const tab = window.open("about:blank", "roamboard_google");
+    const tab = window.open("about:blank", "tripboard_google");
     setBusy(true);
     setError("");
 

@@ -8,6 +8,6 @@ export default defineConfig({
   schema: "./src/lib/db/schema.ts",
   dialect: "postgresql",
   dbCredentials: {
-    url: process.env.DATABASE_URL ?? "postgresql://local:local@localhost:5432/roamboard",
+    url: process.env.DATABASE_URL ?? "postgresql://local:local@localhost:5432/tripboard",
   },
 });

@@ -19,7 +19,7 @@ export function getNeonAuth() {
 export async function getViewer() {
   const auth = getNeonAuth();
   if (!auth) {
-    return { id: "demo-user", name: "Faiz", email: "demo@roamboard.app", image: undefined, demo: true };
+    return { id: "demo-user", name: "Faiz", email: "demo@tripboard.app", image: undefined, demo: true };
   }
   try {
     const { data } = await auth.getSession();

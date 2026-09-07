@@ -26,11 +26,11 @@ const handwritten = Kalam({
 });
 
 export const metadata: Metadata = {
-  title: { default: "Roamboard — trips worth taking", template: "%s · Roamboard" },
+  title: { default: "Tripboard — trips worth taking", template: "%s · Tripboard" },
   description: "Save travel spots, plan with friends, and turn them into a route.",
-  applicationName: "Roamboard",
-  appleWebApp: { capable: true, title: "Roamboard", statusBarStyle: "black-translucent" },
-  icons: { icon: "/roamboard-mark.svg", apple: "/roamboard-mark.svg" },
+  applicationName: "Tripboard",
+  appleWebApp: { capable: true, title: "Tripboard", statusBarStyle: "black-translucent" },
+  icons: { icon: "/tripboard-mark.svg", apple: "/tripboard-mark.svg" },
 };
 
 export const viewport: Viewport = {

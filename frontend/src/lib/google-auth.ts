@@ -1,5 +1,5 @@
-export const GOOGLE_AUTH_CHANNEL = "roamboard-google-auth";
-export const GOOGLE_AUTH_MESSAGE = "roamboard:google-complete";
+export const GOOGLE_AUTH_CHANNEL = "tripboard-google-auth";
+export const GOOGLE_AUTH_MESSAGE = "tripboard:google-complete";
 export const SESSION_VERIFIER_PARAM = "neon_auth_session_verifier";
 
 export type GoogleAuthMessage = {
