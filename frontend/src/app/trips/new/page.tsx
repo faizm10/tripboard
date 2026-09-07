@@ -23,7 +23,7 @@ export default async function NewTripPage() {
       </header>
       <div className="form-page-grid">
         <section className="form-intro">
-          <p className="eyebrow">New trip</p>
+          <p className="eyebrow">new trip</p>
           <h1>Begin with a place.</h1>
           <p>The dates can be rough. The shortlist can grow as the trip becomes real.</p>
           <div className="form-itinerary" aria-hidden="true">
@@ -35,7 +35,7 @@ export default async function NewTripPage() {
           </div>
         </section>
         <section className="form-panel">
-          <p className="eyebrow">The basics</p>
+          <p className="eyebrow">the basics</p>
           <h2>Name the trip.</h2>
           <NewTripForm />
         </section>
