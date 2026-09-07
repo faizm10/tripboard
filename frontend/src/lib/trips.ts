@@ -242,6 +242,7 @@ export async function listViewerTrips(viewer: TripViewer): Promise<Trip[]> {
 export async function getViewerTrip(tripId: string, viewer: TripViewer): Promise<Trip | null> {
   const db = getDatabase();
   if (!db) return null;
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(tripId)) return null;
   const [row] = await db
     .select({
       id: trips.id,
