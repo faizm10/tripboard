@@ -1,4 +1,5 @@
 import { createNeonAuth } from "@neondatabase/auth/next/server";
+import { isReadonlyCookieStoreError } from "@/lib/auth-errors";
 
 export function isNeonAuthConfigured() {
   return Boolean(process.env.NEON_AUTH_BASE_URL && process.env.NEON_AUTH_COOKIE_SECRET);
@@ -20,7 +21,12 @@ export async function getViewer() {
   if (!auth) {
     return { id: "demo-user", name: "Faiz", email: "demo@roamboard.app", image: undefined, demo: true };
   }
-  const { data } = await auth.getSession();
-  if (!data?.user) return null;
-  return { ...data.user, demo: false };
+  try {
+    const { data } = await auth.getSession();
+    if (!data?.user) return null;
+    return { ...data.user, demo: false };
+  } catch (error) {
+    if (isReadonlyCookieStoreError(error)) return null;
+    throw error;
+  }
 }
