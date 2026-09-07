@@ -8,11 +8,11 @@ import { safeReturnTo } from "@/lib/invitations";
 export const metadata: Metadata = { title: "Sign in" };
 export const dynamic = "force-dynamic";
 
-export default async function SignInPage({ searchParams }: { searchParams: Promise<{ returnTo?: string }> }) {
-  const { returnTo: rawReturnTo } = await searchParams;
+export default async function SignInPage({ searchParams }: { searchParams: Promise<{ returnTo?: string; restricted?: string }> }) {
+  const { returnTo: rawReturnTo, restricted } = await searchParams;
   const returnTo = safeReturnTo(rawReturnTo);
   const viewer = await getViewer();
-  if (viewer && !viewer.demo) redirect(returnTo);
+  if (viewer && !viewer.demo && !viewer.restricted) redirect(returnTo);
 
   return (
     <AuthShell
@@ -23,7 +23,7 @@ export default async function SignInPage({ searchParams }: { searchParams: Promi
       switchLabel="Create account"
       title="Your map is waiting."
     >
-      <AuthForm authEnabled={isNeonAuthConfigured()} mode="sign-in" returnTo={returnTo} />
+      <AuthForm authEnabled={isNeonAuthConfigured()} mode="sign-in" restricted={restricted === "1"} returnTo={returnTo} />
     </AuthShell>
   );
 }
