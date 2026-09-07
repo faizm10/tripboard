@@ -1,14 +1,25 @@
 import Link from "next/link";
 import { ArrowUpRight, MapPin, Users } from "lucide-react";
+import { CountryFlag } from "@/components/country-flag";
 import { PlacePhoto } from "@/components/place-photo";
+import { flagCodeForTrip } from "@/lib/country-flag";
 import type { Trip } from "@/lib/types";
 
 export function TripCard({ trip, index }: { trip: Trip; index: number }) {
   const coverPlace = trip.places[0];
+  const flagCode = flagCodeForTrip(trip);
+  const initials = (trip.country || trip.destination).slice(0, 2);
+
   return (
     <Link className="trip-card" href={`/trips/${trip.id}`}>
       <div className="trip-cover">
-        {coverPlace?.fsqPlaceId ? <PlacePhoto fsqPlaceId={coverPlace.fsqPlaceId} name={coverPlace.name} label={trip.destination} sizes="(max-width: 700px) 100vw, 180px" priority={index === 0} /> : <div className="trip-cover-fallback">{trip.destination.slice(0, 2)}</div>}
+        {flagCode ? (
+          <CountryFlag code={flagCode} country={trip.country || trip.destination} />
+        ) : coverPlace?.fsqPlaceId ? (
+          <PlacePhoto fsqPlaceId={coverPlace.fsqPlaceId} name={coverPlace.name} label={trip.destination} sizes="(max-width: 700px) 100vw, 180px" priority={index === 0} />
+        ) : (
+          <div className="trip-cover-fallback">{initials}</div>
+        )}
         <span className="trip-index">{String(index + 1).padStart(2, "0")}</span>
       </div>
       <div className="trip-card-body">
