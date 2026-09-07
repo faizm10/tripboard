@@ -11,6 +11,11 @@ describe("isPublicAuthPath", () => {
     expect(isPublicAuthPath("/trips/lisbon-weekender")).toBe(true);
   });
 
+  it("keeps the marketing homepage public without opening every route", () => {
+    expect(isPublicAuthPath("/")).toBe(true);
+    expect(isPublicAuthPath("/trips")).toBe(false);
+  });
+
   it("still protects the signed-in app", () => {
     expect(isPublicAuthPath("/trips")).toBe(false);
     expect(isPublicAuthPath("/trips/abc123")).toBe(false);
