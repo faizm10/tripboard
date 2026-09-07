@@ -1,14 +1,18 @@
 import Link from "next/link";
 import { Plus } from "lucide-react";
+import { AccountMenu } from "@/components/account-menu";
 import { Logo } from "@/components/logo";
-import { ProfileAvatar } from "@/components/profile-avatar";
 
 export function AppHeader({
+  demo = false,
+  email,
   name = "Traveller",
   image,
   tripTitle,
   highlightNav = true,
 }: {
+  demo?: boolean;
+  email?: string | null;
   name?: string;
   image?: string | null;
   tripTitle?: string;
@@ -36,9 +40,7 @@ export function AppHeader({
             <Plus size={16} /> New trip
           </Link>
         )}
-        <Link aria-label={`${name}'s account`} className="profile-chip-link" href="/account">
-          <ProfileAvatar image={image} name={name} />
-        </Link>
+        <AccountMenu demo={demo} email={email} image={image} name={name} />
       </div>
     </header>
   );
