@@ -1,7 +1,7 @@
 import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { countryFromDestination, formatDateLabel } from "@/lib/dates";
 import { getDatabase } from "@/lib/db";
-import { tripAgendaDayNotes, tripAgendaItems, tripAgendas, tripCities, tripDayNotes, tripFlights, tripHotels, tripMembers, tripPlaces, trips } from "@/lib/db/schema";
+import { tripAgendaDayNotes, tripAgendaItems, tripAgendas, tripCities, tripDayNotes, tripFlights, tripHotels, tripInvitationAcceptances, tripInvitations, tripMembers, tripPlaces, trips } from "@/lib/db/schema";
 import type { CityStop, Collaborator, DayNote, Flight, HotelStay, PlaceCategory, Trip, TripAgenda, TripViewer } from "@/lib/types";
 
 function asIsoDate(value: string | Date) {
@@ -12,13 +12,46 @@ function asIsoDate(value: string | Date) {
 function toCollaborator(
   member: { userId: string; displayName: string; image: string | null; role: "owner" | "editor" },
   viewer?: TripViewer,
+  email?: string | null,
 ): Collaborator {
   const isViewer = member.userId === viewer?.id;
   return {
     id: member.userId,
     name: (isViewer ? viewer?.name : member.displayName) || member.displayName || "Traveller",
+    email: (isViewer ? viewer?.email : email) || email || null,
     image: (isViewer ? viewer?.image : member.image) ?? member.image,
   };
+}
+
+async function emailsByMember(
+  db: NonNullable<ReturnType<typeof getDatabase>>,
+  tripIds: string[],
+  viewer?: TripViewer,
+) {
+  const emails = new Map<string, string>();
+  if (viewer?.id && viewer.email) {
+    for (const tripId of tripIds) emails.set(`${tripId}:${viewer.id}`, viewer.email);
+  }
+  if (!tripIds.length) return emails;
+  try {
+    const rows = await db
+      .select({
+        tripId: tripInvitationAcceptances.tripId,
+        userId: tripInvitationAcceptances.userId,
+        email: tripInvitations.email,
+      })
+      .from(tripInvitationAcceptances)
+      .innerJoin(tripInvitations, eq(tripInvitationAcceptances.invitationId, tripInvitations.id))
+      .where(inArray(tripInvitationAcceptances.tripId, tripIds));
+    for (const row of rows) {
+      if (!row.email) continue;
+      const key = `${row.tripId}:${row.userId}`;
+      if (!emails.has(key)) emails.set(key, row.email);
+    }
+  } catch {
+    // Invitation tables are optional on older databases.
+  }
+  return emails;
 }
 
 function sortPlanners<T extends { role: "owner" | "editor"; joinedAt?: Date | string }>(members: T[]) {
@@ -147,8 +180,8 @@ function toTrip(row: {
   };
 }
 
-export function toTripViewer(viewer: { id: string; name?: string | null; image?: string | null }): TripViewer {
-  return { id: viewer.id, name: viewer.name?.trim() || "Traveller", image: viewer.image };
+export function toTripViewer(viewer: { id: string; name?: string | null; email?: string | null; image?: string | null }): TripViewer {
+  return { id: viewer.id, name: viewer.name?.trim() || "Traveller", email: viewer.email, image: viewer.image };
 }
 
 export async function syncMemberProfile(viewer: TripViewer) {
@@ -192,6 +225,7 @@ export async function listViewerTrips(viewer: TripViewer): Promise<Trip[]> {
     })
     .from(tripMembers)
     .where(inArray(tripMembers.tripId, tripIds));
+  const emails = await emailsByMember(db, tripIds, viewer);
   let cities: {
     id: string;
     tripId: string;
@@ -234,7 +268,7 @@ export async function listViewerTrips(viewer: TripViewer): Promise<Trip[]> {
     toTrip({
       ...row,
       cities: citiesByTrip.get(row.id),
-      collaborators: sortPlanners(membersByTrip.get(row.id) ?? []).map((member) => toCollaborator(member, viewer)),
+      collaborators: sortPlanners(membersByTrip.get(row.id) ?? []).map((member) => toCollaborator(member, viewer, emails.get(`${row.id}:${member.userId}`))),
     }),
   );
 }
@@ -266,9 +300,10 @@ export async function getViewerTrip(tripId: string, viewer: TripViewer): Promise
     })
     .from(tripMembers)
     .where(eq(tripMembers.tripId, tripId));
+  const emails = await emailsByMember(db, [tripId], viewer);
   const trip = toTrip({
     ...row,
-    collaborators: sortPlanners(members).map((member) => toCollaborator(member, viewer)),
+    collaborators: sortPlanners(members).map((member) => toCollaborator(member, viewer, emails.get(`${tripId}:${member.userId}`))),
   });
   let planningSchemaAvailable = true;
   let cityRows: {
