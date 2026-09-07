@@ -56,10 +56,12 @@ function PasswordField({
 export function AuthForm({
   authEnabled,
   mode,
+  restricted = false,
   returnTo = "/trips",
 }: {
   authEnabled: boolean;
   mode: AuthMode;
+  restricted?: boolean;
   returnTo?: string;
 }) {
   const action = mode === "sign-in" ? signInWithEmail : signUpWithEmail;
@@ -82,6 +84,8 @@ export function AuthForm({
           ? "Save spots, invite the people going with you, and keep every trip on one map."
           : "Open your boards, pick up a shared trip, and keep planning from where you left off."}
       </p>
+
+      {restricted ? <p className="form-error" role="alert">Your account has been restricted. Contact Tripboard support if you believe this is a mistake.</p> : null}
 
       <form action={formAction} className="auth-form" key={state?.error ?? "ready"}>
         <input name="returnTo" type="hidden" value={state?.returnTo ?? returnTo} />

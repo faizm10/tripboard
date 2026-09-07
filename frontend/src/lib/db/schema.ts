@@ -14,6 +14,21 @@ import {
 
 export const memberRole = pgEnum("member_role", ["owner", "editor"]);
 export const invitationKind = pgEnum("invitation_kind", ["email", "share"]);
+export const adminAuditAction = pgEnum("admin_audit_action", ["suspend", "restore"]);
+
+export const adminAuditLogs = pgTable(
+  "admin_audit_logs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    action: adminAuditAction("action").notNull(),
+    actorUserId: text("actor_user_id").notNull(),
+    actorEmail: text("actor_email").notNull(),
+    targetUserId: text("target_user_id").notNull(),
+    reason: text("reason").notNull().default(""),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("admin_audit_target_idx").on(table.targetUserId), index("admin_audit_created_idx").on(table.createdAt)],
+);
 
 export const trips = pgTable(
   "trips",

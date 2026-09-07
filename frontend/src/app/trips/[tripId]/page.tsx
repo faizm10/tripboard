@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { AppHeader } from "@/components/app-header";
 import { TripWorkspace } from "@/components/trip-workspace";
 import { getViewer } from "@/lib/auth";
@@ -24,6 +24,7 @@ export async function generateMetadata({ params }: { params: Promise<{ tripId: s
 export default async function TripPage({ params }: { params: Promise<{ tripId: string }> }) {
   const { tripId } = await params;
   const viewer = await getViewer();
+  if (viewer?.restricted) redirect("/sign-in?restricted=1");
   const name = viewer?.name ?? "Traveller";
 
   if (viewer && !viewer.demo) {

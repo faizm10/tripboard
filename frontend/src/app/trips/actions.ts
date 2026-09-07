@@ -44,7 +44,7 @@ import {
 
 async function requireViewer() {
   const viewer = await getViewer();
-  if (!viewer) throw new Error("You must sign in first.");
+  if (!viewer || viewer.restricted) throw new Error("Your account has been restricted.");
   return viewer;
 }
 

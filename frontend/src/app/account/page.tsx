@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 
 export default async function AccountPage() {
   const viewer = await getViewer();
-  if (!viewer) redirect("/sign-in");
+  if (!viewer || viewer.restricted) redirect("/sign-in?restricted=1");
 
   const name = viewer.name?.trim() || "Traveller";
   const email = viewer.email ?? "";

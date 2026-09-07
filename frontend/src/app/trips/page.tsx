@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic";
 
 export default async function TripsPage() {
   const viewer = await getViewer();
-  if (!viewer) redirect("/sign-in");
+  if (!viewer || viewer.restricted) redirect("/sign-in?restricted=1");
 
   const firstName = viewer.name?.split(" ")[0] ?? "Traveller";
   const trips = viewer.demo ? demoTrips : await listViewerTrips(toTripViewer(viewer));
