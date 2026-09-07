@@ -1076,9 +1076,9 @@ input::placeholder, textarea::placeholder { color: #9b9b97; }
 
 /* Trip workspace */
 .workspace-page { height: 100svh; overflow: hidden; }
-.trip-workspace { position: relative; display: grid; height: calc(100svh - 68px); grid-template-columns: 44% 56%; grid-template-areas: "map list"; overflow: hidden; }
+.trip-workspace { position: relative; display: grid; height: calc(100svh - 68px); grid-template-columns: 44% 56%; grid-template-rows: auto 1fr; grid-template-areas: "logistics logistics" "map list"; overflow: hidden; }
 .places-panel { display: flex; min-width: 0; grid-area: list; flex-direction: column; overflow: hidden; border-left: 1px solid var(--line); background: var(--paper-raised); }
-.places-panel-header { position: relative; z-index: 5; flex: none; padding: 14px 28px 0; border-bottom: 1px solid var(--line); background: var(--paper-raised); }
+.places-panel-header { position: relative; z-index: 5; flex: none; padding: 14px 28px 12px; background: var(--paper-raised); }
 .places-panel-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .workspace-mode { display: grid; width: min(100%, 420px); margin-top: 0; grid-template-columns: repeat(3, minmax(0, 1fr)); overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--paper-raised); }
 .workspace-mode button { display: inline-flex; min-height: 36px; padding: 0 12px; align-items: center; justify-content: center; gap: 7px; border: 0; border-right: 1px solid var(--line); background: transparent; color: var(--muted); font-size: 11px; font-weight: 650; cursor: pointer; }
@@ -1103,8 +1103,53 @@ input::placeholder, textarea::placeholder { color: #9b9b97; }
 .collab-row > button { display: inline-flex; margin-left: auto; align-items: center; gap: 6px; border: 0; border-bottom: 1px solid var(--line); background: transparent; font-size: 11px; cursor: pointer; }
 .save-status { color: var(--muted); font-size: 11px; }
 .save-status.error { color: var(--cat-eat-ink); }
-.filter-scroll { display: flex; margin-top: 12px; padding-bottom: 12px; gap: 8px; overflow-x: auto; scrollbar-width: none; }
+.places-panel-find {
+  display: flex;
+  margin-top: 12px;
+  padding-bottom: 12px;
+  align-items: center;
+  gap: 10px;
+}
+.filter-scroll { display: flex; min-width: 0; flex: 1 1 auto; gap: 8px; overflow-x: auto; scrollbar-width: none; }
 .filter-scroll::-webkit-scrollbar { display: none; }
+.place-find {
+  display: flex;
+  min-width: 168px;
+  max-width: 240px;
+  flex: 1 1 180px;
+  height: 32px;
+  padding: 0 10px;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-round);
+  background: var(--paper);
+  color: var(--muted);
+}
+.place-find input {
+  min-width: 0;
+  flex: 1;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--ink);
+  font-size: 12px;
+  -webkit-text-fill-color: var(--ink);
+}
+.place-find input::placeholder { color: var(--quiet); -webkit-text-fill-color: var(--quiet); }
+.place-find button {
+  display: grid;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
 .filter-pill, .category-tag {
   display: inline-flex;
   align-items: center;
@@ -1141,11 +1186,13 @@ input::placeholder, textarea::placeholder { color: #9b9b97; }
 .filter-pill.category-eat, .filter-pill.category-drink, .filter-pill.category-see, .filter-pill.category-shop, .filter-pill.category-stay, .filter-pill.category-transit, .filter-pill.category-other { letter-spacing: .04em; text-transform: none; }
 .category-picker { display: flex; flex-wrap: wrap; gap: 8px; }
 .category-picker .category-tag { min-height: 34px; padding: 0 12px; font-size: 11px; letter-spacing: .04em; text-transform: none; cursor: pointer; }
-.place-list { padding: 0 28px 20px; overflow-y: auto; overscroll-behavior: contain; }
+.place-list { flex: 1; min-height: 0; padding: 0 28px 20px; overflow-y: auto; overscroll-behavior: contain; }
 .places-panel-logistics {
+  grid-area: logistics;
   flex: none;
-  padding: 12px 28px 16px;
-  border-top: 1px solid var(--line);
+  min-width: 0;
+  padding: 12px 28px 14px;
+  border-bottom: 1px solid var(--line);
   background: var(--paper-raised);
 }
 .places-panel-logistics-row {
@@ -1219,7 +1266,7 @@ input::placeholder, textarea::placeholder { color: #9b9b97; }
 .edit-place { color: var(--muted); opacity: .72; transition: opacity 140ms ease, color 140ms ease; }
 .edit-place:hover, .edit-place:focus-visible { color: var(--ink); opacity: 1; }
 .delete-place { color: var(--muted); opacity: 0; transition: opacity 140ms ease; }
-.saved-place:hover .delete-place, .delete-place:focus-visible { opacity: 1; }
+.saved-place:hover .delete-place, .day-place .delete-place, .delete-place:focus-visible { opacity: 1; }
 .empty-filter { padding: 60px 0; border-bottom: 1px solid var(--line); text-align: center; }
 .empty-filter p { color: var(--muted); }
 .empty-filter button { display: inline-flex; align-items: center; gap: 6px; border: 0; border-bottom: 1px solid var(--line); background: transparent; cursor: pointer; }
@@ -1301,7 +1348,7 @@ input::placeholder, textarea::placeholder { color: #9b9b97; }
 
 /* Agenda is intentionally a quiet shared page: writing gets the whole panel. */
 .agenda-document { min-height: 100%; padding: 34px 0 80px; }
-.agenda-document-meta { display: flex; padding-bottom: 22px; align-items: center; gap: 6px; border-bottom: 1px solid var(--line); color: var(--muted); font-size: 9px; letter-spacing: .04em; }
+.agenda-document-meta { display: flex; padding-bottom: 8px; align-items: center; gap: 6px; color: var(--muted); font-size: 9px; letter-spacing: .04em; }
 .agenda-document textarea { display: block; width: 100%; min-height: calc(100svh - 280px); padding: 28px 0; border: 0; outline: 0; background: transparent; color: var(--ink); font-family: var(--font-body), Arial, sans-serif; font-size: 16px; letter-spacing: -.01em; line-height: 1.72; resize: none; }
 .agenda-document textarea::placeholder { color: var(--quiet); }
 .map-panel { position: relative; min-width: 0; grid-area: map; overflow: hidden; background: var(--map-land); }
@@ -1480,17 +1527,27 @@ input::placeholder, textarea::placeholder { color: #9b9b97; }
   .workspace-page .app-header { height: 64px; }
   .trip-workspace { display: block; height: calc(100svh - 64px); }
   .places-panel, .map-panel { position: absolute; inset: 0; display: flex; border: 0; }
-  .places-panel { padding-top: 56px; }
+  .places-panel { padding-top: 56px; padding-bottom: 108px; }
   .map-panel { display: block; }
   .mobile-list .map-panel { display: none; }
   .mobile-map .places-panel { display: none; }
+  .mobile-map .places-panel-logistics { display: none; }
+  .places-panel-logistics {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 20;
+    padding: 12px 28px 16px;
+    border-bottom: 0;
+    border-top: 1px solid var(--line);
+  }
   .mobile-view-switch { position: absolute; top: 10px; left: 50%; z-index: 70; display: grid; grid-template-columns: 1fr 1fr; overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius-round); background: var(--paper-raised); transform: translateX(-50%); }
   .mobile-view-switch button { display: flex; min-width: 88px; height: 36px; padding: 0 13px; align-items: center; justify-content: center; gap: 6px; border: 0; border-right: 1px solid var(--line); background: var(--paper-raised); color: var(--muted); font-size: 11px; cursor: pointer; }
   .mobile-view-switch button:last-child { border-right: 0; }
   .mobile-view-switch button.active { background: var(--accent); color: var(--paper-raised); }
-  .places-panel-header { padding: 14px 28px 0; }
+  .places-panel-header { padding: 14px 28px 12px; }
   .place-list { padding-inline: 28px; }
-  .places-panel-logistics { padding: 12px 28px 16px; }
   .map-topbar { top: 58px; }
   .mobile-add-button { position: absolute; right: 18px; bottom: 18px; z-index: 72; display: grid; width: 48px; height: 48px; padding: 0; place-items: center; border: 1px solid var(--accent); border-radius: 50%; background: var(--accent); color: var(--paper-raised); cursor: pointer; }
   .mobile-place-peek { position: absolute; bottom: 20px; left: 18px; z-index: 18; display: grid; width: min(320px, calc(100% - 92px)); min-height: 72px; padding: 12px; grid-template-columns: 38px 1fr; gap: 2px 10px; align-items: center; border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--paper-raised); box-shadow: var(--shadow-card); text-align: left; cursor: pointer; }
@@ -1584,9 +1641,10 @@ input::placeholder, textarea::placeholder { color: #9b9b97; }
   .invite-main { padding: 46px 22px; }
   .invite-main h1 { font-size: 44px; }
 
-  .places-panel-header { padding: 14px 17px 0; }
+  .places-panel-header { padding: 14px 17px 12px; }
   .places-panel-toolbar { align-items: stretch; flex-direction: column; }
-  .filter-scroll { margin-top: 10px; }
+  .places-panel-find { margin-top: 10px; flex-wrap: wrap; }
+  .place-find { max-width: none; flex: 1 1 100%; }
   .place-list { padding: 0 17px 20px; }
   .places-panel-logistics { padding: 12px 17px 16px; }
   .presence-dock { height: 38px; padding: 3px 5px; }
