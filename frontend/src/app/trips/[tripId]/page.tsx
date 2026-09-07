@@ -31,7 +31,7 @@ export default async function TripPage({ params }: { params: Promise<{ tripId: s
     if (trip) {
       return (
         <main className="workspace-page">
-          <AppHeader image={viewer?.image} name={name} tripTitle={trip.title} />
+          <AppHeader demo={viewer.demo} email={viewer.email} image={viewer.image} name={name} tripTitle={trip.title} />
           <TripWorkspace mapToken={process.env.NEXT_PUBLIC_MAPBOX_TOKEN} trip={trip} viewer={toTripViewer(viewer)} />
         </main>
       );
@@ -42,7 +42,7 @@ export default async function TripPage({ params }: { params: Promise<{ tripId: s
     const trip = getTrip(tripId);
     return (
       <main className="workspace-page">
-        <AppHeader image={viewer?.image} name={name} tripTitle={trip.title} />
+        <AppHeader demo={viewer?.demo} email={viewer?.email} image={viewer?.image} name={name} tripTitle={trip.title} />
         <TripWorkspace
           mapToken={process.env.NEXT_PUBLIC_MAPBOX_TOKEN}
           trip={trip}
