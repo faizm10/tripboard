@@ -212,7 +212,7 @@ export async function LandingMap() {
   return (
     <figure className="board" aria-labelledby="board-caption">
       <figcaption className="sr-only" id="board-caption">
-        An example Roamboard trip: four places saved around Lisbon, each with the note that made it
+        A Roamboard trip: four places saved around Lisbon, each with the note that made it
         worth keeping, shown together on one map.
       </figcaption>
 
