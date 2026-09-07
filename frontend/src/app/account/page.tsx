@@ -16,9 +16,9 @@ export default async function AccountPage() {
 
   return (
     <main className="app-page">
-      <AppHeader highlightNav={false} image={viewer.image} name={name} />
+      <AppHeader demo={viewer.demo} email={email} highlightNav={false} image={viewer.image} name={name} />
       <section className="account-shell">
-        <p className="eyebrow">Account</p>
+        <p className="eyebrow">account</p>
         <h1>Your account.</h1>
         <p className="account-lede">This is how your name shows up on trips.</p>
         <AccountPanel demo={viewer.demo} email={email} image={viewer.image} name={name} />

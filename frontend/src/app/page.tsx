@@ -1,10 +1,10 @@
 import Link from "next/link";
-import { ArrowDown, ArrowUpRight } from "lucide-react";
-import { CollabPreview } from "@/components/landing-collab";
+import { ArrowUpRight } from "lucide-react";
 import { LandingMap } from "@/components/landing-map";
-import { LandingStages } from "@/components/landing-stages";
 import { SiteHeader } from "@/components/site-header";
 import { WalkingPairMark } from "@/components/travel-marks";
+
+export const dynamic = "force-dynamic";
 
 export default function Home() {
   return (
@@ -13,98 +13,49 @@ export default function Home() {
 
       <section className="hero-section">
         <div className="hero-copy">
-          <p className="eyebrow">A quieter place for travel plans</p>
-          <h1>Your saved places, finally on the map.</h1>
-          <p className="hero-lede">
-            Roamboard gathers the places scattered across Instagram, notes, and map lists into one
-            thoughtful trip you can actually use.
-          </p>
-          <div className="hero-actions">
-            <Link className="button button-ink" href="/sign-up">
-              Start a trip <ArrowUpRight size={17} />
-            </Link>
-            <a className="text-action" href="#stages">
-              See how it works <ArrowDown size={16} />
-            </a>
-          </div>
-          <div className="hero-note">
-            <WalkingPairMark />
-            <span>One shared shortlist for everyone going.</span>
-          </div>
-        </div>
-        <div className="hero-visual">
-          <LandingMap />
-        </div>
-      </section>
-
-      <section className="problem-section" aria-labelledby="problem-title">
-        <p className="eyebrow">Where good places go</p>
-        <p className="problem-line" id="problem-title">
-          A place you loved is usually three apps away. A story you screenshotted. A link someone
-          dropped in the group chat. A pin you saved and never opened again.
-        </p>
-        <p className="problem-answer">Roamboard gives them somewhere to live.</p>
-      </section>
-
-      <section className="stages-section" id="stages">
-        <header className="section-heading">
-          <p className="eyebrow">Save → See → Plan</p>
-          <h2>
-            Keep the context.
+          <h1>
+            the places you save,
             <br />
-            Lose the clutter.
-          </h2>
-          <p>
-            Roamboard is built for the small decisions that turn a collection of good places into a
-            day worth taking.
-          </p>
-        </header>
-        <LandingStages />
-      </section>
-
-      <section className="collab-section" id="together">
-        <div className="collab-copy">
-          <p className="eyebrow">Planned together</p>
-          <h2>Everyone saves. Nobody loses the list.</h2>
-          <p>
-            Invite the people you are going with. Their finds land on the same board, with their name
-            still attached to the note, so the plan stops living in four different chats.
-          </p>
-          <Link className="text-action" href="/trips/lisbon-weekender">
-            Open the example trip <ArrowUpRight size={16} />
-          </Link>
+            on one map.
+          </h1>
+          <div className="hero-aside">
+            <p className="hero-lede">
+              Instagram saves, group-chat links, and notes — turned into a trip you can actually walk.
+            </p>
+            <div className="hero-actions">
+              <Link className="button button-ink" href="/sign-up">
+                Start a trip <ArrowUpRight size={17} />
+              </Link>
+            </div>
+            <div className="hero-note">
+              <WalkingPairMark />
+              <span>One shared shortlist for everyone going.</span>
+            </div>
+          </div>
         </div>
-        <div className="collab-visual">
-          <CollabPreview />
+        <div className="hero-tray">
+          <div className="hero-visual">
+            <LandingMap />
+          </div>
         </div>
-      </section>
-
-      <section className="cta-section">
-        <div>
-          <p className="eyebrow">Make the map useful</p>
-          <h2>
-            Save less vaguely.
-            <br />
-            Travel more deliberately.
-          </h2>
-        </div>
-        <Link className="button button-paper button-large" href="/sign-up">
-          Plan a trip <ArrowUpRight size={18} />
-        </Link>
       </section>
 
       <footer className="site-footer">
         <div>
-          <strong>Roamboard</strong>
-          <span>Good places belong together.</span>
+          <strong>roamboard</strong>
           <span>© 2026</span>
         </div>
-        <div>
-          <Link href="/trips/lisbon-weekender">Example trip</Link>
-          <Link href="/sign-in">Sign in</Link>
-          <Link href="/sign-up">Create account</Link>
-          <a href="mailto:hello@roamboard.app">Say hello</a>
-        </div>
+        <a
+          aria-label="Roamboard on GitHub"
+          className="site-footer-github"
+          href="https://github.com/faizm10/roomly"
+          rel="noreferrer"
+          target="_blank"
+        >
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="currentColor">
+            <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12" />
+          </svg>
+        </a>
       </footer>
     </main>
   );

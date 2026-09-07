@@ -1,16 +1,24 @@
 import Link from "next/link";
 import { Plus } from "lucide-react";
+import { AccountMenu } from "@/components/account-menu";
 import { Logo } from "@/components/logo";
-import { ProfileAvatar } from "@/components/profile-avatar";
+import { PresenceDock } from "@/components/presence-dock";
+import type { Collaborator } from "@/lib/types";
 
 export function AppHeader({
+  demo = false,
+  email,
   name = "Traveller",
   image,
+  people,
   tripTitle,
   highlightNav = true,
 }: {
+  demo?: boolean;
+  email?: string | null;
   name?: string;
   image?: string | null;
+  people?: Collaborator[];
   tripTitle?: string;
   highlightNav?: boolean;
 }) {
@@ -31,14 +39,21 @@ export function AppHeader({
         </nav>
       )}
       <div className="app-header-actions">
+        {people?.length ? (
+          <PresenceDock
+            people={people.map((person) =>
+              person.name === name || (email && person.email === email)
+                ? { ...person, name, email: email || person.email, image: image || person.image }
+                : person,
+            )}
+          />
+        ) : null}
         {!tripTitle && (
           <Link href="/trips/new" className="new-trip-link">
             <Plus size={16} /> New trip
           </Link>
         )}
-        <Link aria-label={`${name}'s account`} className="profile-chip-link" href="/account">
-          <ProfileAvatar image={image} name={name} />
-        </Link>
+        <AccountMenu demo={demo} email={email} image={image} name={name} />
       </div>
     </header>
   );

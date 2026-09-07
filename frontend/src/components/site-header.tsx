@@ -1,6 +1,6 @@
 import Link from "next/link";
+import { AccountMenu } from "@/components/account-menu";
 import { Logo } from "@/components/logo";
-import { ProfileAvatar } from "@/components/profile-avatar";
 import { getViewer } from "@/lib/auth";
 
 export async function SiteHeader() {
@@ -12,27 +12,16 @@ export async function SiteHeader() {
   return (
     <header className="site-header">
       <Logo />
-      <nav className="site-nav" aria-label="Main navigation">
-        <a href="#stages">How it works</a>
-        <Link href="/trips/lisbon-weekender">Example trip</Link>
-      </nav>
       <div className="site-actions">
         {signedIn ? (
-          <>
-            <Link className="text-link" href="/trips">
-              Your trips
-            </Link>
-            <Link aria-label={`${name}'s account`} className="profile-chip-link" href="/account">
-              <ProfileAvatar image={image} name={name} />
-            </Link>
-          </>
+          <AccountMenu email={viewer?.email} image={image} name={name} />
         ) : (
           <>
             <Link className="text-link" href="/sign-in">
               Sign in
             </Link>
             <Link className="button button-small button-ink" href="/sign-up">
-              Create account
+              Start a trip
             </Link>
           </>
         )}

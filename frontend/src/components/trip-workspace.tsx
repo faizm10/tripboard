@@ -16,12 +16,12 @@ import {
   List,
   Map as MapIcon,
   MapPin,
-  MoreHorizontal,
   Navigation,
   Pencil,
   Plus,
   Plane,
   Route,
+  Search,
   Share2,
   ShoppingBag,
   Trash2,
@@ -58,24 +58,16 @@ import { FlightPlanDialog, type FlightDraft } from "@/components/flight-plan-dia
 import { HotelStayDialog, type HotelStayDraft } from "@/components/hotel-stay-dialog";
 import { InviteDialog } from "@/components/invite-dialog";
 import { PlacePhoto } from "@/components/place-photo";
-import { ProfileAvatar } from "@/components/profile-avatar";
 import { TripLogisticsDialog, type TripDetails } from "@/components/trip-logistics-dialog";
 import { TripMap } from "@/components/trip-map";
 import { countryFromDestination } from "@/lib/dates";
 import { buildAppleMapsUrl, buildGoogleMapsDirectionsUrl, buildGoogleMapsPlaceUrl, buildGoogleMapsUrl } from "@/lib/navigation";
-import { PLACE_CATEGORIES, categoryClass, isPersistedTripId, type CityStop, type Collaborator, type DayNote, type Flight, type HotelStay, type Place, type PlaceCategory, type RouteStop, type TravelMode, type Trip, type TripViewer } from "@/lib/types";
+import { PLACE_CATEGORIES, categoryClass, isPersistedTripId, type CityStop, type DayNote, type Flight, type HotelStay, type Place, type PlaceCategory, type RouteStop, type TravelMode, type Trip, type TripViewer } from "@/lib/types";
 
 type RouteStats = { durationSeconds: number; distanceMeters: number };
 type MobileView = "list" | "map";
 type SaveState = "idle" | "saving" | "saved" | "error";
 type WorkspaceMode = "saved" | "day" | "agenda";
-
-function plannersFor(collaborators: Collaborator[], viewer?: TripViewer): Collaborator[] {
-  const self = viewer ? { id: viewer.id, name: viewer.name, image: viewer.image } : null;
-  const others = collaborators.filter((person) => person.id && person.id !== self?.id);
-  if (self) return [self, ...others];
-  return collaborators;
-}
 
 const categoryIcons = {
   Eat: Utensils,
@@ -112,6 +104,15 @@ function formatDayHeading(iso: string) {
     day: date.toLocaleDateString("en", { weekday: "long", timeZone: "UTC" }),
     date: date.toLocaleDateString("en", { month: "short", day: "numeric", timeZone: "UTC" }),
   };
+}
+
+function placeMatchesQuery(place: Place, query: string) {
+  const needle = query.trim().toLowerCase();
+  if (!needle) return true;
+  return [place.name, place.address, place.neighborhood, place.note, place.category, place.addedBy]
+    .join("\n")
+    .toLowerCase()
+    .includes(needle);
 }
 
 function parseCityStop(destination: string, trip: TripDetails): Omit<CityStop, "id" | "sortOrder"> {
@@ -152,6 +153,7 @@ export function TripWorkspace({
   const [activeCityId, setActiveCityId] = useState<string>("all");
   const [activeDate, setActiveDate] = useState<string | null>(null);
   const [filter, setFilter] = useState<PlaceCategory | "All">("All");
+  const [placeQuery, setPlaceQuery] = useState("");
   const [mobileView, setMobileView] = useState<MobileView>("list");
   const [addOpen, setAddOpen] = useState(false);
   const [cityOpen, setCityOpen] = useState(false);
@@ -190,15 +192,16 @@ export function TripWorkspace({
       .catch(() => setSaveState("error"));
   }
 
-  const planners = useMemo(() => plannersFor(trip.collaborators, viewer), [trip.collaborators, viewer]);
   const itineraryDates = useMemo(() => tripDates(details.startDate, details.endDate), [details.startDate, details.endDate]);
   const planDates = useMemo(
     () => Array.from(new Set([...itineraryDates, ...flights.flatMap((flight) => [flight.plannedDate, flight.arrivalDate]), ...hotels.flatMap((hotel) => [hotel.startDate, hotel.endDate])])).sort(),
     [flights, hotels, itineraryDates],
   );
   const visiblePlaces = useMemo(
-    () => (filter === "All" ? cityScopedPlaces : cityScopedPlaces.filter((place) => place.category === filter)),
-    [cityScopedPlaces, filter],
+    () => cityScopedPlaces.filter((place) =>
+      (filter === "All" || place.category === filter) && placeMatchesQuery(place, placeQuery),
+    ),
+    [cityScopedPlaces, filter, placeQuery],
   );
   const selected = places.find((place) => place.id === selectedId);
   const activeHotel = useMemo(() => workspaceMode === "day" && activeDate
@@ -206,13 +209,15 @@ export function TripWorkspace({
     : null, [activeCityId, activeDate, hotels, workspaceMode]);
   const mapHotels = useMemo(() => workspaceMode === "day" ? (activeHotel ? [activeHotel] : []) : hotels.filter((hotel) => activeCityId === "all" || !hotel.cityId || hotel.cityId === activeCityId), [activeCityId, activeHotel, hotels, workspaceMode]);
   const mapPlaces = useMemo(() => {
+    const scoped = cityScopedPlaces.filter((place) => placeMatchesQuery(place, placeQuery));
+    if (workspaceMode === "day" && placeQuery.trim()) return scoped;
     if (workspaceMode === "day" && activeDate) {
-      return cityScopedPlaces
+      return scoped
         .filter((place) => place.plannedDate === activeDate)
         .toSorted((left, right) => (left.daySortOrder ?? 0) - (right.daySortOrder ?? 0));
     }
-    return cityScopedPlaces;
-  }, [activeDate, cityScopedPlaces, workspaceMode]);
+    return scoped;
+  }, [activeDate, cityScopedPlaces, placeQuery, workspaceMode]);
   const routeStops = useMemo<RouteStop[]>(() => activeHotel ? [{ id: `hotel-${activeHotel.id}`, name: activeHotel.name, coordinates: activeHotel.coordinates }, ...mapPlaces.map((place) => ({ id: place.id, name: place.name, coordinates: place.coordinates }))] : mapPlaces.map((place) => ({ id: place.id, name: place.name, coordinates: place.coordinates })), [activeHotel, mapPlaces]);
   const routeCoordinates = useMemo(() => routeStops.map((stop) => stop.coordinates), [routeStops]);
   const routeAvailable = routeStops.length >= 2;
@@ -649,52 +654,66 @@ export function TripWorkspace({
         <button role="tab" aria-selected={mobileView === "map"} className={mobileView === "map" ? "active" : ""} onClick={() => setMobileView("map")} type="button"><MapIcon size={15} /> Map</button>
       </div>
 
+      <div className="places-panel-logistics">
+        <div className="city-strip" aria-label="City stops">
+          <button className={activeCityId === "all" ? "active" : ""} onClick={() => setActiveCityId("all")} type="button">All stops</button>
+          {cities.map((city) => (
+            <span className={`city-chip${activeCityId === city.id ? " active" : ""}`} key={city.id}>
+              <button onClick={() => setActiveCityId(city.id)} type="button">{city.name}</button>
+              {cities.length > 1 ? <button aria-label={`Remove ${city.name}`} onClick={() => removeCity(city.id)} type="button"><X size={12} /></button> : null}
+            </span>
+          ))}
+          <button className="city-add" onClick={() => { setNewCityForPlace(false); setCityOpen(true); }} type="button"><Plus size={13} /> Stop</button>
+        </div>
+        <div className="places-panel-logistics-row">
+          <button className="places-panel-logistics-where" onClick={() => setLogisticsOpen(true)} type="button">
+            {details.destination} · {details.dateLabel}
+          </button>
+          {saveState !== "idle" ? (
+            <span className={`save-status${saveState === "error" ? " error" : ""}`} aria-live="polite">
+              {saveState === "saving" ? "Saving" : saveState === "saved" ? "Saved" : "Couldn’t save"}
+            </span>
+          ) : null}
+          <button onClick={() => setInviteOpen(true)} type="button"><Share2 size={14} /> Invite</button>
+        </div>
+      </div>
+
       <aside className="places-panel">
         <div className="places-panel-header">
-          <div className="trip-title-row">
-            <div><p className="eyebrow">{details.destination} · {details.dateLabel}</p><h1>{details.title}</h1></div>
+          <h1 className="sr-only">{details.title}</h1>
+          <div className="places-panel-toolbar">
+            <div className="workspace-mode" role="tablist" aria-label="Planning mode">
+              <button role="tab" aria-selected={workspaceMode === "saved"} className={workspaceMode === "saved" ? "active" : ""} onClick={() => { setWorkspaceMode("saved"); setActiveDate(null); }} type="button"><Bookmark size={14} /> Saved places</button>
+              <button role="tab" aria-selected={workspaceMode === "day"} className={workspaceMode === "day" ? "active" : ""} onClick={() => { setWorkspaceMode("day"); setActiveDate((current) => current ?? planDates[0] ?? null); }} type="button"><CalendarDays size={14} /> Day plan</button>
+              <button role="tab" aria-selected={workspaceMode === "agenda"} className={workspaceMode === "agenda" ? "active" : ""} onClick={() => setWorkspaceMode("agenda")} type="button"><FileText size={14} /> Agenda</button>
+            </div>
             <div className="trip-header-actions">
-              <button className="icon-button trip-options" aria-label="Add a city" onClick={() => { setNewCityForPlace(false); setCityOpen(true); }} type="button"><MapPin size={19} /></button>
               <button className="icon-button trip-options" aria-label="Add a place" onClick={() => setAddOpen(true)} type="button"><Plus size={19} /></button>
-              <button className="icon-button trip-options" aria-label="Change where, when, and what" onClick={() => setLogisticsOpen(true)} type="button"><MoreHorizontal size={19} /></button>
             </div>
           </div>
-          <div className="workspace-mode" role="tablist" aria-label="Planning mode">
-            <button role="tab" aria-selected={workspaceMode === "saved"} className={workspaceMode === "saved" ? "active" : ""} onClick={() => { setWorkspaceMode("saved"); setActiveDate(null); }} type="button"><Bookmark size={14} /> Saved places</button>
-            <button role="tab" aria-selected={workspaceMode === "day"} className={workspaceMode === "day" ? "active" : ""} onClick={() => { setWorkspaceMode("day"); setActiveDate((current) => current ?? planDates[0] ?? null); }} type="button"><CalendarDays size={14} /> Day plan</button>
-            <button role="tab" aria-selected={workspaceMode === "agenda"} className={workspaceMode === "agenda" ? "active" : ""} onClick={() => setWorkspaceMode("agenda")} type="button"><FileText size={14} /> Agenda</button>
-          </div>
-          <div className="city-strip" aria-label="City stops">
-            <button className={activeCityId === "all" ? "active" : ""} onClick={() => setActiveCityId("all")} type="button">All stops</button>
-            {cities.map((city) => (
-              <span className={`city-chip${activeCityId === city.id ? " active" : ""}`} key={city.id}>
-                <button onClick={() => setActiveCityId(city.id)} type="button">{city.name}</button>
-                {cities.length > 1 ? <button aria-label={`Remove ${city.name}`} onClick={() => removeCity(city.id)} type="button"><X size={12} /></button> : null}
-              </span>
-            ))}
-            <button className="city-add" onClick={() => { setNewCityForPlace(false); setCityOpen(true); }} type="button"><Plus size={13} /> Stop</button>
-          </div>
-          <div className="collab-row">
-            <div className="mini-avatars">
-              {planners.map((person) => (
-                <ProfileAvatar image={person.image} key={person.id ?? person.name} name={person.name} size="xs" />
-              ))}
+          {workspaceMode !== "agenda" ? (
+            <div className="places-panel-find">
+              <div className="filter-scroll" aria-label="Filter places">
+                <button className={`filter-pill filter-all${filter === "All" ? " active" : ""}`} onClick={() => setFilter("All")} type="button">All</button>
+                {PLACE_CATEGORIES.map((item) => {
+                  const Icon = categoryIcons[item];
+                  return <button className={`filter-pill ${categoryClass(item)}${filter === item ? " active" : ""}`} onClick={() => setFilter(item)} key={item} type="button"><Icon size={13} /> {item}</button>;
+                })}
+              </div>
+              <div className="place-find">
+                <Search size={14} aria-hidden="true" />
+                <input
+                  aria-label="Search places"
+                  onChange={(event) => setPlaceQuery(event.target.value)}
+                  placeholder="Search places"
+                  value={placeQuery}
+                />
+                {placeQuery ? (
+                  <button aria-label="Clear search" onClick={() => setPlaceQuery("")} type="button"><X size={12} /></button>
+                ) : null}
+              </div>
             </div>
-            <span className="planning-count">{planners.length} {planners.length === 1 ? "planner" : "planners"}</span>
-            {saveState !== "idle" ? (
-              <span className={`save-status${saveState === "error" ? " error" : ""}`} aria-live="polite">
-                {saveState === "saving" ? "Saving" : saveState === "saved" ? "Saved" : "Couldn’t save"}
-              </span>
-            ) : null}
-            <button onClick={() => setInviteOpen(true)} type="button"><Share2 size={14} /> Invite</button>
-          </div>
-          {workspaceMode !== "agenda" ? <div className="filter-scroll" aria-label="Filter places">
-            <button className={`filter-pill filter-all${filter === "All" ? " active" : ""}`} onClick={() => setFilter("All")} type="button">All</button>
-            {PLACE_CATEGORIES.map((item) => {
-              const Icon = categoryIcons[item];
-              return <button className={`filter-pill ${categoryClass(item)}${filter === item ? " active" : ""}`} onClick={() => setFilter(item)} key={item} type="button"><Icon size={13} /> {item}</button>;
-            })}
-          </div> : null}
+          ) : null}
         </div>
 
         <div className="place-list">
@@ -758,6 +777,7 @@ export function TripWorkspace({
               flights={flights}
               hotels={hotels}
               filter={filter}
+              query={placeQuery}
               onAddNote={addNote}
               onFocusDate={setActiveDate}
               onAddFlight={() => setFlightEditor("new")}
@@ -766,6 +786,7 @@ export function TripWorkspace({
               onEditHotel={(hotel) => setHotelEditor(hotel)}
               onEditPlace={(place) => setPlaceEditor(place)}
               onRemoveNote={removeNote}
+              onRemovePlace={removePlace}
               onSelectPlace={selectPlace}
               onReorderDay={reorderDay}
               onToggleSaved={toggleSaved}
@@ -782,7 +803,12 @@ export function TripWorkspace({
               tripId={trip.id}
             />
           )}
-          {workspaceMode === "saved" && !visiblePlaces.length ? <div className="empty-filter"><p>No {filter.toLowerCase()} places yet.</p><button onClick={() => setAddOpen(true)} type="button">Add the first one <Plus size={15} /></button></div> : null}
+          {workspaceMode === "saved" && !visiblePlaces.length ? (
+            <div className="empty-filter">
+              <p>{placeQuery.trim() ? `No places match “${placeQuery.trim()}”.` : `No ${filter.toLowerCase()} places yet.`}</p>
+              {placeQuery.trim() ? null : <button onClick={() => setAddOpen(true)} type="button">Add the first one <Plus size={15} /></button>}
+            </div>
+          ) : null}
           {workspaceMode === "saved" ? <button className="add-place-row" onClick={() => setAddOpen(true)} type="button"><span><Plus size={18} /></span><div><strong>Add another place</strong><small>Search {selectedCity?.name ?? details.destination}</small></div></button> : null}
         </div>
       </aside>
@@ -906,6 +932,7 @@ function DayPlan({
   flights,
   hotels,
   filter,
+  query,
   onAddNote,
   onAddFlight,
   onEditFlight,
@@ -915,6 +942,7 @@ function DayPlan({
   onFocusDate,
   onReorderDay,
   onRemoveNote,
+  onRemovePlace,
   onSelectPlace,
   onToggleSaved,
   onUpdateNote,
@@ -930,6 +958,7 @@ function DayPlan({
   flights: Flight[];
   hotels: HotelStay[];
   filter: PlaceCategory | "All";
+  query: string;
   onAddNote: (plannedDate: string, note: string, cityId: string) => void;
   onAddFlight: () => void;
   onEditFlight: (flight: Flight) => void;
@@ -938,6 +967,7 @@ function DayPlan({
   onEditPlace: (place: Place) => void;
   onFocusDate: (plannedDate: string | null) => void;
   onRemoveNote: (noteId: string) => void;
+  onRemovePlace: (placeId: string) => void;
   onSelectPlace: (placeId: string) => void;
   onReorderDay: (plannedDate: string, placeIds: string[]) => void;
   onToggleSaved: (placeId: string) => void;
@@ -948,8 +978,9 @@ function DayPlan({
 }) {
   const cityMatches = (cityId?: string | null) => activeCityId === "all" || cityId === activeCityId;
   const categoryMatches = (category: PlaceCategory) => filter === "All" || category === filter;
-  const unplannedPlaces = places.filter((place) => !place.plannedDate && cityMatches(place.cityId) && categoryMatches(place.category));
-  const plannedCount = places.filter((place) => place.plannedDate && cityMatches(place.cityId) && categoryMatches(place.category)).length;
+  const visiblePlace = (place: Place) => cityMatches(place.cityId) && categoryMatches(place.category) && placeMatchesQuery(place, query);
+  const unplannedPlaces = places.filter((place) => !place.plannedDate && visiblePlace(place));
+  const plannedCount = places.filter((place) => place.plannedDate && visiblePlace(place)).length;
   const hasUnplannedPage = unplannedPlaces.length > 0;
   const totalPages = dates.length + (hasUnplannedPage ? 1 : 0);
   const [pageIndex, setPageIndex] = useState(() => Math.max(0, activeDate ? dates.indexOf(activeDate) : 0));
@@ -973,12 +1004,22 @@ function DayPlan({
   const dayHotel = currentDate
     ? hotels.find((hotel) => hotel.startDate <= currentDate && hotel.endDate >= currentDate && (activeCityId === "all" || !hotel.cityId || hotel.cityId === activeCityId))
     : null;
-  const dayPlaces = currentDate
-    ? places
-      .filter((place) => place.plannedDate === currentDate && cityMatches(place.cityId) && categoryMatches(place.category))
-      .sort((left, right) => (left.daySortOrder ?? 0) - (right.daySortOrder ?? 0))
-    : unplannedPlaces;
-  const canReorder = Boolean(currentDate && activeCityId === "all" && filter === "All" && dayPlaces.length > 1);
+  const searching = Boolean(query.trim());
+  const matchedPlaces = places
+    .filter(visiblePlace)
+    .sort((left, right) => {
+      const dateCmp = (left.plannedDate ?? "zzz").localeCompare(right.plannedDate ?? "zzz");
+      if (dateCmp !== 0) return dateCmp;
+      return (left.daySortOrder ?? 0) - (right.daySortOrder ?? 0);
+    });
+  const dayPlaces = searching
+    ? matchedPlaces
+    : currentDate
+      ? places
+        .filter((place) => place.plannedDate === currentDate && visiblePlace(place))
+        .sort((left, right) => (left.daySortOrder ?? 0) - (right.daySortOrder ?? 0))
+      : unplannedPlaces;
+  const canReorder = Boolean(!searching && currentDate && activeCityId === "all" && filter === "All" && dayPlaces.length > 1);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dropTargetId, setDropTargetId] = useState<string | null>(null);
 
@@ -1014,16 +1055,59 @@ function DayPlan({
       <div className="day-plan-intro">
         <div>
           <p className="eyebrow">Day plan</p>
-          <strong>{plannedCount} planned · {dates.length} {dates.length === 1 ? "day" : "days"}</strong>
+          <strong>{searching ? `${matchedPlaces.length} ${matchedPlaces.length === 1 ? "match" : "matches"}` : `${plannedCount} planned · ${dates.length} ${dates.length === 1 ? "day" : "days"}`}</strong>
         </div>
-        <div className="day-pagination" aria-label="Day pages">
-          <button onClick={() => movePage(-1)} disabled={clampedPageIndex === 0} type="button">Prev</button>
-          <span>{currentDate && label ? `${label.day} · ${label.date}` : "Saved for later"}</span>
-          <button onClick={() => movePage(1)} disabled={clampedPageIndex >= totalPages - 1} type="button">Next</button>
-          <button className={!activeDate ? "active" : ""} onClick={() => onFocusDate(null)} type="button">Map all days</button>
-        </div>
+        {searching ? null : (
+          <div className="day-pagination" aria-label="Day pages">
+            <button onClick={() => movePage(-1)} disabled={clampedPageIndex === 0} type="button">Prev</button>
+            <span>{currentDate && label ? `${label.day} · ${label.date}` : "Saved for later"}</span>
+            <button onClick={() => movePage(1)} disabled={clampedPageIndex >= totalPages - 1} type="button">Next</button>
+            <button className={!activeDate ? "active" : ""} onClick={() => onFocusDate(null)} type="button">Map all days</button>
+          </div>
+        )}
       </div>
-      {currentDate && label ? (
+      {searching ? (
+        <section className="day-section">
+          <header>
+            <div>
+              <span>Search</span>
+              <h2>{query.trim()}</h2>
+            </div>
+          </header>
+          <div className="day-place-list">
+            {matchedPlaces.map((place, placeIndex) => {
+              const number = String(placeIndex + 1).padStart(2, "0");
+              return (
+                <DayPlaceRow
+                  canMoveDown={false}
+                  canReorder={false}
+                  cities={cities}
+                  dates={dates}
+                  dragging={false}
+                  dropTarget={false}
+                  key={place.id}
+                  number={number}
+                  onDragEnd={() => undefined}
+                  onDragOver={() => undefined}
+                  onDragStart={() => undefined}
+                  onDrop={() => undefined}
+                  onMoveDown={() => undefined}
+                  onMoveUp={() => undefined}
+                  onEdit={() => onEditPlace(place)}
+                  onRemove={() => onRemovePlace(place.id)}
+                  onSelect={onSelectPlace}
+                  onToggleSaved={onToggleSaved}
+                  onUpdatePlanning={onUpdatePlanning}
+                  place={place}
+                  selected={selectedId === place.id}
+                />
+              );
+            })}
+            {!matchedPlaces.length ? <p className="day-empty">No matching places.</p> : null}
+          </div>
+        </section>
+      ) : null}
+      {!searching && currentDate && label ? (
         <section className={`day-section${activeDate === currentDate ? " active" : ""}`}>
           <header>
             <div>
@@ -1036,18 +1120,6 @@ function DayPlan({
               <button onClick={showCurrentDateOnMap} type="button">{activeDate === currentDate ? "Showing" : "Map this day"}</button>
             </div>
           </header>
-          {dayHotel ? <article className="hotel-strip"><button className="hotel-strip-copy" onClick={() => onEditHotel(dayHotel)} type="button"><span className="hotel-strip-icon"><BedDouble size={16} /></span><span><small>Home base · {dayHotel.startDate === dayHotel.endDate ? "Today" : `${formatDayHeading(dayHotel.startDate).date} — ${formatDayHeading(dayHotel.endDate).date}`}</small><strong>{dayHotel.name}</strong><em>{dayHotel.address || "Pinned on the map"}</em></span><span className="hotel-strip-route">Route starts here</span></button><a className="hotel-map-link" href={buildGoogleMapsDirectionsUrl(dayHotel)} rel="noreferrer" target="_blank">Google Maps <ExternalLink size={13} /></a></article> : null}
-          {dayFlights.length ? (
-            <div className="flight-list" aria-label="Flights for this day">
-              {dayFlights.map(({ flight, moment }) => (
-                <button className="flight-strip" key={`${flight.id}-${moment}`} onClick={() => onEditFlight(flight)} type="button">
-                  <span className="flight-strip-icon"><Plane size={16} /></span>
-                  <span className="flight-strip-route"><small>{moment === "departing" ? "Departs today" : "Arrives today"} · {[flight.airline, flight.flightNumber].filter(Boolean).join(" · ") || "Flight"}</small><strong>{flight.departureAirport}<ArrowRight size={14} />{flight.arrivalAirport}</strong></span>
-                  <span className="flight-strip-times"><strong>{flight.departureTime} <span>→</span> {flight.arrivalTime}</strong><small>{flight.plannedDate === flight.arrivalDate ? "Same day" : `Lands ${formatDayHeading(flight.arrivalDate).date}`}</small></span>
-                </button>
-              ))}
-            </div>
-          ) : null}
           <div className="day-notes">
             {notes.map((note) => (
               <DayNoteRow key={note.id} note={note} onRemove={onRemoveNote} onUpdate={onUpdateNote} />
@@ -1075,6 +1147,7 @@ function DayPlan({
                   onMoveDown={() => movePlace(place.id, 1)}
                   onMoveUp={() => movePlace(place.id, -1)}
                   onEdit={() => onEditPlace(place)}
+                  onRemove={() => onRemovePlace(place.id)}
                   onSelect={onSelectPlace}
                   onToggleSaved={onToggleSaved}
                   onUpdatePlanning={onUpdatePlanning}
@@ -1083,11 +1156,27 @@ function DayPlan({
                 />
               );
             })}
-            {!dayPlaces.length ? <p className="day-empty">No places planned for this day yet.</p> : null}
+            {!dayPlaces.length ? <p className="day-empty">{query.trim() ? "No matching places this day." : "No places planned for this day yet."}</p> : null}
           </div>
+          {dayHotel || dayFlights.length ? (
+            <div className="day-logistics">
+              {dayHotel ? <article className="hotel-strip"><button className="hotel-strip-copy" onClick={() => onEditHotel(dayHotel)} type="button"><span className="hotel-strip-icon"><BedDouble size={16} /></span><span><small>Home base · {dayHotel.startDate === dayHotel.endDate ? "Today" : `${formatDayHeading(dayHotel.startDate).date} — ${formatDayHeading(dayHotel.endDate).date}`}</small><strong>{dayHotel.name}</strong><em>{dayHotel.address || "Pinned on the map"}</em></span><span className="hotel-strip-route">Route starts here</span></button><a className="hotel-map-link" href={buildGoogleMapsDirectionsUrl(dayHotel)} rel="noreferrer" target="_blank">Google Maps <ExternalLink size={13} /></a></article> : null}
+              {dayFlights.length ? (
+                <div className="flight-list" aria-label="Flights for this day">
+                  {dayFlights.map(({ flight, moment }) => (
+                    <button className="flight-strip" key={`${flight.id}-${moment}`} onClick={() => onEditFlight(flight)} type="button">
+                      <span className="flight-strip-icon"><Plane size={16} /></span>
+                      <span className="flight-strip-route"><small>{moment === "departing" ? "Departs today" : "Arrives today"} · {[flight.airline, flight.flightNumber].filter(Boolean).join(" · ") || "Flight"}</small><strong>{flight.departureAirport}<ArrowRight size={14} />{flight.arrivalAirport}</strong></span>
+                      <span className="flight-strip-times"><strong>{flight.departureTime} <span>→</span> {flight.arrivalTime}</strong><small>{flight.plannedDate === flight.arrivalDate ? "Same day" : `Lands ${formatDayHeading(flight.arrivalDate).date}`}</small></span>
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
         </section>
       ) : null}
-      {!currentDate && hasUnplannedPage ? (
+      {!searching && !currentDate && hasUnplannedPage ? (
         <section className="day-section unplanned-section">
           <header>
             <div><span>Unscheduled</span><h2>Saved for later</h2></div>
@@ -1113,6 +1202,7 @@ function DayPlan({
                   onMoveDown={() => undefined}
                   onMoveUp={() => undefined}
                   onEdit={() => onEditPlace(place)}
+                  onRemove={() => onRemovePlace(place.id)}
                   onSelect={onSelectPlace}
                   onToggleSaved={onToggleSaved}
                   onUpdatePlanning={onUpdatePlanning}
@@ -1143,6 +1233,7 @@ function DayPlaceRow({
   onEdit,
   onMoveDown,
   onMoveUp,
+  onRemove,
   onSelect,
   onToggleSaved,
   onUpdatePlanning,
@@ -1163,6 +1254,7 @@ function DayPlaceRow({
   onEdit: () => void;
   onMoveDown: () => void;
   onMoveUp: () => void;
+  onRemove: () => void;
   onSelect: (placeId: string) => void;
   onToggleSaved: (placeId: string) => void;
   onUpdatePlanning: (placeId: string, plannedDate: string, cityId: string) => void;
@@ -1222,6 +1314,7 @@ function DayPlaceRow({
         </div> : null}
         <button className="edit-place" onClick={(event) => { event.stopPropagation(); onEdit(); }} aria-label={`Edit ${place.name}`} type="button"><Pencil size={15} /></button>
         <button className="save-button" onClick={(event) => { event.stopPropagation(); onToggleSaved(place.id); }} aria-label={place.saved ? `Unsave ${place.name}` : `Save ${place.name}`} type="button"><Bookmark size={18} fill={place.saved ? "currentColor" : "none"} /></button>
+        <button className="delete-place" onClick={(event) => { event.stopPropagation(); onRemove(); }} aria-label={`Remove ${place.name}`} type="button"><Trash2 size={15} /></button>
       </div>
     </article>
   );

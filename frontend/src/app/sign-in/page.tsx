@@ -16,7 +16,7 @@ export default async function SignInPage({ searchParams }: { searchParams: Promi
 
   return (
     <AuthShell
-      eyebrow="Your boards"
+      eyebrow="your boards"
       lede="Pick up a shared map, add the next place, and keep the trip in one shortlist."
       switchAsButton
       switchHref={`/sign-up?returnTo=${encodeURIComponent(returnTo)}`}

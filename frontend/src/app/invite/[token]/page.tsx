@@ -83,8 +83,8 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
               </Link>
             </div>
           ) : invite.demo ? (
-            <Link className="button button-ink" href="/trips/lisbon-weekender">
-              Join the demo trip <ArrowRight size={17} />
+            <Link className="button button-ink" href={viewer && !viewer.demo ? "/trips" : "/"}>
+              {viewer && !viewer.demo ? "Go to your trips" : "Start a trip"} <ArrowRight size={17} />
             </Link>
           ) : blocked ? (
             <div className="invite-status-card" role="alert">

@@ -167,6 +167,7 @@ function RealMap({ view, mapUrl, routePoints }: { view: MapView; mapUrl: string;
         priority
         sizes="(max-width: 700px) 100vw, 520px"
         src={mapUrl}
+        unoptimized
         width={MAP_WIDTH}
       />
       <svg className="board-route" viewBox={`0 0 ${MAP_WIDTH} ${MAP_HEIGHT}`} aria-hidden="true">
@@ -212,7 +213,7 @@ export async function LandingMap() {
   return (
     <figure className="board" aria-labelledby="board-caption">
       <figcaption className="sr-only" id="board-caption">
-        An example Roamboard trip: four places saved around Lisbon, each with the note that made it
+        A Roamboard trip: four places saved around Lisbon, each with the note that made it
         worth keeping, shown together on one map.
       </figcaption>
 

@@ -115,6 +115,7 @@ export type TripAgenda = {
 export type Collaborator = {
   id?: string;
   name: string;
+  email?: string | null;
   image?: string | null;
 };
 
@@ -150,6 +151,7 @@ export type Trip = {
 export type TripViewer = {
   id: string;
   name: string;
+  email?: string | null;
   image?: string | null;
 };
 

@@ -5,11 +5,12 @@ export function Logo({ compact = false }: { compact?: boolean }) {
     <Link className="brand" href="/" aria-label="Roamboard home">
       <span className="brand-mark" aria-hidden="true">
         <svg viewBox="0 0 38 38" role="presentation">
-          <path d="M7 29V9h9.4c5.7 0 9.1 2.7 9.1 7.3 0 3.2-1.8 5.6-4.8 6.7L29 29h-6.2l-7.1-5.4h-3.3V29H7Zm5.4-9.8h3.7c2.6 0 4-1 4-2.9s-1.4-2.8-4-2.8h-3.7v5.7Z" />
-          <circle cx="30.5" cy="8.2" r="3.2" />
+          <rect width="38" height="38" rx="12" fill="currentColor" opacity="0.08" />
+          <path d="M9.2 27.4V10.6h8.6c5.1 0 8.2 2.4 8.2 6.6 0 2.9-1.6 5.1-4.3 6.1L28.4 27.4h-5.4l-6.4-4.8h-3.1v4.8H9.2Zm4.8-8.7h3.3c2.3 0 3.5-.9 3.5-2.6s-1.2-2.5-3.5-2.5h-3.3v5.1Z" />
+          <circle cx="29.2" cy="10.4" r="2.7" />
         </svg>
       </span>
-      {!compact ? <span className="brand-word">Roamboard</span> : <span className="brand-word brand-word-compact">RB</span>}
+      {!compact ? <span className="brand-word">roamboard</span> : <span className="brand-word brand-word-compact">rb</span>}
     </Link>
   );
 }
