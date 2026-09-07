@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 
 export default async function NewTripPage() {
   const viewer = await getViewer();
-  if (!viewer) redirect("/sign-in");
+  if (!viewer || viewer.restricted) redirect("/sign-in?restricted=1");
 
   return (
     <main className="form-page">
