@@ -167,6 +167,7 @@ function RealMap({ view, mapUrl, routePoints }: { view: MapView; mapUrl: string;
         priority
         sizes="(max-width: 700px) 100vw, 520px"
         src={mapUrl}
+        unoptimized
         width={MAP_WIDTH}
       />
       <svg className="board-route" viewBox={`0 0 ${MAP_WIDTH} ${MAP_HEIGHT}`} aria-hidden="true">
