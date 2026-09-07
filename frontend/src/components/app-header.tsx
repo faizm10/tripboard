@@ -3,6 +3,7 @@ import { Plus } from "lucide-react";
 import { AccountMenu } from "@/components/account-menu";
 import { Logo } from "@/components/logo";
 import { PresenceDock } from "@/components/presence-dock";
+import { isAdminEmail } from "@/lib/admin-config";
 import type { Collaborator } from "@/lib/types";
 
 export function AppHeader({
@@ -53,7 +54,7 @@ export function AppHeader({
             <Plus size={16} /> New trip
           </Link>
         )}
-        <AccountMenu demo={demo} email={email} image={image} name={name} />
+        <AccountMenu admin={!demo && isAdminEmail(email)} demo={demo} email={email} image={image} name={name} />
       </div>
     </header>
   );
