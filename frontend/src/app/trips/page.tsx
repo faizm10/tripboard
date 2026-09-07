@@ -23,7 +23,7 @@ export default async function TripsPage() {
       <AppHeader demo={viewer.demo} email={viewer.email} image={viewer.image} name={viewer.name ?? firstName} />
       <section className="trips-shell">
         <div className="trips-heading">
-          <div>
+          <div className="trips-heading-copy">
             <p className="eyebrow">your trips</p>
             <h1>
               Where to next,
