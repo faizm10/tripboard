@@ -16,7 +16,6 @@ import {
   List,
   Map as MapIcon,
   MapPin,
-  MoreHorizontal,
   Navigation,
   Pencil,
   Plus,
@@ -642,18 +641,16 @@ export function TripWorkspace({
 
       <aside className="places-panel">
         <div className="places-panel-header">
-          <div className="trip-title-row">
-            <div><p className="eyebrow">{details.destination} · {details.dateLabel}</p><h1>{details.title}</h1></div>
-            <div className="trip-header-actions">
-              <button className="icon-button trip-options" aria-label="Add a city" onClick={() => { setNewCityForPlace(false); setCityOpen(true); }} type="button"><MapPin size={19} /></button>
-              <button className="icon-button trip-options" aria-label="Add a place" onClick={() => setAddOpen(true)} type="button"><Plus size={19} /></button>
-              <button className="icon-button trip-options" aria-label="Change where, when, and what" onClick={() => setLogisticsOpen(true)} type="button"><MoreHorizontal size={19} /></button>
+          <h1 className="sr-only">{details.title}</h1>
+          <div className="places-panel-toolbar">
+            <div className="workspace-mode" role="tablist" aria-label="Planning mode">
+              <button role="tab" aria-selected={workspaceMode === "saved"} className={workspaceMode === "saved" ? "active" : ""} onClick={() => { setWorkspaceMode("saved"); setActiveDate(null); }} type="button"><Bookmark size={14} /> Saved places</button>
+              <button role="tab" aria-selected={workspaceMode === "day"} className={workspaceMode === "day" ? "active" : ""} onClick={() => { setWorkspaceMode("day"); setActiveDate((current) => current ?? planDates[0] ?? null); }} type="button"><CalendarDays size={14} /> Day plan</button>
+              <button role="tab" aria-selected={workspaceMode === "agenda"} className={workspaceMode === "agenda" ? "active" : ""} onClick={() => setWorkspaceMode("agenda")} type="button"><FileText size={14} /> Agenda</button>
             </div>
-          </div>
-          <div className="workspace-mode" role="tablist" aria-label="Planning mode">
-            <button role="tab" aria-selected={workspaceMode === "saved"} className={workspaceMode === "saved" ? "active" : ""} onClick={() => { setWorkspaceMode("saved"); setActiveDate(null); }} type="button"><Bookmark size={14} /> Saved places</button>
-            <button role="tab" aria-selected={workspaceMode === "day"} className={workspaceMode === "day" ? "active" : ""} onClick={() => { setWorkspaceMode("day"); setActiveDate((current) => current ?? planDates[0] ?? null); }} type="button"><CalendarDays size={14} /> Day plan</button>
-            <button role="tab" aria-selected={workspaceMode === "agenda"} className={workspaceMode === "agenda" ? "active" : ""} onClick={() => setWorkspaceMode("agenda")} type="button"><FileText size={14} /> Agenda</button>
+            <div className="trip-header-actions">
+              <button className="icon-button trip-options" aria-label="Add a place" onClick={() => setAddOpen(true)} type="button"><Plus size={19} /></button>
+            </div>
           </div>
           {workspaceMode !== "agenda" ? <div className="filter-scroll" aria-label="Filter places">
             <button className={`filter-pill filter-all${filter === "All" ? " active" : ""}`} onClick={() => setFilter("All")} type="button">All</button>
@@ -764,13 +761,14 @@ export function TripWorkspace({
             <button className="city-add" onClick={() => { setNewCityForPlace(false); setCityOpen(true); }} type="button"><Plus size={13} /> Stop</button>
           </div>
           <div className="places-panel-logistics-row">
+            <button className="places-panel-logistics-where" onClick={() => setLogisticsOpen(true)} type="button">
+              {details.destination} · {details.dateLabel}
+            </button>
             {saveState !== "idle" ? (
               <span className={`save-status${saveState === "error" ? " error" : ""}`} aria-live="polite">
                 {saveState === "saving" ? "Saving" : saveState === "saved" ? "Saved" : "Couldn’t save"}
               </span>
-            ) : (
-              <span className="places-panel-logistics-meta">{details.destination} · {details.dateLabel}</span>
-            )}
+            ) : null}
             <button onClick={() => setInviteOpen(true)} type="button"><Share2 size={14} /> Invite</button>
           </div>
         </div>
