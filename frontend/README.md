@@ -2,6 +2,8 @@
 
 Tripboard turns travel finds from social posts, articles, notes, and group chats into a shared visual trip board with route previews.
 
+Live: [tripboard-lovat.vercel.app](https://tripboard-lovat.vercel.app)
+
 ## Start locally
 
 ```bash
