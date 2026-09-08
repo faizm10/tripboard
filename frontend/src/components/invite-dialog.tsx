@@ -13,7 +13,7 @@ import type { TripInvitationSummary } from "@/lib/types";
 type InviteMode = "email" | "share";
 type InviteResult = { inviteUrl: string; expiresAt: string; demo: boolean; id?: string };
 const DEMO_INVITE: InviteResult = {
-  inviteUrl: "/invite/demo-lisbon-board",
+  inviteUrl: "/invite/demo-nyc-board",
   expiresAt: "2099-01-01T00:00:00.000Z",
   demo: true,
 };
