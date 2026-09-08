@@ -7,8 +7,11 @@ import type { CitySuggestion } from "@/lib/cities";
 
 export function CityField({
   defaultValue = "",
+  onCityChange,
 }: {
   defaultValue?: string;
+  /** Fires when a city is picked from the list, so callers can react to the destination. */
+  onCityChange?: (label: string) => void;
 }) {
   const listId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
@@ -47,6 +50,7 @@ export function CityField({
     setQuery(city.label);
     setSelected(city.label);
     setOpen(false);
+    onCityChange?.(city.label);
   }
 
   function onKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
