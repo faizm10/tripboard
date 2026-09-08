@@ -28,7 +28,7 @@ export function NewTripForm() {
     setError("");
     try {
       const result = await createTrip(parsed.data);
-      router.push(result.demo ? "/trips/lisbon-weekender?fresh=1" : `/trips/${result.id}`);
+      router.push(result.demo ? "/trips/nyc-weekender?fresh=1" : `/trips/${result.id}`);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "The trip could not be created.");
       setPending(false);
@@ -39,7 +39,7 @@ export function NewTripForm() {
     <form className="new-trip-form" onSubmit={submit}>
       <label>
         <span>What are you calling it?</span>
-        <input name="title" placeholder="Lisbon, loosely" required />
+        <input name="title" placeholder="New York, loosely" required />
       </label>
       <CityField />
       <div className="date-fields">
