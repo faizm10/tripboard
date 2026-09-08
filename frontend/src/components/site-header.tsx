@@ -19,7 +19,15 @@ export async function SiteHeader() {
       </nav>
       <div className="site-actions">
         {signedIn ? (
-          <AccountMenu email={viewer?.email} image={image} name={name} />
+          <>
+            <Link className="text-link" href="/trips">
+              My trips
+            </Link>
+            <Link className="button button-small button-ink" href="/trips/new">
+              New trip
+            </Link>
+            <AccountMenu email={viewer?.email} image={image} name={name} />
+          </>
         ) : (
           <>
             <Link className="text-link" href="/sign-in">
