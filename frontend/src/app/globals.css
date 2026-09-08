@@ -1565,19 +1565,24 @@ input::placeholder, textarea::placeholder { color: #9b9b97; }
   border-right: 1px solid var(--line);
   background: var(--accent-soft);
 }
-.logistics-visual-flag { padding: 26px 18px; object-fit: contain; object-position: center; }
-.logistics-visual-fallback {
+.logistics-visual-photo { object-fit: cover; object-position: center; }
+/* A scrim so the destination stays readable over the bright end of the photo. */
+.logistics-visual::after {
   position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  color: var(--accent-quiet);
+  inset: 40% 0 0;
+  background: linear-gradient(to bottom, transparent, rgb(26 24 20 / .34));
+  content: "";
+  pointer-events: none;
 }
 .logistics-visual-caption {
   position: relative;
   z-index: 2;
+  display: flex;
   margin: 0;
-  padding: 7px 11px;
+  padding: 7px 12px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   border-radius: var(--radius-round);
   background: color-mix(in srgb, var(--paper-raised) 92%, transparent);
   color: var(--ink);
@@ -1585,6 +1590,8 @@ input::placeholder, textarea::placeholder { color: #9b9b97; }
   font-weight: 650;
   text-align: center;
 }
+.logistics-visual-flag { position: relative; width: 22px; height: 15px; flex: none; overflow: hidden; border-radius: 2px; }
+.logistics-visual-flag-img { object-fit: cover; object-position: center; }
 .logistics-main { padding: 24px; overflow-y: auto; }
 .logistics-dialog .new-trip-form { width: 100%; }
 .logistics-dialog .new-trip-form .button { margin-top: 6px; }
@@ -1830,7 +1837,6 @@ input::placeholder, textarea::placeholder { color: #9b9b97; }
   .dialog-backdrop { padding: 0; align-items: flex-end; }
   .logistics-dialog { grid-template-columns: 1fr; }
   .logistics-visual { min-height: 132px; border-right: 0; border-bottom: 1px solid var(--line); }
-  .logistics-visual-flag { padding: 16px 18px 34px; }
   .place-dialog, .nav-dialog, .invite-dialog { width: 100%; max-width: none; max-height: 94svh; padding: 20px 18px 34px; border-right: 0; border-bottom: 0; border-left: 0; }
   .place-dialog h2, .nav-dialog h2, .invite-dialog h2 { font-size: 39px; }
   .flight-form-grid { gap: 10px; }

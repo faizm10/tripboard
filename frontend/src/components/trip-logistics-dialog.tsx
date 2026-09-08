@@ -1,6 +1,7 @@
 "use client";
 
-import { CalendarDays, MapPin, Trash2, X } from "lucide-react";
+import { CalendarDays, Trash2, X } from "lucide-react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { deleteTrip, updateTrip } from "@/app/trips/actions";
@@ -121,19 +122,27 @@ export function TripLogisticsDialog({
         tabIndex={-1}
       >
         <div className="logistics-visual">
-          {flagCode ? (
-            <CountryFlag
-              className="logistics-visual-flag"
-              code={flagCode}
-              country={destination}
-              sizes="(max-width: 760px) 100vw, 232px"
-            />
-          ) : (
-            <span className="logistics-visual-fallback" aria-hidden="true">
-              <MapPin size={30} />
-            </span>
-          )}
-          <p className="logistics-visual-caption">{destination || "Somewhere new"}</p>
+          <Image
+            alt=""
+            className="logistics-visual-photo"
+            fill
+            priority
+            sizes="(max-width: 760px) 100vw, 232px"
+            src="/cool-image.jpeg"
+          />
+          <p className="logistics-visual-caption">
+            {flagCode ? (
+              <span className="logistics-visual-flag" aria-hidden="true">
+                <CountryFlag
+                  className="logistics-visual-flag-img"
+                  code={flagCode}
+                  country={destination}
+                  sizes="30px"
+                />
+              </span>
+            ) : null}
+            <span>{destination || "Somewhere new"}</span>
+          </p>
         </div>
 
         <div className="logistics-main">
