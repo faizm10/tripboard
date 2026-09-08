@@ -882,7 +882,12 @@ a { color: inherit; text-decoration: none; }
   box-shadow: var(--shadow-card);
   transform: translateY(-3px);
 }
-.trip-cover { position: relative; min-height: 155px; margin: 18px; overflow: hidden; border-radius: var(--radius-md); background: var(--surface); }
+/*
+ * No frame and no ground: the artwork sits straight on the card. PlacePhoto
+ * brings its own background for the loading state, so covers that hold a photo
+ * are unaffected.
+ */
+.trip-cover { position: relative; min-height: 155px; margin: 18px; overflow: hidden; border-radius: var(--radius-md); }
 .trip-cover .place-photo { width: 100%; height: 100%; border: 0; border-radius: 0; }
 .trip-cover img,
 .trip-cover-fallback {
@@ -898,7 +903,6 @@ a { color: inherit; text-decoration: none; }
  * overlay: the colours are the point.
  */
 .trip-cover-flag {
-  padding: 10px;
   object-fit: contain;
   object-position: center;
 }
@@ -1712,7 +1716,8 @@ input::placeholder, textarea::placeholder { color: #9b9b97; }
   .site-header, .hero-section, .site-footer { width: min(100% - 32px, 1440px); }
   .site-header { height: 66px; }
   .site-actions .text-link { display: none; }
-  .site-actions { gap: 0; }
+  /* Signed in, the button and the avatar both survive here and need air. */
+  .site-actions { gap: 10px; }
   .hero-section { min-height: auto; padding: 12px 0 24px; gap: 20px; }
   .hero-copy { gap: 16px; }
   .hero-copy h1 { font-size: clamp(38px, 10vw, 52px); }
