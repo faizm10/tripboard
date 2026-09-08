@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
@@ -23,6 +24,14 @@ export default async function NewTripPage() {
       </header>
       <div className="form-page-grid">
         <section className="form-intro">
+          <Image
+            alt=""
+            className="form-intro-photo"
+            fill
+            priority
+            sizes="(max-width: 900px) 100vw, 50vw"
+            src="/cool-image.jpeg"
+          />
           <p className="eyebrow">new trip</p>
           <h1>Begin with a place.</h1>
           <p>The dates can be rough. The shortlist can grow as the trip becomes real.</p>
