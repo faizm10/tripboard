@@ -3,6 +3,7 @@ import { ArrowUpRight, MapPin } from "lucide-react";
 import { CountryFlag } from "@/components/country-flag";
 import { PlacePhoto } from "@/components/place-photo";
 import { ProfileAvatar } from "@/components/profile-avatar";
+import { TripDeleteButton } from "@/components/trip-delete-button";
 import { flagCodeForTrip } from "@/lib/country-flag";
 import type { Collaborator, Trip } from "@/lib/types";
 
@@ -16,7 +17,7 @@ function peopleLabel(people: Collaborator[]) {
   return `${names.slice(0, 2).join(", ")} +${names.length - 2}`;
 }
 
-export function TripCard({ trip, index }: { trip: Trip; index: number }) {
+export function TripCard({ trip, index, canDelete = false }: { trip: Trip; index: number; canDelete?: boolean }) {
   const coverPlace = trip.places[0];
   const flagCode = flagCodeForTrip(trip);
   const initials = (trip.country || trip.destination).slice(0, 2);
@@ -24,38 +25,41 @@ export function TripCard({ trip, index }: { trip: Trip; index: number }) {
   const shownPeople = people.slice(0, 4);
 
   return (
-    <Link className="trip-card" href={`/trips/${trip.id}`}>
-      <div className="trip-cover">
-        {flagCode ? (
-          <CountryFlag code={flagCode} country={trip.country || trip.destination} />
-        ) : coverPlace?.fsqPlaceId ? (
-          <PlacePhoto fsqPlaceId={coverPlace.fsqPlaceId} name={coverPlace.name} label={trip.destination} sizes="(max-width: 700px) 100vw, 180px" priority={index === 0} />
-        ) : (
-          <div className="trip-cover-fallback">{initials}</div>
-        )}
-        <span className="trip-index">{String(index + 1).padStart(2, "0")}</span>
-      </div>
-      <div className="trip-card-body">
-        <div>
-          <p className="eyebrow">{trip.country} · {trip.dateLabel}</p>
-          <h2>{trip.title}</h2>
-          <p className="trip-destination">{trip.destination}</p>
+    <div className="trip-card-row">
+      <Link className="trip-card" href={`/trips/${trip.id}`}>
+        <div className="trip-cover">
+          {flagCode ? (
+            <CountryFlag code={flagCode} country={trip.country || trip.destination} />
+          ) : coverPlace?.fsqPlaceId ? (
+            <PlacePhoto fsqPlaceId={coverPlace.fsqPlaceId} name={coverPlace.name} label={trip.destination} sizes="(max-width: 700px) 100vw, 180px" priority={index === 0} />
+          ) : (
+            <div className="trip-cover-fallback">{initials}</div>
+          )}
+          <span className="trip-index">{String(index + 1).padStart(2, "0")}</span>
         </div>
-        <ArrowUpRight className="trip-arrow" size={24} />
-        <div className="trip-meta">
-          <span><MapPin size={14} /> {trip.places.length} places</span>
-          {people.length > 0 ? (
-            <span className="trip-people" title={people.map((person) => person.name).join(", ")}>
-              <span className="mini-avatars" aria-hidden="true">
-                {shownPeople.map((person) => (
-                  <ProfileAvatar image={person.image} key={person.id ?? person.name} name={person.name} size="xs" />
-                ))}
+        <div className="trip-card-body">
+          <div>
+            <p className="eyebrow">{trip.country} · {trip.dateLabel}</p>
+            <h2>{trip.title}</h2>
+            <p className="trip-destination">{trip.destination}</p>
+          </div>
+          <ArrowUpRight className="trip-arrow" size={24} />
+          <div className="trip-meta">
+            <span><MapPin size={14} /> {trip.places.length} places</span>
+            {people.length > 0 ? (
+              <span className="trip-people" title={people.map((person) => person.name).join(", ")}>
+                <span className="mini-avatars" aria-hidden="true">
+                  {shownPeople.map((person) => (
+                    <ProfileAvatar image={person.image} key={person.id ?? person.name} name={person.name} size="xs" />
+                  ))}
+                </span>
+                <span className="trip-people-names">{peopleLabel(people)}</span>
               </span>
-              <span className="trip-people-names">{peopleLabel(people)}</span>
-            </span>
-          ) : null}
+            ) : null}
+          </div>
         </div>
-      </div>
-    </Link>
+      </Link>
+      {canDelete ? <TripDeleteButton tripId={trip.id} title={trip.title} /> : null}
+    </div>
   );
 }

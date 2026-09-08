@@ -7,6 +7,7 @@ import { TripCard } from "@/components/trip-card";
 import { getViewer } from "@/lib/auth";
 import { demoTrips } from "@/lib/demo-data";
 import { listViewerTrips, toTripViewer } from "@/lib/trips";
+import { isPersistedTripId } from "@/lib/types";
 
 export const metadata: Metadata = { title: "Your trips" };
 export const dynamic = "force-dynamic";
@@ -50,7 +51,17 @@ export default async function TripsPage() {
               <p>Create a trip, save the first place, and it will live here with your account.</p>
             </div>
           ) : (
-            trips.map((trip, index) => <TripCard trip={trip} index={index} key={trip.id} />)
+            trips.map((trip, index) => (
+              <TripCard
+                canDelete={
+                  isPersistedTripId(trip.id) &&
+                  trip.collaborators.some((person) => person.id === viewer.id && person.role === "owner")
+                }
+                index={index}
+                key={trip.id}
+                trip={trip}
+              />
+            ))
           )}
           <Link className="new-trip-card" href="/trips/new">
             <span>
