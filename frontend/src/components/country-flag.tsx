@@ -4,16 +4,20 @@ import { flagImageUrl } from "@/lib/country-flag";
 export function CountryFlag({
   code,
   country,
+  className = "trip-cover-flag",
+  sizes = "(max-width: 700px) 105px, 154px",
 }: {
   code: string;
   country: string;
+  className?: string;
+  sizes?: string;
 }) {
   return (
     <Image
       alt=""
-      className="trip-cover-flag"
+      className={className}
       fill
-      sizes="(max-width: 700px) 105px, 154px"
+      sizes={sizes}
       src={flagImageUrl(code)}
       title={country}
     />
