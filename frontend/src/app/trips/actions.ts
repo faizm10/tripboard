@@ -183,7 +183,7 @@ export async function createTrip(input: unknown) {
   const viewer = await requireViewer();
   const data = createTripSchema.parse(input);
   const db = getDatabase();
-  if (!db) return { id: "lisbon-weekender", demo: true };
+  if (!db) return { id: "nyc-weekender", demo: true };
   const [trip] = await db
     .insert(trips)
     .values({
@@ -829,7 +829,7 @@ export async function createEmailInvite(input: unknown) {
   const viewer = await requireViewer();
   const data = createEmailInviteSchema.parse(input);
   const db = getDatabase();
-  if (!db) return { inviteUrl: "/invite/demo-lisbon-board", demo: true, expiresAt: inviteExpiresAt().toISOString() };
+  if (!db) return { inviteUrl: "/invite/demo-nyc-board", demo: true, expiresAt: inviteExpiresAt().toISOString() };
   await requireOwner(data.tripId, viewer.id);
   const token = createInviteToken();
   const expiresAt = inviteExpiresAt();
@@ -858,7 +858,7 @@ export async function createShareInvite(input: unknown) {
   const viewer = await requireViewer();
   const data = createShareInviteSchema.parse(input);
   const db = getDatabase();
-  if (!db) return { inviteUrl: "/invite/demo-lisbon-board", demo: true, expiresAt: inviteExpiresAt().toISOString() };
+  if (!db) return { inviteUrl: "/invite/demo-nyc-board", demo: true, expiresAt: inviteExpiresAt().toISOString() };
   await requireOwner(data.tripId, viewer.id);
   const token = createInviteToken();
   const expiresAt = inviteExpiresAt();
@@ -908,11 +908,11 @@ export async function inviteCollaborator(input: unknown) {
 }
 
 export async function acceptInvitation(rawToken: string) {
-  if (rawToken === "demo-lisbon-board") redirect("/trips/lisbon-weekender");
+  if (rawToken === "demo-nyc-board") redirect("/trips/nyc-weekender");
   const token = inviteTokenSchema.parse(rawToken);
   const viewer = await requireViewer();
   const db = getDatabase();
-  if (!db) redirect("/trips/lisbon-weekender");
+  if (!db) redirect("/trips/nyc-weekender");
   const tokenHash = hashInviteToken(token);
   let tripId = "";
   try {
