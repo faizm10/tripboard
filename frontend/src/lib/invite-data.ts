@@ -33,7 +33,7 @@ export async function getInvitePreview(
   token: string,
   viewer?: { id: string; email?: string | null; demo?: boolean } | null,
 ): Promise<InvitePreview> {
-  if (token === "demo-lisbon-board") {
+  if (token === "demo-nyc-board") {
     return {
       found: true,
       status: "active",
@@ -44,10 +44,10 @@ export async function getInvitePreview(
       expiresAt: "2099-01-01T00:00:00.000Z",
       invitedBy: "Faiz",
       trip: {
-        id: "lisbon-weekender",
-        title: "Lisbon, loosely",
-        destination: "Lisbon",
-        dateLabel: "SEP 18-22",
+        id: "nyc-weekender",
+        title: "New York, loosely",
+        destination: "New York",
+        dateLabel: "APR 10-13",
       },
       viewerAlreadyMember: false,
       viewerEmailMismatch: false,
@@ -66,10 +66,10 @@ export async function getInvitePreview(
       expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
       invitedBy: "Faiz",
       trip: {
-        id: "lisbon-weekender",
-        title: "Lisbon, loosely",
-        destination: "Lisbon",
-        dateLabel: "SEP 18-22",
+        id: "nyc-weekender",
+        title: "New York, loosely",
+        destination: "New York",
+        dateLabel: "APR 10-13",
       },
       viewerAlreadyMember: false,
       viewerEmailMismatch: false,

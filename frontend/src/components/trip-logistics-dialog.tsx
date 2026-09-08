@@ -91,7 +91,7 @@ export function TripLogisticsDialog({
         <form className="new-trip-form" onSubmit={submit}>
           <label>
             <span>What are you calling it?</span>
-            <input defaultValue={trip.title} name="title" placeholder="Lisbon, loosely" required />
+            <input defaultValue={trip.title} name="title" placeholder="New York, loosely" required />
           </label>
           <CityField defaultValue={trip.destination} />
           <div className="date-fields">

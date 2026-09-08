@@ -17,10 +17,10 @@ function SaveVisual() {
       <div className="stage-saved-card">
         <p className="stage-card-meta">
           <em className="category-tag category-eat">Eat</em>
-          <span>Baixa</span>
+          <span>West Village</span>
         </p>
-        <strong>Prado Mercearia</strong>
-        <q>Ana says the mushroom toast is non-negotiable.</q>
+        <strong>Joe’s Pizza</strong>
+        <q>Go late — the line looks long and never is.</q>
         <Bookmark className="stage-card-save" size={13} />
       </div>
     </div>
@@ -53,9 +53,9 @@ function SeeVisual() {
 
 function PlanVisual() {
   const stops = [
-    { time: "Morning", index: "01", name: "Gulbenkian Garden" },
-    { time: "Afternoon", index: "02", name: "Prado Mercearia" },
-    { time: "Evening", index: "03", name: "Ponto Final" },
+    { time: "Morning", index: "01", name: "Washington Square Park" },
+    { time: "Afternoon", index: "02", name: "Joe’s Pizza" },
+    { time: "Evening", index: "03", name: "Chelsea Market" },
   ];
   return (
     <div className="stage-visual stage-visual-plan" aria-hidden="true">
@@ -69,7 +69,7 @@ function PlanVisual() {
         ))}
       </ol>
       <p className="stage-day-route">
-        <Footprints size={13} /> 24 min walking
+        <Footprints size={13} /> 25 min walking
       </p>
     </div>
   );

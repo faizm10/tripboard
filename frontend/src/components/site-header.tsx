@@ -12,6 +12,11 @@ export async function SiteHeader() {
   return (
     <header className="site-header">
       <Logo />
+      <nav className="site-nav">
+        <a href="#how">How it works</a>
+        <a href="#together">Plan together</a>
+        <a href="#demo">Demo trip</a>
+      </nav>
       <div className="site-actions">
         {signedIn ? (
           <AccountMenu email={viewer?.email} image={image} name={name} />

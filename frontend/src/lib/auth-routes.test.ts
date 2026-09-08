@@ -8,7 +8,7 @@ describe("isPublicAuthPath", () => {
 
   it("covers the Google callback and the demo trip", () => {
     expect(isPublicAuthPath("/auth/callback")).toBe(true);
-    expect(isPublicAuthPath("/trips/lisbon-weekender")).toBe(true);
+    expect(isPublicAuthPath("/trips/nyc-weekender")).toBe(true);
   });
 
   it("keeps the marketing homepage public without opening every route", () => {
@@ -24,6 +24,6 @@ describe("isPublicAuthPath", () => {
 
   it("does not treat a prefix match as a public route", () => {
     expect(isPublicAuthPath("/invitations")).toBe(false);
-    expect(isPublicAuthPath("/trips/lisbon-weekender-2")).toBe(false);
+    expect(isPublicAuthPath("/trips/nyc-weekender-2")).toBe(false);
   });
 });
