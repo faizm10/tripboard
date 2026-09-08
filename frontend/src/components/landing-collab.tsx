@@ -3,21 +3,21 @@ import { categoryClass, type PlaceCategory } from "@/lib/types";
 /** A still of a shared board: the same place list, with everyone's name on their own saves. */
 const saves: { name: string; category: PlaceCategory; note: string; by: string }[] = [
   {
-    name: "Feira da Ladra",
+    name: "Chelsea Market",
     category: "Shop",
-    note: "Tuesday flea market. Look for old ceramics.",
+    note: "Go hungry, leave with olive oil.",
     by: "Faiz",
   },
   {
-    name: "Gulbenkian Garden",
+    name: "Washington Square Park",
     category: "See",
-    note: "Slow morning, sculpture garden, then coffee nearby.",
+    note: "Start here. Chess tables, and someone always at the piano.",
     by: "Ana",
   },
   {
-    name: "Ponto Final",
-    category: "Eat",
-    note: "Book sunset dinner and take the ferry back.",
+    name: "Caffè Reggio",
+    category: "Drink",
+    note: "The corner table, before it gets loud.",
     by: "Jon",
   },
 ];
