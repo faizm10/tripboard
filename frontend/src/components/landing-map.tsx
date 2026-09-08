@@ -14,9 +14,9 @@ import { categoryClass, type PlaceCategory } from "@/lib/types";
 
 /**
  * A still of the trip workspace, built from the same places as the demo trip at
- * /trips/lisbon-weekender so the marketing page and the product agree.
+ * /trips/nyc-weekender so the marketing page and the product agree.
  *
- * With a Mapbox token the basemap is a real static map of Lisbon and the route
+ * With a Mapbox token the basemap is a real static map of New York and the route
  * is real walking geometry; without one it falls back to a drawn map so the
  * landing page still renders in demo mode. Pin/card hover linkage is CSS-only
  * (:has), which keeps this a server component.
@@ -35,43 +35,43 @@ type BoardPlace = {
 
 const places: BoardPlace[] = [
   {
-    key: "gulbenkian",
+    key: "washington-square",
     index: "01",
-    name: "Gulbenkian Garden",
+    name: "Washington Square Park",
     category: "See",
-    neighborhood: "Avenidas Novas",
-    note: "Slow morning, sculpture garden, then coffee nearby.",
-    coordinates: [-9.1544, 38.7367],
+    neighborhood: "Greenwich Village",
+    note: "Start here. Chess tables, and someone always at the piano.",
+    coordinates: [-73.9973, 40.7308],
     drawnPin: { top: "18%", left: "18%" },
   },
   {
-    key: "seagull",
+    key: "reggio",
     index: "02",
-    name: "Seagull Method Café",
+    name: "Caffè Reggio",
     category: "Drink",
-    neighborhood: "Príncipe Real",
-    note: "Breakfast before walking down to Chiado.",
-    coordinates: [-9.1507, 38.7162],
+    neighborhood: "Greenwich Village",
+    note: "Ana wants the corner table before it gets loud.",
+    coordinates: [-73.9997, 40.73],
     drawnPin: { top: "58%", left: "20%" },
   },
   {
-    key: "prado",
+    key: "joes",
     index: "03",
-    name: "Prado Mercearia",
+    name: "Joe’s Pizza",
     category: "Eat",
-    neighborhood: "Baixa",
-    note: "Ana says the mushroom toast is non-negotiable.",
-    coordinates: [-9.1349, 38.7107],
+    neighborhood: "West Village",
+    note: "Go late — the line looks long and never is.",
+    coordinates: [-74.0027, 40.7305],
     drawnPin: { top: "76%", left: "52%" },
   },
   {
-    key: "feira",
+    key: "chelsea-market",
     index: "04",
-    name: "Feira da Ladra",
+    name: "Chelsea Market",
     category: "Shop",
-    neighborhood: "Alfama",
-    note: "Tuesday flea market. Look for old ceramics.",
-    coordinates: [-9.1256, 38.7151],
+    neighborhood: "Chelsea",
+    note: "Go hungry, leave with olive oil.",
+    coordinates: [-74.0061, 40.7424],
     drawnPin: { top: "62%", left: "78%" },
   },
 ];
@@ -147,7 +147,7 @@ function DrawnMap() {
           align: Number.parseFloat(drawnPin.left) > 55 ? ("end" as const) : undefined,
         }))}
       />
-      <span className="board-water-label">Rio Tejo</span>
+      <span className="board-water-label">Hudson River</span>
     </div>
   );
 }
@@ -208,12 +208,12 @@ export async function LandingMap() {
         .join(" ")
     : schematicRoute(view);
 
-  const walkingMinutes = route ? Math.round(route.durationSeconds / 60) : 46;
+  const walkingMinutes = route ? Math.round(route.durationSeconds / 60) : 25;
 
   return (
     <figure className="board" aria-labelledby="board-caption">
       <figcaption className="sr-only" id="board-caption">
-        A Tripboard trip: four places saved around Lisbon, each with the note that made it
+        A Tripboard trip: four places saved around New York, each with the note that made it
         worth keeping, shown together on one map.
       </figcaption>
 
@@ -229,7 +229,7 @@ export async function LandingMap() {
         )}
 
         <p className="board-map-chip">
-          <MapPin size={12} /> Lisbon · 4 places
+          <MapPin size={12} /> New York · 4 places
         </p>
         <p className="board-route-chip">{walkingMinutes} min walking · 4 stops</p>
         {basemapToken ? <p className="board-attribution">© Mapbox © OpenStreetMap</p> : null}
@@ -237,8 +237,8 @@ export async function LandingMap() {
 
       <div className="board-list" aria-hidden="true">
         <header className="board-list-head">
-          <p className="eyebrow">Portugal · Sep 18—22</p>
-          <h2>Lisbon, loosely</h2>
+          <p className="eyebrow">New York · Apr 10—13</p>
+          <h2>New York, loosely</h2>
           <span>Four places worth crossing town for.</span>
         </header>
 
