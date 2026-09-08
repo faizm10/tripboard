@@ -39,6 +39,7 @@ import {
   updatePlacePlanningSchema,
   updatePlaceSchema,
   updateTripCitySchema,
+  deleteTripSchema,
   updateTripSchema,
 } from "@/lib/validators";
 
@@ -998,5 +999,23 @@ export async function updateTrip(input: unknown) {
   if (!updated) throw new Error("This trip could not be updated.");
   revalidatePath("/trips");
   revalidatePath(`/trips/${tripId}`);
+  return { demo: false };
+}
+
+/**
+ * Only the owner may delete a trip. Every child table hangs off `trips` with
+ * `onDelete: cascade`, so the single delete takes members, places, cities,
+ * notes, logistics and invitations with it.
+ */
+export async function deleteTrip(input: unknown) {
+  const viewer = await requireViewer();
+  const data = deleteTripSchema.parse(input);
+  const db = getDatabase();
+  if (!db) return { demo: true };
+  await requireOwner(data.tripId, viewer.id);
+  const [deleted] = await db.delete(trips).where(eq(trips.id, data.tripId)).returning({ id: trips.id });
+  if (!deleted) throw new Error("This trip could not be deleted.");
+  revalidatePath("/trips");
+  revalidatePath(`/trips/${data.tripId}`);
   return { demo: false };
 }

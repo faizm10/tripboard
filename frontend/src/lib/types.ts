@@ -117,6 +117,8 @@ export type Collaborator = {
   name: string;
   email?: string | null;
   image?: string | null;
+  /** Owners are the only members who may delete the trip. */
+  role?: "owner" | "editor";
 };
 
 export type InviteKind = "email" | "share";

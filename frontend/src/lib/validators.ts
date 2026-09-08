@@ -31,6 +31,8 @@ export const updateTripSchema = withOptionalReturnAfterStart({
   ...tripDetailsFields,
 });
 
+export const deleteTripSchema = z.object({ tripId: z.string().uuid() });
+
 export const addPlaceSchema = z.object({
   tripId: z.string().uuid(),
   cityId: z.string().uuid().optional().or(z.literal("")),
