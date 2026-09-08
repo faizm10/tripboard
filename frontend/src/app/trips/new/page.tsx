@@ -32,16 +32,8 @@ export default async function NewTripPage() {
             sizes="(max-width: 900px) 100vw, 50vw"
             src="/cool-image.jpeg"
           />
-          <p className="eyebrow">new trip</p>
           <h1>Begin with a place.</h1>
           <p>The dates can be rough. The shortlist can grow as the trip becomes real.</p>
-          <div className="form-itinerary" aria-hidden="true">
-            <span>01</span>
-            <i />
-            <span>02</span>
-            <i />
-            <span>03</span>
-          </div>
         </section>
         <section className="form-panel">
           <p className="eyebrow">the basics</p>
