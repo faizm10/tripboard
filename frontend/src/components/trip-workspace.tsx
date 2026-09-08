@@ -177,6 +177,11 @@ export function TripWorkspace({
   const localFlightCounter = useRef(0);
   const localHotelCounter = useRef(0);
   const persistable = isPersistedTripId(trip.id);
+  // Deleting is owner-only. The server enforces it; this keeps editors from
+  // seeing a button that would only ever fail for them.
+  const viewerIsOwner = trip.collaborators.some(
+    (person) => person.id === viewer?.id && person.role === "owner",
+  );
   const primaryCity = cities[0];
   const selectedCity = activeCityId === "all" ? primaryCity : cities.find((city) => city.id === activeCityId) ?? primaryCity;
   const cityScopedPlaces = useMemo(
@@ -864,6 +869,7 @@ export function TripWorkspace({
       {inviteOpen ? <InviteDialog demo={!persistable} onClose={() => setInviteOpen(false)} tripId={trip.id} /> : null}
       {logisticsOpen ? (
         <TripLogisticsDialog
+          canDelete={viewerIsOwner}
           onClose={() => setLogisticsOpen(false)}
           onSave={(next) => {
             setDetails(next);
