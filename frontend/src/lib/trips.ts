@@ -20,6 +20,7 @@ function toCollaborator(
     name: (isViewer ? viewer?.name : member.displayName) || member.displayName || "Traveller",
     email: (isViewer ? viewer?.email : email) || email || null,
     image: (isViewer ? viewer?.image : member.image) ?? member.image,
+    role: member.role,
   };
 }
 
