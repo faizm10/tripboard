@@ -15,7 +15,7 @@ export async function generateMetadata({ params }: { params: Promise<{ tripId: s
     const trip = await getViewerTrip(tripId, toTripViewer(viewer));
     if (trip) return { title: trip.title };
   }
-  if (tripId === "lisbon-weekender" || viewer?.demo) {
+  if (tripId === "nyc-weekender" || viewer?.demo) {
     return { title: getTrip(tripId).title };
   }
   return { title: "Trip" };
@@ -39,7 +39,7 @@ export default async function TripPage({ params }: { params: Promise<{ tripId: s
     }
   }
 
-  if (tripId === "lisbon-weekender" || viewer?.demo) {
+  if (tripId === "nyc-weekender" || viewer?.demo) {
     const trip = getTrip(tripId);
     return (
       <main className="workspace-page">
