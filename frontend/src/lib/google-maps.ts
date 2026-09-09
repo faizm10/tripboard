@@ -33,6 +33,13 @@ type GooglePlace = {
   addressComponents?: Array<{ longText?: string; types?: string[] }>;
 };
 
+export function nameNeedsAddressLookup(name: string, address: string) {
+  const normalize = (value: string) => value.toLocaleLowerCase().replace(/[.,#\-–—]/g, " ").replace(/\s+/g, " ").trim();
+  const normalizedName = normalize(name);
+  const normalizedAddress = normalize(address);
+  return Boolean(normalizedName && normalizedAddress && normalizedName === normalizedAddress);
+}
+
 export function cityFromGooglePrediction(
   prediction: GoogleSuggestion["placePrediction"],
   kind?: CitySuggestion["kind"],
@@ -249,6 +256,43 @@ export async function googlePlaceSearch(query: string, near: string): Promise<Pl
       category: categoryFromGoogleTypes(place.types, place.primaryType),
     }];
   });
+}
+
+/**
+ * Finds the venue attached to an address. This is intentionally used only as
+ * a fallback for old saves whose name is the address itself.
+ */
+export async function googlePlaceNameFromAddress(address: string, coordinates?: [number, number]): Promise<string | null> {
+  const key = getGoogleMapsKey();
+  if (!key || !address.trim()) return null;
+  const response = await fetch("https://places.googleapis.com/v1/places:searchText", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Goog-Api-Key": key,
+      "X-Goog-FieldMask": "places.displayName,places.formattedAddress",
+    },
+    body: JSON.stringify({
+      textQuery: address,
+      languageCode: "en",
+      maxResultCount: 1,
+      ...(coordinates
+        ? {
+            locationBias: {
+              circle: {
+                center: { longitude: coordinates[0], latitude: coordinates[1] },
+                radius: 75,
+              },
+            },
+          }
+        : {}),
+    }),
+    cache: "no-store",
+  });
+  if (!response.ok) return null;
+  const body = (await response.json()) as { places?: GooglePlace[] };
+  const name = body.places?.[0]?.displayName?.text?.trim();
+  return name && !nameNeedsAddressLookup(name, address) ? name : null;
 }
 
 export async function googlePlacePhotoUrl(placeId: string, placeName: string) {

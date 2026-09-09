@@ -1,12 +1,15 @@
 "use client";
 
-import { LocateFixed, MapPin, Minus, Plus } from "lucide-react";
+import { CalendarDays, LocateFixed, MapPin, Minus, Plus } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { CityLocation } from "@/lib/cities";
+import { formatWeekdayDate } from "@/lib/dates";
+import { nameNeedsAddressLookup } from "@/lib/google-maps";
 import { buildGoogleMapsPlaceUrl } from "@/lib/navigation";
 import type { HotelStay, Place } from "@/lib/types";
 
 const FALLBACK_CENTER: [number, number] = [-9.1393, 38.7139];
+const previewNameLookups = new Map<string, Promise<string | null>>();
 
 type TripMapProps = {
   destination: string;
@@ -46,7 +49,29 @@ function showCity(map: import("mapbox-gl").Map, location: CityLocation, animate:
 }
 
 function previewSubtitle(place: Place) {
-  return place.neighborhood || place.address || "Saved place";
+  return place.address || place.neighborhood || "Address unavailable";
+}
+
+function previewDay(place: Place) {
+  return place.plannedDate ? formatWeekdayDate(place.plannedDate) : "Not scheduled";
+}
+
+function lookupPreviewName(place: Place) {
+  if (!nameNeedsAddressLookup(place.name, place.address)) return Promise.resolve(null);
+  const key = `${place.address}:${place.coordinates.join(",")}`;
+  const cached = previewNameLookups.get(key);
+  if (cached) return cached;
+  const params = new URLSearchParams({
+    address: place.address,
+    lng: String(place.coordinates[0]),
+    lat: String(place.coordinates[1]),
+  });
+  const request = fetch(`/api/places/resolve-name?${params}`)
+    .then((response) => response.ok ? response.json() as Promise<{ name?: unknown }> : null)
+    .then((body) => typeof body?.name === "string" ? body.name : null)
+    .catch(() => null);
+  previewNameLookups.set(key, request);
+  return request;
 }
 
 function isTransitPlace(place: Place) {
@@ -76,6 +101,14 @@ function createPreviewCard(place: Place) {
   const title = document.createElement("strong");
   title.textContent = place.name;
 
+  void lookupPreviewName(place).then((name) => {
+    if (name) title.textContent = name;
+  });
+
+  const day = document.createElement("span");
+  day.className = "map-preview-day";
+  day.textContent = previewDay(place);
+
   const addressRow = document.createElement("span");
   addressRow.className = "map-preview-address";
 
@@ -90,7 +123,7 @@ function createPreviewCard(place: Place) {
   mapsLink.innerHTML = '<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20 10c0 4.8-5.4 10.3-7.4 12.2a.9.9 0 0 1-1.2 0C9.4 20.3 4 14.8 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.6"/></svg>';
 
   addressRow.append(subtitle, mapsLink);
-  copy.append(title, addressRow);
+  copy.append(title, day, addressRow);
   card.append(copy);
   return card;
 }
@@ -110,10 +143,22 @@ function createHotelPreviewCard(hotel: HotelStay) {
 }
 
 function MapPlacePreview({ place }: { place: Place }) {
+  const [resolvedTitle, setResolvedTitle] = useState<{ address: string; name: string } | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    void lookupPreviewName(place).then((name) => {
+      if (active && name) setResolvedTitle({ address: place.address, name });
+    });
+    return () => { active = false; };
+  }, [place]);
+  const title = resolvedTitle?.address === place.address ? resolvedTitle.name : place.name;
+
   return (
     <span className="map-preview-card">
       <span className="map-preview-copy">
-        <strong>{place.name}</strong>
+        <strong>{title}</strong>
+        <span className="map-preview-day"><CalendarDays size={12} />{previewDay(place)}</span>
         <span className="map-preview-address">
           <small>{previewSubtitle(place)}</small>
           <a

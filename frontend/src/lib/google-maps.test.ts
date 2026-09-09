@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { categoryFromGoogleTypes, cityFromGooglePrediction, viewportToBbox } from "@/lib/google-maps";
+import { categoryFromGoogleTypes, cityFromGooglePrediction, nameNeedsAddressLookup, viewportToBbox } from "@/lib/google-maps";
 
 describe("google city predictions", () => {
   it("builds a stored destination from Google's main and secondary text", () => {
@@ -56,6 +56,13 @@ describe("google place categories", () => {
   it("maps transit stops to transit", () => {
     expect(categoryFromGoogleTypes(["train_station", "transit_station", "point_of_interest"], "train_station")).toBe("Transit");
     expect(categoryFromGoogleTypes(["bus_stop", "point_of_interest"], "bus_stop")).toBe("Transit");
+  });
+});
+
+describe("address-style place names", () => {
+  it("requests a venue lookup only when the saved name is just the address", () => {
+    expect(nameNeedsAddressLookup("3-chome-12-16 Ginza", "3 chome 12 16 Ginza")).toBe(true);
+    expect(nameNeedsAddressLookup("Ginza Six", "3-chome-12-16 Ginza")).toBe(false);
   });
 });
 

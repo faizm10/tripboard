@@ -1432,7 +1432,7 @@ input::placeholder, textarea::placeholder { color: #9b9b97; }
 .place-map-popup { z-index: 18; }
 .place-map-popup .mapboxgl-popup-content { padding: 0; border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--paper-raised); box-shadow: var(--shadow-card); }
 .place-map-popup .mapboxgl-popup-tip { border-top-color: var(--ink); border-bottom-color: var(--ink); }
-.map-preview-card { display: block; width: min(230px, calc(100vw - 34px)); min-height: 58px; padding: 10px 11px; border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--paper-raised); color: var(--ink); pointer-events: auto; text-align: left; }
+.map-preview-card { display: block; width: min(250px, calc(100vw - 34px)); min-height: 76px; padding: 11px 12px; border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--paper-raised); color: var(--ink); pointer-events: auto; text-align: left; }
 
 /* Admin control tower */
 .admin-page { min-height: 100svh; background: #e8eee7; }
@@ -1519,6 +1519,8 @@ input::placeholder, textarea::placeholder { color: #9b9b97; }
 .place-map-popup .map-preview-card { border: 0; }
 .map-preview-copy { min-width: 0; }
 .map-preview-copy strong { display: block; overflow: hidden; font-size: 15px; font-weight: 700; letter-spacing: -.03em; line-height: 1.05; text-overflow: ellipsis; white-space: nowrap; }
+.map-preview-day { display: inline-flex; margin-top: 7px; align-items: center; gap: 4px; color: var(--accent); font-size: 10px; font-weight: 700; letter-spacing: .02em; line-height: 1; }
+.map-preview-day svg { flex: none; }
 .map-preview-address { display: grid; margin-top: 7px; grid-template-columns: 1fr auto; align-items: center; gap: 8px; }
 .map-preview-address small { display: -webkit-box; overflow: hidden; color: var(--muted); font-size: 10px; line-height: 1.3; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 .map-preview-address a { display: grid; width: 24px; height: 24px; flex: none; place-items: center; border: 1px solid var(--line); border-radius: 50%; color: var(--ink); text-decoration: none; }

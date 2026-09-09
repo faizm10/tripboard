@@ -10,6 +10,16 @@ export function formatDateLabel(startDate?: string | null, endDate?: string | nu
   return `${monthName(startDate)} ${day(startDate)}—${monthName(endDate)} ${day(endDate)}`;
 }
 
+/** A compact, timezone-safe label for a date stored as an ISO calendar day. */
+export function formatWeekdayDate(iso?: string | null) {
+  if (!iso) return "Not scheduled";
+  const date = new Date(`${iso}T00:00:00.000Z`);
+  if (Number.isNaN(date.getTime())) return "Not scheduled";
+  const weekday = date.toLocaleDateString("en", { weekday: "short", timeZone: "UTC" });
+  const calendarDate = date.toLocaleDateString("en", { month: "short", day: "numeric", timeZone: "UTC" });
+  return `${weekday} · ${calendarDate}`;
+}
+
 export function countryFromDestination(destination: string) {
   const parts = destination.split(",").map((part) => part.trim()).filter(Boolean);
   return parts.at(-1) || destination;
