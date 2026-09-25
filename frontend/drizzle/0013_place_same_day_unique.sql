@@ -1,0 +1,2 @@
+DROP INDEX "trip_places_provider_unique";--> statement-breakpoint
+ALTER TABLE "trip_places" ADD CONSTRAINT "trip_places_provider_day_unique" UNIQUE NULLS NOT DISTINCT("trip_id","fsq_place_id","planned_date");

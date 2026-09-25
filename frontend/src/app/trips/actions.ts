@@ -91,6 +91,15 @@ function planningMigrationError() {
   return new Error("Day planning needs the latest database migration before it can be saved.");
 }
 
+function isPlaceDayConflict(error: unknown) {
+  const message = error instanceof Error ? `${error.message} ${error.cause ?? ""}` : String(error);
+  return message.includes("trip_places_provider_day_unique") || message.includes("trip_places_provider_unique") || message.includes("duplicate key");
+}
+
+function placeDayConflictError(plannedDate?: string | null) {
+  return new Error(plannedDate ? "That place is already on this day." : "That place is already saved without a day.");
+}
+
 function isAgendaSchemaMissing(error: unknown) {
   const message = error instanceof Error ? `${error.message} ${error.cause ?? ""}` : String(error);
   return /trip_agendas|trip_agenda_day_notes|trip_agenda_items|agenda/i.test(message);
@@ -270,10 +279,7 @@ export async function addPlace(input: unknown) {
     revalidateTrip(data.tripId);
     return { demo: false, id: saved.id };
   } catch (error) {
-    const message = error instanceof Error ? `${error.message} ${error.cause ?? ""}` : String(error);
-    if (message.includes("trip_places_provider_unique") || message.includes("duplicate key")) {
-      throw new Error("That place is already on this trip.");
-    }
+    if (isPlaceDayConflict(error)) throw placeDayConflictError(data.plannedDate);
     throw error;
   }
 }
@@ -300,21 +306,27 @@ export async function updatePlaceDetails(input: unknown) {
   const db = getDatabase();
   if (!db) return { demo: true };
   await requireEditor(data.tripId, viewer.id);
-  const [updated] = await db
-    .update(tripPlaces)
-    .set({
-      cityId: optionalValue(data.cityId),
-      name: data.name,
-      address: data.address,
-      neighborhood: data.neighborhood,
-      category: data.category,
-      note: data.note,
-      sourceUrl: data.sourceUrl || null,
-      plannedDate: optionalValue(data.plannedDate),
-      daySortOrder: data.plannedDate ? data.daySortOrder ?? 0 : 0,
-    })
-    .where(and(eq(tripPlaces.id, data.placeId), eq(tripPlaces.tripId, data.tripId)))
-    .returning({ id: tripPlaces.id });
+  let updated: { id: string } | undefined;
+  try {
+    [updated] = await db
+      .update(tripPlaces)
+      .set({
+        cityId: optionalValue(data.cityId),
+        name: data.name,
+        address: data.address,
+        neighborhood: data.neighborhood,
+        category: data.category,
+        note: data.note,
+        sourceUrl: data.sourceUrl || null,
+        plannedDate: optionalValue(data.plannedDate),
+        daySortOrder: data.plannedDate ? data.daySortOrder ?? 0 : 0,
+      })
+      .where(and(eq(tripPlaces.id, data.placeId), eq(tripPlaces.tripId, data.tripId)))
+      .returning({ id: tripPlaces.id });
+  } catch (error) {
+    if (isPlaceDayConflict(error)) throw placeDayConflictError(data.plannedDate);
+    throw error;
+  }
   if (!updated) throw new Error("This place could not be updated.");
   revalidateTrip(data.tripId);
   return { demo: false };
@@ -335,15 +347,21 @@ export async function updatePlacePlanning(input: unknown) {
       throw error;
     }
   }
-  const [updated] = await db
-    .update(tripPlaces)
-    .set({
-      cityId: plannedDate ? optionalValue(data.cityId) : null,
-      plannedDate,
-      daySortOrder: data.daySortOrder ?? 0,
-    })
-    .where(and(eq(tripPlaces.id, data.placeId), eq(tripPlaces.tripId, data.tripId)))
-    .returning({ id: tripPlaces.id });
+  let updated: { id: string } | undefined;
+  try {
+    [updated] = await db
+      .update(tripPlaces)
+      .set({
+        cityId: plannedDate ? optionalValue(data.cityId) : null,
+        plannedDate,
+        daySortOrder: data.daySortOrder ?? 0,
+      })
+      .where(and(eq(tripPlaces.id, data.placeId), eq(tripPlaces.tripId, data.tripId)))
+      .returning({ id: tripPlaces.id });
+  } catch (error) {
+    if (isPlaceDayConflict(error)) throw placeDayConflictError(plannedDate);
+    throw error;
+  }
   if (!updated) throw new Error("This place could not be updated.");
   revalidateTrip(data.tripId);
   return { demo: false };
