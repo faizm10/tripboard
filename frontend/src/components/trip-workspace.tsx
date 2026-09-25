@@ -1177,7 +1177,7 @@ function DayPlan({
                       selected={selectedId === place.id}
                     />
                   ) : (
-                    <button className="day-home-base" onClick={() => dayHotel && onEditHotel(dayHotel)} type="button"><BedDouble size={18} /><span><small>Start from your stay</small><strong>{stop.name}</strong></span><Pencil size={14} /></button>
+                    <button className="day-home-base" onClick={() => dayHotel && onEditHotel(dayHotel)} type="button"><span className="itinerary-rail"><span><BedDouble size={14} /></span></span><span><small>Stay</small><strong>{stop.name}</strong></span><Pencil size={14} /></button>
                   )}
                   {direct && !editingHere ? (
                     <TransitRideCard plan={direct} removing={removingTransitId === direct.id} onEdit={() => setTransitDraft({ fromId: stop.id, toId: direct.to.id, plan: direct })} onRemove={() => void removeTransitRide(direct.id)} />
