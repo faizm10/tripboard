@@ -5,6 +5,7 @@ import { PlacePhoto } from "@/components/place-photo";
 import { ProfileAvatar } from "@/components/profile-avatar";
 import { TripDeleteButton } from "@/components/trip-delete-button";
 import { flagCodeForTrip } from "@/lib/country-flag";
+import { tripWhen } from "@/lib/trip-order";
 import type { Collaborator, Trip } from "@/lib/types";
 
 function firstName(name: string) {
@@ -17,33 +18,33 @@ function peopleLabel(people: Collaborator[]) {
   return `${names.slice(0, 2).join(", ")} +${names.length - 2}`;
 }
 
-export function TripCard({ trip, index, canDelete = false }: { trip: Trip; index: number; canDelete?: boolean }) {
+export function TripCard({ trip, index, today, canDelete = false }: { trip: Trip; index: number; today: string; canDelete?: boolean }) {
   const coverPlace = trip.places[0];
   const flagCode = flagCodeForTrip(trip);
   const initials = (trip.country || trip.destination).slice(0, 2);
   const people = trip.collaborators;
   const shownPeople = people.slice(0, 4);
+  const happening = tripWhen(trip, today) === "now";
 
   return (
     <div className="trip-card-row">
-      <Link className="trip-card" href={`/trips/${trip.id}`}>
+      <Link className={`trip-card${happening ? " trip-card-now" : ""}`} href={`/trips/${trip.id}`}>
         <div className="trip-cover">
           {flagCode ? (
             <CountryFlag code={flagCode} country={trip.country || trip.destination} />
           ) : coverPlace?.fsqPlaceId ? (
-            <PlacePhoto fsqPlaceId={coverPlace.fsqPlaceId} name={coverPlace.name} label={trip.destination} sizes="(max-width: 700px) 100vw, 180px" priority={index === 0} />
+            <PlacePhoto fsqPlaceId={coverPlace.fsqPlaceId} name={coverPlace.name} label={trip.destination} sizes="96px" priority={index === 0} />
           ) : (
             <div className="trip-cover-fallback">{initials}</div>
           )}
-          <span className="trip-index">{String(index + 1).padStart(2, "0")}</span>
         </div>
         <div className="trip-card-body">
           <div>
-            <p className="eyebrow">{trip.country} · {trip.dateLabel}</p>
+            <p className="eyebrow">{happening ? <span className="trip-now">Now</span> : null}{trip.country} · {trip.dateLabel}</p>
             <h2>{trip.title}</h2>
             <p className="trip-destination">{trip.destination}</p>
           </div>
-          <ArrowUpRight className="trip-arrow" size={24} />
+          <ArrowUpRight className="trip-arrow" size={16} />
           <div className="trip-meta">
             <span><MapPin size={14} /> {trip.places.length} places</span>
             {people.length > 0 ? (

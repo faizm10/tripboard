@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { Plus } from "lucide-react";
 import { AppHeader } from "@/components/app-header";
 import { TripCard } from "@/components/trip-card";
 import { getViewer } from "@/lib/auth";
 import { demoTrips } from "@/lib/demo-data";
+import { calendarDate, sortTrips } from "@/lib/trip-order";
 import { listViewerTrips, toTripViewer } from "@/lib/trips";
 import { isPersistedTripId } from "@/lib/types";
 
@@ -17,7 +19,9 @@ export default async function TripsPage() {
   if (!viewer || viewer.restricted) redirect("/sign-in?restricted=1");
 
   const firstName = viewer.name?.split(" ")[0] ?? "Traveller";
-  const trips = viewer.demo ? demoTrips : await listViewerTrips(toTripViewer(viewer));
+  const headerStore = await headers();
+  const today = calendarDate(headerStore.get("x-vercel-ip-timezone") || Intl.DateTimeFormat().resolvedOptions().timeZone);
+  const trips = sortTrips(viewer.demo ? demoTrips : await listViewerTrips(toTripViewer(viewer)), today);
 
   return (
     <main className="app-page">
@@ -59,6 +63,7 @@ export default async function TripsPage() {
                 }
                 index={index}
                 key={trip.id}
+                today={today}
                 trip={trip}
               />
             ))

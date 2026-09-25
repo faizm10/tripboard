@@ -818,18 +818,18 @@ a { color: inherit; text-decoration: none; }
 .app-header-trip { display: flex; min-width: 0; flex-direction: column; text-align: center; }
 .app-header-trip span { color: var(--muted); font-size: 9px; letter-spacing: .1em; text-transform: uppercase; }
 .app-header-trip strong { margin-top: 3px; overflow: hidden; font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
-.trips-shell { width: min(100% - 56px, 1240px); margin: 0 auto; padding: 88px 0; }
+.trips-shell { width: min(100% - 56px, 980px); margin: 0 auto; padding: 40px 0 64px; }
 .trips-heading {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 24px 48px;
-  margin-bottom: 70px;
+  margin-bottom: 28px;
 }
 .trips-heading-copy { min-width: 0; }
 .trips-heading h1 {
   margin: 10px 0 0;
-  font-size: clamp(48px, 5.8vw, 78px);
+  font-size: clamp(36px, 4vw, 52px);
   font-weight: 580;
   letter-spacing: -.04em;
   line-height: 1.05;
@@ -860,7 +860,7 @@ a { color: inherit; text-decoration: none; }
   background: var(--surface);
 }
 .account-sign-out { margin-top: 36px; padding-top: 28px; border-top: 1px solid var(--line); }
-.trip-index-list { display: grid; gap: 12px; }
+.trip-index-list { display: grid; gap: 8px; }
 /*
  * The card is one big link, so the delete control is a sibling laid over it
  * rather than a button nested inside an anchor. It stays hidden until the row
@@ -869,9 +869,11 @@ a { color: inherit; text-decoration: none; }
 .trip-card-row { position: relative; }
 .trip-delete {
   position: absolute;
-  right: 22px;
-  bottom: 22px;
+  top: 50%;
+  right: 12px;
+  bottom: auto;
   z-index: 3;
+  transform: translateY(-50%);
   display: grid;
   width: 34px;
   height: 34px;
@@ -890,6 +892,8 @@ a { color: inherit; text-decoration: none; }
 }
 .trip-card-row:hover .trip-delete,
 .trip-card-row:focus-within .trip-delete { opacity: 1; }
+.trip-card-row:has(.trip-delete):hover .trip-arrow,
+.trip-card-row:has(.trip-delete):focus-within .trip-arrow { opacity: 0; }
 .trip-delete:hover { border-color: var(--destructive); background: var(--paper); color: var(--destructive); }
 .trip-delete:focus-visible { opacity: 1; }
 /* Pointer-only hiding: on touch there is no hover to reveal it. */
@@ -905,8 +909,8 @@ a { color: inherit; text-decoration: none; }
 .trip-card {
   position: relative;
   display: grid;
-  min-height: 190px;
-  grid-template-columns: 190px 1fr;
+  min-height: 0;
+  grid-template-columns: 104px minmax(0, 1fr);
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
   background: var(--paper-raised);
@@ -921,14 +925,14 @@ a { color: inherit; text-decoration: none; }
   border-color: var(--accent-line);
   background: var(--accent-soft);
   box-shadow: var(--shadow-card);
-  transform: translateY(-3px);
 }
+.trip-card-now { border-color: color-mix(in srgb, var(--accent) 42%, var(--line)); }
 /*
  * No frame and no ground: the artwork sits straight on the card. PlacePhoto
  * brings its own background for the loading state, so covers that hold a photo
  * are unaffected.
  */
-.trip-cover { position: relative; min-height: 155px; margin: 18px; overflow: hidden; border-radius: var(--radius-md); }
+.trip-cover { position: relative; height: 72px; min-height: 0; margin: 8px; overflow: hidden; border-radius: var(--radius-md); }
 .trip-cover .place-photo { width: 100%; height: 100%; border: 0; border-radius: 0; }
 .trip-cover img,
 .trip-cover-fallback {
@@ -948,21 +952,24 @@ a { color: inherit; text-decoration: none; }
   object-position: center;
 }
 .trip-cover-fallback { display: grid; width: 100%; height: 100%; place-items: center; color: var(--quiet); font-size: 24px; }
-.trip-index { position: absolute; top: 9px; left: 9px; z-index: 2; padding: 5px 6px; border: 1px solid var(--line); background: var(--paper); font-size: 9px; font-weight: 700; }
-.trip-card-body { position: relative; display: grid; padding: 30px 62px 30px 35px; grid-template-columns: 1fr auto; align-items: center; }
-.trip-card-body h2, .new-trip-card h2 { margin: 8px 0 4px; font-size: clamp(28px, 2.8vw, 42px); font-weight: 600; line-height: 1.05; }
-.trip-destination { margin: 0; color: var(--muted); font-size: 13px; }
+.trip-card-body { position: relative; display: grid; min-width: 0; padding: 10px 44px 10px 6px; grid-template-columns: minmax(0, 1fr); align-items: center; }
+.trip-card-body h2, .new-trip-card h2 { margin: 2px 0 0; overflow: hidden; font-size: 20px; font-weight: 600; letter-spacing: -.03em; line-height: 1.15; text-overflow: ellipsis; white-space: nowrap; }
+.trip-now { display: inline-block; margin-right: 8px; padding: 1px 6px; border-radius: 999px; background: var(--accent); color: #fff; font-size: 10px; font-weight: 700; letter-spacing: .04em; line-height: 1.5; vertical-align: 1px; }
+.trip-destination { margin: 2px 0 0; overflow: hidden; color: var(--muted); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
 .trip-arrow {
   position: absolute;
-  top: 30px;
-  right: 24px;
-  transition: transform var(--dur-base) var(--ease-out), color var(--dur-fast) var(--ease-out);
+  top: 50%;
+  right: 14px;
+  width: 16px;
+  height: 16px;
+  transform: translateY(-50%);
+  transition: transform var(--dur-base) var(--ease-out), color var(--dur-fast) var(--ease-out), opacity var(--dur-fast) var(--ease-out);
 }
 .trip-card:hover .trip-arrow {
   color: var(--accent);
-  transform: translate(3px, -3px);
+  transform: translate(2px, calc(-50% - 1px));
 }
-.trip-meta { display: flex; flex-wrap: wrap; align-self: end; align-items: center; gap: 12px 20px; padding-top: 20px; grid-column: 1 / -1; }
+.trip-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; padding-top: 6px; }
 .trip-meta > span { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 12px; }
 .trip-people { min-width: 0; }
 .trip-people .mini-avatars { flex: none; }
@@ -977,9 +984,9 @@ a { color: inherit; text-decoration: none; }
 .trip-people-names { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .new-trip-card {
   display: grid;
-  min-height: 118px;
-  padding: 22px 0;
-  grid-template-columns: 190px 1fr;
+  min-height: 0;
+  padding: 8px 0;
+  grid-template-columns: 104px minmax(0, 1fr);
   align-items: center;
   border: 1px dashed var(--line);
   border-radius: var(--radius-lg);
@@ -989,9 +996,9 @@ a { color: inherit; text-decoration: none; }
 .new-trip-card:hover { border-color: var(--accent); background: var(--accent-soft); }
 .new-trip-card > span {
   display: grid;
-  width: 52px;
-  height: 52px;
-  margin-left: 68px;
+  width: 36px;
+  height: 36px;
+  margin-left: 34px;
   place-items: center;
   border: 1px solid var(--line);
   border-radius: 50%;
@@ -1002,7 +1009,7 @@ a { color: inherit; text-decoration: none; }
   background: var(--paper-raised);
   transform: rotate(90deg);
 }
-.new-trip-card h2 { margin: 6px 0 0; font-size: 25px; font-weight: 560; }
+.new-trip-card h2 { margin: 2px 0 0; font-size: 18px; font-weight: 560; }
 .demo-note { margin: 30px 0 0; color: var(--muted); font-size: 11px; line-height: 1.5; }
 
 /* Forms, auth, and invitations */
@@ -1821,19 +1828,20 @@ input::placeholder, textarea::placeholder { color: #9b9b97; }
   .app-header-trip { max-width: 180px; }
   .trips-shell { width: min(100% - 32px, 1240px); padding: 62px 0; }
   .trips-heading { flex-direction: column; gap: 18px; }
-  .trips-heading h1 { font-size: 53px; }
+  .trips-heading h1 { font-size: 34px; }
   .trips-heading-note { max-width: none; }
   .account-shell { width: min(100% - 32px, 560px); padding: 48px 0 72px; }
   .account-identity { align-items: flex-start; }
-  .trip-card { min-height: 235px; grid-template-columns: 105px 1fr; }
-  .trip-cover { min-height: 170px; margin: 18px 0; }
-  .trip-card-body { padding: 26px 32px 26px 20px; }
-  .trip-card-body h2 { font-size: 31px; }
-  .trip-meta { flex-direction: column; gap: 7px; }
-  .trip-arrow { top: 22px; right: 8px; width: 18px; }
-  .new-trip-card { grid-template-columns: 105px 1fr; }
-  .new-trip-card > span { margin-left: 25px; }
-  .new-trip-card h2 { font-size: 21px; }
+  .trip-card { grid-template-columns: 84px minmax(0, 1fr); }
+  .trip-cover { height: 64px; margin: 6px; }
+  .trip-card-body { padding: 8px 40px 8px 4px; }
+  .trip-card-body h2 { font-size: 17px; }
+  .trip-meta { gap: 4px 10px; }
+  .trip-people-names { display: none; }
+  .trip-arrow { right: 12px; }
+  .new-trip-card { grid-template-columns: 84px minmax(0, 1fr); }
+  .new-trip-card > span { margin-left: 24px; }
+  .new-trip-card h2 { font-size: 17px; }
 
   .form-page-header, .auth-page > header, .invite-page > header { height: 66px; padding-inline: 16px; }
   .form-page-header .brand-word { display: none; }
