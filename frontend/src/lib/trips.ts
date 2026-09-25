@@ -1,7 +1,7 @@
 import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { countryFromDestination, formatDateLabel } from "@/lib/dates";
 import { getDatabase } from "@/lib/db";
-import { tripAgendaDayNotes, tripAgendaItems, tripAgendas, tripCities, tripDayNotes, tripFlights, tripHotels, tripInvitationAcceptances, tripInvitations, tripMembers, tripPlaces, trips } from "@/lib/db/schema";
+import { tripTransitPlans, tripAgendaDayNotes, tripAgendaItems, tripAgendas, tripCities, tripDayNotes, tripFlights, tripHotels, tripInvitationAcceptances, tripInvitations, tripMembers, tripPlaces, trips } from "@/lib/db/schema";
 import type { CityStop, Collaborator, DayNote, Flight, HotelStay, PlaceCategory, Trip, TripAgenda, TripViewer } from "@/lib/types";
 
 function asIsoDate(value: string | Date) {
@@ -546,6 +546,18 @@ export async function getViewerTrip(tripId: string, viewer: TripViewer): Promise
     };
   } catch (error) {
     if (!isAgendaSchemaMissing(error)) throw error;
+  }
+  try {
+    trip.transitPlans = await db.select({
+      id: tripTransitPlans.id, plannedDate: tripTransitPlans.plannedDate,
+      from: tripTransitPlans.from, to: tripTransitPlans.to,
+      departureTime: tripTransitPlans.departureTime, note: tripTransitPlans.note,
+    }).from(tripTransitPlans).where(eq(tripTransitPlans.tripId, tripId)).orderBy(tripTransitPlans.createdAt);
+  } catch (error) {
+    // Older databases can still display trips until the additive migration is applied.
+    const cause = (error as { cause?: { code?: string } })?.cause;
+    if (cause?.code !== "42P01" && (error as { code?: string })?.code !== "42P01") throw error;
+    trip.transitPlans = [];
   }
   trip.places = savedPlaces.map((place) => ({
     id: place.id,

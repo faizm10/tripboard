@@ -6,10 +6,12 @@ import { redirect } from "next/navigation";
 import { getViewer } from "@/lib/auth";
 import { getDatabase } from "@/lib/db";
 import { countryFromDestination } from "@/lib/dates";
-import { tripAgendaDayNotes, tripAgendaItems, tripAgendas, tripCities, tripDayNotes, tripFlights, tripHotels, tripInvitationAcceptances, tripInvitations, tripMembers, tripPlaces, trips } from "@/lib/db/schema";
+import { tripTransitPlans, tripAgendaDayNotes, tripAgendaItems, tripAgendas, tripCities, tripDayNotes, tripFlights, tripHotels, tripInvitationAcceptances, tripInvitations, tripMembers, tripPlaces, trips } from "@/lib/db/schema";
 import { createInviteToken, hashInviteToken, inviteExpiresAt, inviteStatus } from "@/lib/invitations";
 import type { TripInvitationSummary } from "@/lib/types";
 import {
+  saveTransitPlanSchema,
+  removeTransitPlanSchema,
   addDayNoteSchema,
   addFlightSchema,
   addHotelStaySchema,
@@ -1018,4 +1020,31 @@ export async function deleteTrip(input: unknown) {
   revalidatePath("/trips");
   revalidatePath(`/trips/${data.tripId}`);
   return { demo: false };
+}
+
+export async function saveTransitPlan(input: unknown) {
+  const viewer = await requireViewer();
+  const data = saveTransitPlanSchema.parse(input);
+  const db = getDatabase();
+  if (!db) throw new Error("Transit plans could not be saved. Try again later.");
+  await requireEditor(data.tripId, viewer.id);
+  const { id, ...values } = data;
+  const [saved] = id
+    ? await db.update(tripTransitPlans).set({ ...values, updatedAt: new Date() })
+      .where(and(eq(tripTransitPlans.id, id), eq(tripTransitPlans.tripId, data.tripId)))
+      .returning({ id: tripTransitPlans.id })
+    : await db.insert(tripTransitPlans).values(values).returning({ id: tripTransitPlans.id });
+  if (!saved) throw new Error("This transit plan could not be updated.");
+  revalidateTrip(data.tripId);
+  return saved;
+}
+
+export async function removeTransitPlan(input: unknown) {
+  const viewer = await requireViewer();
+  const data = removeTransitPlanSchema.parse(input);
+  const db = getDatabase();
+  if (!db) throw new Error("Transit plans could not be saved. Try again later.");
+  await requireEditor(data.tripId, viewer.id);
+  await db.delete(tripTransitPlans).where(and(eq(tripTransitPlans.id, data.id), eq(tripTransitPlans.tripId, data.tripId)));
+  revalidateTrip(data.tripId);
 }

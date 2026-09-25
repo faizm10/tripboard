@@ -90,6 +90,15 @@ export type RouteStop = {
   coordinates: [longitude: number, latitude: number];
 };
 
+export type TransitPlan = {
+  id: string;
+  plannedDate: string;
+  from: RouteStop;
+  to: RouteStop;
+  departureTime: string;
+  note: string;
+};
+
 export type AgendaItem = {
   id: string;
   plannedDate?: string | null;
@@ -146,6 +155,7 @@ export type Trip = {
   flights: Flight[];
   hotels: HotelStay[];
   agenda: TripAgenda;
+  transitPlans?: TransitPlan[];
   places: Place[];
   collaborators: Collaborator[];
 };

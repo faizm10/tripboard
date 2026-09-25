@@ -11,6 +11,21 @@ export function buildGoogleMapsDirectionsUrl(destination: Pick<RouteStop, "coord
   return `https://www.google.com/maps/dir/?${new URLSearchParams({ api: "1", destination: `${lat},${lng}` }).toString()}`;
 }
 
+/** Transit is a point-to-point handoff; it must never use a multi-stop waypoint route. */
+export function buildGoogleMapsLegUrl(
+  origin: Pick<RouteStop, "coordinates">,
+  destination: Pick<RouteStop, "coordinates">,
+  mode: "walking" | "transit",
+) {
+  const params = new URLSearchParams({
+    api: "1",
+    origin: `${origin.coordinates[1]},${origin.coordinates[0]}`,
+    destination: `${destination.coordinates[1]},${destination.coordinates[0]}`,
+    travelmode: mode,
+  });
+  return `https://www.google.com/maps/dir/?${params.toString()}`;
+}
+
 export function buildGoogleMapsUrl(places: Array<Pick<RouteStop, "coordinates">>, mode: TravelMode) {
   const [origin, ...rest] = places;
   const destination = rest.at(-1) ?? origin;
