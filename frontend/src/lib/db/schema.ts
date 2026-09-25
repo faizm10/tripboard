@@ -10,6 +10,7 @@ import {
   pgTable,
   text,
   timestamp,
+  unique,
   uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
@@ -139,7 +140,7 @@ export const tripPlaces = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
-    uniqueIndex("trip_places_provider_unique").on(table.tripId, table.fsqPlaceId),
+    unique("trip_places_provider_day_unique").on(table.tripId, table.fsqPlaceId, table.plannedDate).nullsNotDistinct(),
     index("trip_places_trip_sort_idx").on(table.tripId, table.sortOrder),
     index("trip_places_day_idx").on(table.tripId, table.plannedDate, table.daySortOrder),
     index("trip_places_city_idx").on(table.cityId),

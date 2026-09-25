@@ -176,6 +176,7 @@ export function TripWorkspace({
   const [routeStats, setRouteStats] = useState<RouteStats | null>(null);
   const [navOpen, setNavOpen] = useState(false);
   const [saveState, setSaveState] = useState<SaveState>("idle");
+  const [saveNotice, setSaveNotice] = useState("");
   const navDialogRef = useRef<HTMLElement>(null);
   const persistChain = useRef(Promise.resolve());
   const persistedIds = useRef(new Map<string, string>());
@@ -198,6 +199,7 @@ export function TripWorkspace({
   );
 
   function enqueuePersist(work: () => Promise<void>) {
+    setSaveNotice("");
     setSaveState("saving");
     persistChain.current = persistChain.current
       .then(work)
@@ -278,6 +280,12 @@ export function TripWorkspace({
   function addPlace(place: Place, requestedCityId?: string) {
     const cityId = requestedCityId || selectedCity?.id || null;
     const plannedDate = place.plannedDate ?? null;
+    const alreadyOnDay = places.some((item) => item.fsqPlaceId === place.fsqPlaceId && (item.plannedDate ?? null) === plannedDate);
+    if (alreadyOnDay) {
+      setSaveState("error");
+      setSaveNotice(plannedDate ? "That place is already on this day." : "That place is already saved without a day.");
+      return;
+    }
     const daySortOrder = plannedDate
       ? places.filter((item) => item.plannedDate === plannedDate && item.cityId === cityId).length
       : 0;
@@ -311,6 +319,7 @@ export function TripWorkspace({
         setSelectedId((current) => (current === next.id ? saved.id : current));
       } catch (error) {
         setPlaces((current) => current.filter((item) => item.id !== next.id));
+        if (error instanceof Error && error.message) setSaveNotice(error.message);
         throw error;
       }
     });
@@ -321,6 +330,12 @@ export function TripWorkspace({
     if (!previous) return;
     const plannedDate = draft.plannedDate ?? null;
     const cityId = draft.cityId ?? null;
+    const alreadyOnDay = places.some((item) => item.id !== id && item.fsqPlaceId === previous.fsqPlaceId && (item.plannedDate ?? null) === plannedDate);
+    if (alreadyOnDay) {
+      setSaveState("error");
+      setSaveNotice(plannedDate ? "That place is already on this day." : "That place is already saved without a day.");
+      return;
+    }
     const daySortOrder = plannedDate
       ? plannedDate === previous.plannedDate
         ? previous.daySortOrder ?? 0
@@ -356,6 +371,7 @@ export function TripWorkspace({
         });
       } catch (error) {
         setPlaces((current) => current.map((item) => (item.id === id ? previous : item)));
+        if (error instanceof Error && error.message) setSaveNotice(error.message);
         throw error;
       }
     });
@@ -657,7 +673,7 @@ export function TripWorkspace({
       <div className="places-panel-logistics">
         <div className="mobile-trip-context">
           <label><span className="sr-only">City stops</span><select value={activeCityId} onChange={(event) => setActiveCityId(event.target.value)}><option value="all">All stops</option>{cities.map((city) => <option key={city.id} value={city.id}>{city.name}</option>)}</select></label>
-          <span className={`save-status${saveState === "error" ? " error" : ""}`} role="status">{saveState === "saving" ? "Saving…" : saveState === "saved" ? "Saved" : saveState === "error" ? "Couldn’t save" : details.dateLabel}</span>
+          <span className={`save-status${saveState === "error" ? " error" : ""}`} role="status">{saveState === "saving" ? "Saving…" : saveState === "saved" ? "Saved" : saveState === "error" ? (saveNotice || "Couldn’t save") : details.dateLabel}</span>
           <DropdownMenu><DropdownMenuTrigger asChild><button className="place-menu-trigger" aria-label="Trip options" type="button"><MoreHorizontal size={20} /></button></DropdownMenuTrigger>
             <DropdownMenuContent className="planner-menu" align="end">
               <DropdownMenuItem onSelect={() => setLogisticsOpen(true)}><Pencil size={16} /> Trip details</DropdownMenuItem>
@@ -683,7 +699,7 @@ export function TripWorkspace({
           </button>
           {saveState !== "idle" ? (
             <span className={`save-status${saveState === "error" ? " error" : ""}`} aria-live="polite">
-              {saveState === "saving" ? "Saving" : saveState === "saved" ? "Saved" : "Couldn’t save"}
+              {saveState === "saving" ? "Saving" : saveState === "saved" ? "Saved" : (saveNotice || "Couldn’t save")}
             </span>
           ) : null}
           <button onClick={() => setInviteOpen(true)} type="button"><Share2 size={14} /> Invite</button>
