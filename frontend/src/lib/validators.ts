@@ -256,3 +256,21 @@ export const signUpSchema = z
 export const accountNameSchema = z.object({
   name: z.string().trim().min(2, "Enter your name.").max(80),
 });
+
+const transitStopSchema = z.object({
+  id: z.string().min(1).max(120),
+  name: z.string().trim().min(1).max(200),
+  coordinates: z.tuple([z.number().min(-180).max(180), z.number().min(-90).max(90)]),
+});
+
+export const saveTransitPlanSchema = z.object({
+  tripId: z.string().uuid(),
+  id: z.string().uuid().optional(),
+  plannedDate: z.iso.date(),
+  from: transitStopSchema,
+  to: transitStopSchema,
+  departureTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).or(z.literal("")),
+  note: z.string().trim().max(500),
+}).refine((plan) => plan.from.id !== plan.to.id, { message: "Choose a different destination.", path: ["to"] });
+
+export const removeTransitPlanSchema = z.object({ tripId: z.string().uuid(), id: z.string().uuid() });

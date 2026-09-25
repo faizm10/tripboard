@@ -246,6 +246,31 @@ export function TripMap({ destination, hotels, places, routeCoordinates, selecte
 
   useEffect(() => {
     const map = mapRef.current;
+    const container = containerRef.current;
+    if (!mapReady || !map || !container) return;
+    // Mobile toggles the map with display:none. Mapbox only watches window
+    // resize, so observe its actual container when the map becomes visible.
+    const resize = () => {
+      if (!container.clientWidth || !container.clientHeight) return;
+      map.resize();
+      const coordinates = routeData.geometry.coordinates;
+      if (!coordinates.length) return;
+      const lngs = coordinates.map(([lng]) => lng);
+      const lats = coordinates.map(([, lat]) => lat);
+      map.fitBounds([[Math.min(...lngs), Math.min(...lats)], [Math.max(...lngs), Math.max(...lats)]], {
+        padding: { top: 64, right: 44, bottom: Math.min(140, container.clientHeight / 4), left: 44 },
+        maxZoom: 15,
+        duration: 0,
+      });
+    };
+    const observer = new ResizeObserver(resize);
+    observer.observe(container);
+    resize();
+    return () => observer.disconnect();
+  }, [mapReady, routeData]);
+
+  useEffect(() => {
+    const map = mapRef.current;
     if (!mapReady || !map || !destination.trim()) return;
     if (shownDestinationRef.current === destination) return;
     const controller = new AbortController();

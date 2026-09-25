@@ -1,9 +1,11 @@
+import type { RouteStop } from "@/lib/types";
 import {
   boolean,
   date,
   doublePrecision,
   index,
   integer,
+  jsonb,
   pgEnum,
   pgTable,
   text,
@@ -245,3 +247,15 @@ export const tripAgendaItems = pgTable(
     index("trip_agenda_items_place_idx").on(table.placeId),
   ],
 );
+
+export const tripTransitPlans = pgTable("trip_transit_plans", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tripId: uuid("trip_id").notNull().references(() => trips.id, { onDelete: "cascade" }),
+  plannedDate: date("planned_date").notNull(),
+  from: jsonb("from_stop").$type<RouteStop>().notNull(),
+  to: jsonb("to_stop").$type<RouteStop>().notNull(),
+  departureTime: text("departure_time").notNull().default(""),
+  note: text("note").notNull().default(""),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [index("trip_transit_plans_day_idx").on(table.tripId, table.plannedDate)]);
