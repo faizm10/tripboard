@@ -1374,11 +1374,11 @@ function PlaceActions({ place, onEdit, onToggleSaved, onRemove, onMoveUp, onMove
     <div className="place-row-controls" onClick={(event) => event.stopPropagation()}>
       <DropdownMenu>
         <DropdownMenuTrigger asChild><button className="place-menu-trigger" aria-label={`Options for ${place.name}`} type="button"><MoreHorizontal size={20} /></button></DropdownMenuTrigger>
-        <DropdownMenuContent className="planner-menu" align="end">
+        <DropdownMenuContent className="planner-menu" align="end" updatePositionStrategy="always">
           <DropdownMenuItem onSelect={onEdit}><Pencil size={16} /> Edit place & day</DropdownMenuItem>
           <DropdownMenuItem asChild><a href={buildGoogleMapsPlaceUrl(place)} target="_blank" rel="noreferrer"><MapPin size={16} /> Open in Google Maps</a></DropdownMenuItem>
-          {onMoveUp ? <DropdownMenuItem disabled={first} onSelect={onMoveUp}><ChevronUp size={16} /> Move earlier</DropdownMenuItem> : null}
-          {onMoveDown ? <DropdownMenuItem disabled={last} onSelect={onMoveDown}><ChevronDown size={16} /> Move later</DropdownMenuItem> : null}
+          {onMoveUp ? <DropdownMenuItem disabled={first} onSelect={(event) => { event.preventDefault(); onMoveUp(); }}><ChevronUp size={16} /> Move earlier</DropdownMenuItem> : null}
+          {onMoveDown ? <DropdownMenuItem disabled={last} onSelect={(event) => { event.preventDefault(); onMoveDown(); }}><ChevronDown size={16} /> Move later</DropdownMenuItem> : null}
           <DropdownMenuItem onSelect={onToggleSaved}><Bookmark size={16} /> {place.saved ? "Unsave place" : "Save place"}</DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem variant="destructive" onSelect={onRemove}><Trash2 size={16} /> Remove place</DropdownMenuItem>
