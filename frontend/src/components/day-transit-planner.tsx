@@ -8,6 +8,27 @@ import type { RouteStop, TransitPlan } from "@/lib/types";
 
 export type TransitDraft = Omit<TransitPlan, "id"> & { id?: string };
 
+export function orderedTransitPlans(plans: TransitPlan[], stops: { id: string }[]) {
+  const stopOrder = new Map(stops.map((stop, index) => [stop.id, index]));
+  const rank = (id: string) => stopOrder.get(id) ?? stops.length;
+  return plans.toSorted((left, right) => rank(left.from.id) - rank(right.from.id) || rank(left.to.id) - rank(right.to.id));
+}
+
+/** The ride that belongs in the gap after each stop, plus any other rides that leave that stop. */
+export function transitLegs(stops: { id: string }[], plans: TransitPlan[]) {
+  const ordered = orderedTransitPlans(plans, stops);
+  return stops.slice(0, -1).map((stop, index) => {
+    const next = stops[index + 1];
+    const leaving = ordered.filter((plan) => plan.from.id === stop.id);
+    return {
+      fromId: stop.id,
+      toId: next.id,
+      direct: leaving.find((plan) => plan.to.id === next.id) ?? null,
+      other: leaving.filter((plan) => plan.to.id !== next.id),
+    };
+  });
+}
+
 export function DayTransitPlanner({ date, stops, plans, onSave, onRemove }: {
   date: string;
   stops: RouteStop[];
@@ -18,11 +39,7 @@ export function DayTransitPlanner({ date, stops, plans, onSave, onRemove }: {
   const [editor, setEditor] = useState<TransitPlan | "new" | null>(null);
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [error, setError] = useState("");
-  const stopOrder = new Map(stops.map((stop, index) => [stop.id, index]));
-  const rank = (id: string) => stopOrder.get(id) ?? stops.length;
-  const orderedPlans = plans.toSorted((left, right) =>
-    rank(left.from.id) - rank(right.from.id) || rank(left.to.id) - rank(right.to.id),
-  );
+  const orderedPlans = orderedTransitPlans(plans, stops);
 
   async function remove(id: string) {
     setRemovingId(id);
@@ -40,20 +57,7 @@ export function DayTransitPlanner({ date, stops, plans, onSave, onRemove }: {
       </header>
       {!plans.length && !editor ? <p className="transit-help">{stops.length < 2 ? "Plan at least two stops for this day to choose a ride." : "Choose a ride between this day’s places or hotel."}</p> : null}
       {orderedPlans.map((plan) => (
-        <article className="transit-plan" key={plan.id}>
-          <div>
-            <small>{plan.departureTime ? `Depart around ${plan.departureTime} · local time` : "Departure time flexible"}</small>
-            <strong>{plan.from.name} → {plan.to.name}</strong>
-            {plan.note ? <p>{plan.note}</p> : null}
-            <a href={buildGoogleMapsLegUrl(plan.from, plan.to, "transit")} target="_blank" rel="noreferrer">Check Google Maps <ExternalLink size={13} /></a>
-          </div>
-          <DropdownMenu><DropdownMenuTrigger asChild><button className="place-menu-trigger" disabled={removingId === plan.id} aria-label={`Transit options from ${plan.from.name} to ${plan.to.name}`} type="button"><MoreHorizontal size={19} /></button></DropdownMenuTrigger>
-            <DropdownMenuContent className="planner-menu" align="end">
-              <DropdownMenuItem onSelect={() => setEditor(plan)}><Pencil size={16} /> Edit transit plan</DropdownMenuItem>
-              <DropdownMenuItem variant="destructive" onSelect={() => void remove(plan.id)}><Trash2 size={16} /> Remove transit plan</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </article>
+        <TransitRideCard key={plan.id} plan={plan} removing={removingId === plan.id} onEdit={() => setEditor(plan)} onRemove={() => void remove(plan.id)} />
       ))}
       {editor ? <TransitEditor key={editor === "new" ? "new" : editor.id} date={date} plan={editor === "new" ? null : editor} stops={stops} onCancel={() => setEditor(null)} onSave={async (draft) => { await onSave(draft); setEditor(null); }} /> : null}
       {error ? <p className="form-error" role="alert">{error}</p> : null}
@@ -61,15 +65,42 @@ export function DayTransitPlanner({ date, stops, plans, onSave, onRemove }: {
   );
 }
 
-function TransitEditor({ date, plan, stops, onSave, onCancel }: {
+export function TransitRideCard({ plan, removing, onEdit, onRemove }: {
+  plan: TransitPlan;
+  removing?: boolean;
+  onEdit: () => void;
+  onRemove: () => void;
+}) {
+  return (
+    <article className="transit-plan transit-leg">
+      <span className="transit-leg-mark" aria-hidden="true"><TramFront size={16} /></span>
+      <div className="transit-leg-copy">
+        <small>{plan.departureTime ? `Depart around ${plan.departureTime} · local time` : "Departure time flexible"}</small>
+        <strong>{plan.from.name} → {plan.to.name}</strong>
+        {plan.note ? <p>{plan.note}</p> : null}
+        <a href={buildGoogleMapsLegUrl(plan.from, plan.to, "transit")} target="_blank" rel="noreferrer">Check Google Maps <ExternalLink size={13} /></a>
+      </div>
+      <DropdownMenu><DropdownMenuTrigger asChild><button className="place-menu-trigger" disabled={removing} aria-label={`Transit options from ${plan.from.name} to ${plan.to.name}`} type="button"><MoreHorizontal size={19} /></button></DropdownMenuTrigger>
+        <DropdownMenuContent className="planner-menu" align="end">
+          <DropdownMenuItem onSelect={onEdit}><Pencil size={16} /> Edit transit plan</DropdownMenuItem>
+          <DropdownMenuItem variant="destructive" onSelect={onRemove}><Trash2 size={16} /> Remove transit plan</DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </article>
+  );
+}
+
+export function TransitEditor({ date, plan, stops, initialFromId = "", initialToId = "", onSave, onCancel }: {
   date: string;
   plan: TransitPlan | null;
   stops: RouteStop[];
+  initialFromId?: string;
+  initialToId?: string;
   onSave: (draft: TransitDraft) => Promise<void>;
   onCancel: () => void;
 }) {
-  const [fromId, setFromId] = useState(plan && stops.some((stop) => stop.id === plan.from.id) ? plan.from.id : "");
-  const [toId, setToId] = useState(plan && stops.some((stop) => stop.id === plan.to.id) ? plan.to.id : "");
+  const [fromId, setFromId] = useState(plan && stops.some((stop) => stop.id === plan.from.id) ? plan.from.id : stops.some((stop) => stop.id === initialFromId) ? initialFromId : "");
+  const [toId, setToId] = useState(plan && stops.some((stop) => stop.id === plan.to.id) ? plan.to.id : stops.some((stop) => stop.id === initialToId) ? initialToId : "");
   const [departureTime, setDepartureTime] = useState(plan?.departureTime ?? "");
   const [note, setNote] = useState(plan?.note ?? "");
   const [saving, setSaving] = useState(false);

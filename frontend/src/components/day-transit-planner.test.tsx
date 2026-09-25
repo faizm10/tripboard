@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { DayTransitPlanner } from "@/components/day-transit-planner";
+import { DayTransitPlanner, transitLegs } from "@/components/day-transit-planner";
 import { saveTransitPlanSchema } from "@/lib/validators";
 import type { RouteStop, TransitPlan } from "@/lib/types";
 
@@ -22,6 +22,15 @@ function chooseRide() {
 }
 
 describe("optional transit planning", () => {
+  it("puts a ride in the gap between the stop it leaves and the next one", () => {
+    const hop = { ...savedPlan, id: "hop", from: stops[1], to: stops[2] };
+    const legs = transitLegs(stops, [hop, savedPlan]);
+    expect(legs[0].direct).toBeNull();
+    expect(legs[0].other.map((plan) => plan.id)).toEqual([savedPlan.id]);
+    expect(legs[1].direct?.id).toBe("hop");
+    expect(legs[2].direct).toBeNull();
+  });
+
   it("orders saved rides by the itinerary and updates them when stops are reordered", () => {
     const parkRide = { ...savedPlan, id: "park-ride", from: stops[1] };
     const cafeRide = { ...savedPlan, id: "cafe-ride", from: stops[2] };

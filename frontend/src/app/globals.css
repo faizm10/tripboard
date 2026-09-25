@@ -2216,6 +2216,8 @@ html {
   .day-section > header h2 { font-size: 30px; }
   .day-section > header span { font-size: 12px; }
   .saved-place, .day-place { min-height: 0; padding: 12px 0; grid-template-columns: 24px minmax(0, 1fr) 44px; gap: 10px; content-visibility: visible; }
+  .transit-leg { grid-template-columns: 24px minmax(0, 1fr) 44px; }
+  .transit-leg-editor, .transit-gap { margin-left: 34px; }
   .saved-place .place-photo, .day-place .place-photo { display: none; }
   .itinerary-rail span { width: 24px; height: 24px; font-size: 10px; }
   .saved-place-copy h2 { margin: 8px 0; font-size: 23px; line-height: 1.15; overflow-wrap: anywhere; }
@@ -2253,9 +2255,15 @@ html {
 .day-transit-planner .transit-add { display: inline-flex; min-height: 44px; align-items: center; gap: 6px; border: 0; background: transparent; color: var(--accent); font-size: 12px; cursor: pointer; }
 .transit-help { margin: 6px 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
 .transit-plan { display: grid; grid-template-columns: minmax(0, 1fr) 44px; gap: 8px; margin-top: 12px; padding: 12px; border: 1px solid var(--accent-line); border-radius: var(--radius-sm); background: var(--accent-soft); }
+.transit-leg { grid-template-columns: 28px minmax(0, 1fr) 44px; gap: 14px; align-items: center; margin: 0; padding: 2px 0 8px; border: 0; border-radius: 0; background: transparent; }
+.transit-leg-mark { display: grid; width: 28px; height: 28px; place-items: center; color: var(--accent-strong); }
+.transit-leg-copy { min-width: 0; padding: 8px 12px; border-left: 2px solid var(--accent); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; background: var(--accent-soft); }
+.transit-leg-editor { margin: 0 0 8px 42px; }
+.transit-gap { display: inline-flex; min-height: 36px; margin: 0 0 4px 42px; padding: 0; align-items: center; gap: 8px; border: 0; background: transparent; color: var(--muted); font-size: 12px; cursor: pointer; }
+.transit-gap:hover { color: var(--accent-strong); }
 .transit-plan small, .transit-plan strong { display: block; overflow-wrap: anywhere; }
 .transit-plan small { color: var(--muted); font-size: 11px; }
-.transit-plan strong { margin-top: 6px; font-size: 14px; line-height: 1.5; }
+.transit-plan strong { margin-top: 2px; font-size: 13px; line-height: 1.4; }
 .transit-plan p { margin: 8px 0; font-size: 13px; overflow-wrap: anywhere; }
 .transit-plan a, .transit-compare { display: inline-flex; min-height: 44px; align-items: center; gap: 6px; color: var(--accent-strong); font-size: 12px; text-decoration: underline; text-underline-offset: 3px; }
 .transit-editor { margin-top: 12px; padding: 14px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--paper); }
