@@ -33,7 +33,7 @@ import {
   Utensils,
   X,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   saveTransitPlan as persistSaveTransitPlan,
@@ -57,7 +57,7 @@ import {
 } from "@/app/trips/actions";
 import { AddPlaceDialog } from "@/components/add-place-dialog";
 import { AgendaPanel } from "@/components/agenda-panel";
-import { DayTransitPlanner, type TransitDraft } from "@/components/day-transit-planner";
+import { TransitEditor, TransitRideCard, transitLegs, type TransitDraft } from "@/components/day-transit-planner";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { CityField } from "@/components/city-field";
 import { EditPlaceDialog, type PlaceEditDraft } from "@/components/edit-place-dialog";
@@ -1017,6 +1017,10 @@ function DayPlan({
   const canReorder = Boolean(!searching && currentDate && activeCityId === "all" && filter === "All" && dayPlaces.length > 1);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dropTargetId, setDropTargetId] = useState<string | null>(null);
+  const [transitDraft, setTransitDraft] = useState<{ fromId: string; toId: string; plan: TransitPlan | null } | null>(null);
+  const [removingTransitId, setRemovingTransitId] = useState<string | null>(null);
+  const [transitError, setTransitError] = useState("");
+  useEffect(() => { setTransitDraft(null); }, [currentDate]);
 
   function movePage(delta: number) {
     const nextIndex = Math.min(Math.max(clampedPageIndex + delta, 0), Math.max(0, totalPages - 1));
@@ -1038,6 +1042,28 @@ function DayPlan({
     const targetIndex = fromIndex + direction;
     if (targetIndex < 0 || targetIndex >= dayPlaces.length) return;
     reorderPlace(placeId, targetIndex);
+  }
+
+  const dayTransit = currentDate ? transitPlans.filter((plan) => plan.plannedDate === currentDate) : [];
+  const itineraryStops = [
+    ...(dayHotel ? [{ id: `hotel-${dayHotel.id}`, name: dayHotel.name }] : []),
+    ...dayPlaces.map((place) => ({ id: place.id, name: place.name })),
+  ];
+  const legs = transitLegs(itineraryStops, dayTransit);
+  const placedTransitIds = new Set(legs.flatMap((leg) => [leg.direct?.id, ...leg.other.map((plan) => plan.id)].filter((id): id is string => Boolean(id))));
+  const leftoverPlans = dayTransit.filter((plan) => !placedTransitIds.has(plan.id));
+
+  async function removeTransitRide(id: string) {
+    setRemovingTransitId(id);
+    setTransitError("");
+    try {
+      await onRemoveTransit(id);
+      setTransitDraft((current) => current?.plan?.id === id ? null : current);
+    } catch {
+      setTransitError("Couldn’t remove this ride. Try again.");
+    } finally {
+      setRemovingTransitId(null);
+    }
   }
 
   return (
@@ -1118,36 +1144,72 @@ function DayPlan({
               <NoteComposer activeCityId={activeCityId} cities={cities} onAdd={(note, cityId) => onAddNote(currentDate, note, cityId)} />
             </div>
           </details>
-          {dayHotel ? <button className="day-home-base" onClick={() => onEditHotel(dayHotel)} type="button"><BedDouble size={18} /><span><small>Start from your stay</small><strong>{dayHotel.name}</strong></span><Pencil size={14} /></button> : null}
-          <DayTransitPlanner key={currentDate} date={currentDate} stops={transitStops} plans={transitPlans.filter((plan) => plan.plannedDate === currentDate)} onSave={onSaveTransit} onRemove={onRemoveTransit} />
           <div className="day-place-list">
-            {dayPlaces.map((place, placeIndex) => {
+            {itineraryStops.map((stop, index) => {
+              const place = dayPlaces.find((item) => item.id === stop.id);
+              const placeIndex = place ? dayPlaces.indexOf(place) : -1;
+              const leg = legs[index];
+              const direct = leg?.direct ?? null;
+              const next = itineraryStops[index + 1];
+              const editingHere = transitDraft?.fromId === stop.id;
               const number = String(placeIndex + 1).padStart(2, "0");
               return (
-                <DayPlaceRow
-                  canMoveDown={placeIndex < dayPlaces.length - 1}
-                  cities={cities}
-                  key={place.id}
-                  canReorder={canReorder}
-                  dragging={draggingId === place.id}
-                  dropTarget={dropTargetId === place.id}
-                  number={number}
-                  onDragEnd={() => { setDraggingId(null); setDropTargetId(null); }}
-                  onDragOver={() => { if (canReorder) setDropTargetId(place.id); }}
-                  onDragStart={() => setDraggingId(place.id)}
-                  onDrop={() => { if (draggingId) reorderPlace(draggingId, placeIndex); setDraggingId(null); setDropTargetId(null); }}
-                  onMoveDown={() => movePlace(place.id, 1)}
-                  onMoveUp={() => movePlace(place.id, -1)}
-                  onEdit={() => onEditPlace(place)}
-                  onRemove={() => onRemovePlace(place.id)}
-                  onSelect={onSelectPlace}
-                  onToggleSaved={onToggleSaved}
-                  place={place}
-                  selected={selectedId === place.id}
-                />
+                <Fragment key={stop.id}>
+                  {place ? (
+                    <DayPlaceRow
+                      canMoveDown={placeIndex < dayPlaces.length - 1}
+                      cities={cities}
+                      canReorder={canReorder}
+                      dragging={draggingId === place.id}
+                      dropTarget={dropTargetId === place.id}
+                      number={number}
+                      onDragEnd={() => { setDraggingId(null); setDropTargetId(null); }}
+                      onDragOver={() => { if (canReorder) setDropTargetId(place.id); }}
+                      onDragStart={() => setDraggingId(place.id)}
+                      onDrop={() => { if (draggingId) reorderPlace(draggingId, placeIndex); setDraggingId(null); setDropTargetId(null); }}
+                      onMoveDown={() => movePlace(place.id, 1)}
+                      onMoveUp={() => movePlace(place.id, -1)}
+                      onEdit={() => onEditPlace(place)}
+                      onRemove={() => onRemovePlace(place.id)}
+                      onSelect={onSelectPlace}
+                      onToggleSaved={onToggleSaved}
+                      place={place}
+                      selected={selectedId === place.id}
+                    />
+                  ) : (
+                    <button className="day-home-base" onClick={() => dayHotel && onEditHotel(dayHotel)} type="button"><BedDouble size={18} /><span><small>Start from your stay</small><strong>{stop.name}</strong></span><Pencil size={14} /></button>
+                  )}
+                  {direct && !editingHere ? (
+                    <TransitRideCard plan={direct} removing={removingTransitId === direct.id} onEdit={() => setTransitDraft({ fromId: stop.id, toId: direct.to.id, plan: direct })} onRemove={() => void removeTransitRide(direct.id)} />
+                  ) : null}
+                  {leg && !editingHere && !direct && next ? (
+                    <button className="transit-gap" onClick={() => setTransitDraft({ fromId: stop.id, toId: next.id, plan: null })} type="button"><TramFront size={15} /> Transit to {next.name}</button>
+                  ) : null}
+                  {leg && !editingHere ? leg.other.map((plan) => (
+                    <TransitRideCard key={plan.id} plan={plan} removing={removingTransitId === plan.id} onEdit={() => setTransitDraft({ fromId: plan.from.id, toId: plan.to.id, plan })} onRemove={() => void removeTransitRide(plan.id)} />
+                  )) : null}
+                  {editingHere && transitDraft ? (
+                    <div className="transit-leg-editor">
+                      <TransitEditor
+                        key={`${transitDraft.fromId}-${transitDraft.toId}-${transitDraft.plan?.id ?? "new"}`}
+                        date={currentDate}
+                        initialFromId={transitDraft.fromId}
+                        initialToId={transitDraft.toId}
+                        plan={transitDraft.plan}
+                        stops={transitStops}
+                        onCancel={() => setTransitDraft(null)}
+                        onSave={async (draft) => { await onSaveTransit(draft); setTransitDraft(null); }}
+                      />
+                    </div>
+                  ) : null}
+                </Fragment>
               );
             })}
-            {!dayPlaces.length ? <p className="day-empty">{query.trim() ? "No matching places this day." : "No places planned for this day yet."}</p> : null}
+            {leftoverPlans.map((plan) => (
+              <TransitRideCard key={plan.id} plan={plan} removing={removingTransitId === plan.id} onEdit={() => setTransitDraft({ fromId: plan.from.id, toId: plan.to.id, plan })} onRemove={() => void removeTransitRide(plan.id)} />
+            ))}
+            {!dayPlaces.length && !dayHotel ? <p className="day-empty">{query.trim() ? "No matching places this day." : "No places planned for this day yet."}</p> : null}
+            {transitError ? <p className="form-error" role="alert">{transitError}</p> : null}
           </div>
           {dayFlights.length ? (
             <div className="day-logistics">
