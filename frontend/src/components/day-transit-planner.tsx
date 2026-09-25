@@ -76,7 +76,8 @@ export function TransitRideCard({ plan, removing, onEdit, onRemove }: {
       <span className="transit-leg-mark" aria-hidden="true"><TramFront size={16} /></span>
       <div className="transit-leg-copy">
         <small>{plan.departureTime ? `Depart around ${plan.departureTime} · local time` : "Departure time flexible"}</small>
-        <strong>{plan.from.name} → {plan.to.name}</strong>
+        <strong className="transit-leg-route">{plan.from.name} → {plan.to.name}</strong>
+        <span className="transit-leg-commute">Commute to {plan.to.name}{plan.departureTime ? ` · ${plan.departureTime}` : ""}</span>
         {plan.note ? <p>{plan.note}</p> : null}
         <a href={buildGoogleMapsLegUrl(plan.from, plan.to, "transit")} target="_blank" rel="noreferrer">Check Google Maps <ExternalLink size={13} /></a>
       </div>

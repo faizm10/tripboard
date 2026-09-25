@@ -90,6 +90,7 @@ describe("optional transit planning", () => {
     render(<DayTransitPlanner {...props} plans={[savedPlan]} />);
     expect(screen.getAllByRole("link")).toHaveLength(1);
     expect(screen.getByText("Our hotel → Chelsea market")).toBeTruthy();
+    expect(screen.getByText("Commute to Chelsea market · 13:30")).toBeTruthy();
     expect(screen.getByText("Depart around 13:30 · local time")).toBeTruthy();
   });
 

@@ -1199,7 +1199,7 @@ function DayPlan({
                     <TransitRideCard plan={direct} removing={removingTransitId === direct.id} onEdit={() => setTransitDraft({ fromId: stop.id, toId: direct.to.id, plan: direct })} onRemove={() => void removeTransitRide(direct.id)} />
                   ) : null}
                   {leg && !editingHere && !direct && next ? (
-                    <button className="transit-gap" onClick={() => setTransitDraft({ fromId: stop.id, toId: next.id, plan: null })} type="button"><TramFront size={15} /> Transit to {next.name}</button>
+                    <button className="transit-gap" onClick={() => setTransitDraft({ fromId: stop.id, toId: next.id, plan: null })} type="button"><TramFront size={15} /><span className="transit-gap-label">Transit to {next.name}</span><span className="transit-gap-commute">Commute to {next.name}</span></button>
                   ) : null}
                   {leg && !editingHere ? leg.other.map((plan) => (
                     <TransitRideCard key={plan.id} plan={plan} removing={removingTransitId === plan.id} onEdit={() => setTransitDraft({ fromId: plan.from.id, toId: plan.to.id, plan })} onRemove={() => void removeTransitRide(plan.id)} />
