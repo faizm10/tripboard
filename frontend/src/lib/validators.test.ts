@@ -182,6 +182,17 @@ describe("trip validation", () => {
     if (result.success) expect(result.data.departureAirport).toBe("YYZ");
     expect(updateFlightSchema.safeParse({ ...flight, flightId: "83cb9471-a356-4a42-a13f-23c6fb93bb0c" }).success).toBe(true);
     expect(addFlightSchema.safeParse({ ...flight, arrivalAirport: "Tokyo", departureTime: "9:30" }).success).toBe(false);
+    const train = addFlightSchema.safeParse({
+      ...flight,
+      mode: "train",
+      airline: "Amtrak",
+      flightNumber: "Acela 2153",
+      departureAirport: "Union Station",
+      arrivalAirport: "Moynihan Train Hall",
+    });
+    expect(train.success).toBe(true);
+    const bus = addFlightSchema.safeParse({ ...flight, mode: "bus", departureAirport: "A", arrivalAirport: "South Station" });
+    expect(bus.success).toBe(false);
   });
 
   it("accepts a dated hotel stay and rejects an inverted stay", () => {

@@ -472,6 +472,7 @@ export async function getViewerTrip(tripId: string, viewer: TripViewer): Promise
     const flights = await db
       .select({
         id: tripFlights.id,
+        mode: tripFlights.mode,
         plannedDate: tripFlights.plannedDate,
         arrivalDate: tripFlights.arrivalDate,
         airline: tripFlights.airline,
@@ -486,6 +487,7 @@ export async function getViewerTrip(tripId: string, viewer: TripViewer): Promise
       .orderBy(tripFlights.plannedDate, tripFlights.departureTime);
     trip.flights = flights.map((flight) => ({
       ...flight,
+      mode: flight.mode === "train" || flight.mode === "bus" ? flight.mode : "flight",
       plannedDate: asIsoDate(flight.plannedDate),
       arrivalDate: asIsoDate(flight.arrivalDate),
     }));

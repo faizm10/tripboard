@@ -99,6 +99,13 @@
       "when": 1790379702936,
       "tag": "0013_place_same_day_unique",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1792964857732,
+      "tag": "0014_trip_journey_mode",
+      "breakpoints": true
     }
   ]
 }

@@ -1,0 +1,1 @@
+ALTER TABLE "trip_flights" ADD COLUMN "mode" text DEFAULT 'flight' NOT NULL;

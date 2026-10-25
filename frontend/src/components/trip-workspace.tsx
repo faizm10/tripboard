@@ -23,8 +23,10 @@ import {
   Navigation,
   Pencil,
   Plus,
+  Bus,
   Plane,
   Route,
+  TrainFront,
   Search,
   Share2,
   ShoppingBag,
@@ -61,7 +63,7 @@ import { TransitEditor, TransitRideCard, transitLegs, type TransitDraft } from "
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { CityField } from "@/components/city-field";
 import { EditPlaceDialog, type PlaceEditDraft } from "@/components/edit-place-dialog";
-import { FlightPlanDialog, type FlightDraft } from "@/components/flight-plan-dialog";
+import { FlightPlanDialog, JourneyIcon, journeyModeOf, type FlightDraft } from "@/components/flight-plan-dialog";
 import { HotelStayDialog, type HotelStayDraft } from "@/components/hotel-stay-dialog";
 import { InviteDialog } from "@/components/invite-dialog";
 import { PlacePhoto } from "@/components/place-photo";
@@ -70,7 +72,7 @@ import { TripMap } from "@/components/trip-map";
 import { countryFromDestination } from "@/lib/dates";
 import { buildAppleMapsUrl, buildGoogleMapsPlaceUrl, buildGoogleMapsUrl } from "@/lib/navigation";
 import { resolvePersistedPlaceIds } from "@/lib/place-persistence";
-import { PLACE_CATEGORIES, categoryClass, isPersistedTripId, type CityStop, type DayNote, type Flight, type HotelStay, type Place, type PlaceCategory, type RouteStop, type TravelMode, type TransitPlan, type Trip, type TripViewer } from "@/lib/types";
+import { PLACE_CATEGORIES, categoryClass, isPersistedTripId, type CityStop, type DayNote, type Flight, type HotelStay, type JourneyMode, type Place, type PlaceCategory, type RouteStop, type TravelMode, type TransitPlan, type Trip, type TripViewer } from "@/lib/types";
 
 type RouteStats = { durationSeconds: number; distanceMeters: number };
 type MobileView = "list" | "map";
@@ -171,7 +173,7 @@ export function TripWorkspace({
   const [inviteOpen, setInviteOpen] = useState(false);
   const [logisticsOpen, setLogisticsOpen] = useState(false);
   const [placeEditor, setPlaceEditor] = useState<Place | null>(null);
-  const [flightEditor, setFlightEditor] = useState<Flight | "new" | null>(null);
+  const [flightEditor, setFlightEditor] = useState<{ mode: JourneyMode; flight: Flight | null } | null>(null);
   const [hotelEditor, setHotelEditor] = useState<HotelStay | "new" | null>(null);
   const [routeMode, setRouteMode] = useState<TravelMode | null>(null);
   const [routeStats, setRouteStats] = useState<RouteStats | null>(null);
@@ -559,7 +561,7 @@ export function TripWorkspace({
   }
 
   function saveFlight(draft: FlightDraft) {
-    const existing = flightEditor !== "new" ? flightEditor : null;
+    const existing = flightEditor?.flight ?? null;
     const previous = flights;
     if (existing) {
       const next = { ...existing, ...draft };
@@ -759,6 +761,11 @@ export function TripWorkspace({
           ) : null}
         </div>
 
+        <JourneyBoard
+          flights={flights}
+          onAdd={(mode) => setFlightEditor({ mode, flight: null })}
+          onEdit={(flight) => setFlightEditor({ mode: journeyModeOf(flight), flight })}
+        />
         <div className="place-list">
           {workspaceMode === "saved" ? visiblePlaces.map((place) => {
             const originalIndex = places.findIndex((item) => item.id === place.id);
@@ -822,8 +829,8 @@ export function TripWorkspace({
               query={placeQuery}
               onAddNote={addNote}
               onFocusDate={setActiveDate}
-              onAddFlight={() => setFlightEditor("new")}
-              onEditFlight={(flight) => setFlightEditor(flight)}
+              onAddJourney={(mode) => setFlightEditor({ mode, flight: null })}
+              onEditFlight={(flight) => setFlightEditor({ mode: journeyModeOf(flight), flight })}
               onAddHotel={() => setHotelEditor("new")}
               onEditHotel={(hotel) => setHotelEditor(hotel)}
               onEditPlace={(place) => setPlaceEditor(place)}
@@ -894,8 +901,9 @@ export function TripWorkspace({
       {cityOpen ? <AddCityDialog details={details} onAdd={(city) => { const added = addCity(city); if (newCityForPlace) setNewestCityId(added.id); setNewCityForPlace(false); }} onClose={() => setCityOpen(false)} /> : null}
       {flightEditor ? (
         <FlightPlanDialog
-          flight={flightEditor === "new" ? null : flightEditor}
+          flight={flightEditor.flight}
           initialDate={activeDate ?? planDates[0] ?? ""}
+          mode={flightEditor.mode}
           onClose={() => setFlightEditor(null)}
           onDelete={removeFlight}
           onSave={saveFlight}
@@ -929,6 +937,50 @@ export function TripWorkspace({
   );
 }
 
+function JourneyBoard({
+  flights,
+  onAdd,
+  onEdit,
+}: {
+  flights: Flight[];
+  onAdd: (mode: JourneyMode) => void;
+  onEdit: (flight: Flight) => void;
+}) {
+  const sorted = [...flights].sort((left, right) => `${left.plannedDate} ${left.departureTime}`.localeCompare(`${right.plannedDate} ${right.departureTime}`));
+  return (
+    <section className="journey-board" aria-label="Getting there">
+      <div className="journey-board-head">
+        <strong>Getting there</strong>
+        <div className="journey-board-actions">
+          <button className="button button-small" onClick={() => onAdd("flight")} type="button"><Plane size={14} /> Flight</button>
+          <button className="button button-small" onClick={() => onAdd("train")} type="button"><TrainFront size={14} /> Train</button>
+          <button className="button button-small" onClick={() => onAdd("bus")} type="button"><Bus size={14} /> Bus</button>
+        </div>
+      </div>
+      {sorted.length ? (
+        <div className="flight-list">
+          {sorted.map((flight) => {
+            const mode = journeyModeOf(flight);
+            return (
+              <button className="flight-strip" key={flight.id} onClick={() => onEdit(flight)} type="button">
+                <span className="flight-strip-icon"><JourneyIcon mode={mode} /></span>
+                <span className="flight-strip-route">
+                  <small>{formatDayHeading(flight.plannedDate).date} · {[flight.airline, flight.flightNumber].filter(Boolean).join(" · ") || mode}</small>
+                  <strong>{flight.departureAirport}<ArrowRight size={14} />{flight.arrivalAirport}</strong>
+                </span>
+                <span className="flight-strip-times">
+                  <strong>{flight.departureTime} <span>→</span> {flight.arrivalTime}</strong>
+                  <small>{flight.plannedDate === flight.arrivalDate ? "Same day" : `Arrives ${formatDayHeading(flight.arrivalDate).date}`}</small>
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      ) : <p className="journey-board-empty">Add the flights, trains, and buses that get you there.</p>}
+    </section>
+  );
+}
+
 function DayPlan({
   transitPlans,
   onSaveTransit,
@@ -943,7 +995,7 @@ function DayPlan({
   filter,
   query,
   onAddNote,
-  onAddFlight,
+  onAddJourney,
   onEditFlight,
   onAddHotel,
   onEditHotel,
@@ -971,7 +1023,7 @@ function DayPlan({
   filter: PlaceCategory | "All";
   query: string;
   onAddNote: (plannedDate: string, note: string, cityId: string) => void;
-  onAddFlight: () => void;
+  onAddJourney: (mode: JourneyMode) => void;
   onEditFlight: (flight: Flight) => void;
   onAddHotel: () => void;
   onEditHotel: (hotel: HotelStay) => void;
@@ -1155,7 +1207,9 @@ function DayPlan({
             <DropdownMenu><DropdownMenuTrigger asChild><button className="place-menu-trigger" aria-label="Day options" type="button"><MoreHorizontal size={20} /></button></DropdownMenuTrigger>
               <DropdownMenuContent className="planner-menu" align="end">
                 <DropdownMenuItem onSelect={() => dayHotel ? onEditHotel(dayHotel) : onAddHotel()}><BedDouble size={16} /> {dayHotel ? "Edit hotel stay" : "Add hotel stay"}</DropdownMenuItem>
-                <DropdownMenuItem onSelect={onAddFlight}><Plane size={16} /> Add flight</DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => onAddJourney("flight")}><Plane size={16} /> Add flight</DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => onAddJourney("train")}><TrainFront size={16} /> Add train</DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => onAddJourney("bus")}><Bus size={16} /> Add bus</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </header>
@@ -1239,9 +1293,9 @@ function DayPlan({
                 <div className="flight-list" aria-label="Flights for this day">
                   {dayFlights.map(({ flight, moment }) => (
                     <button className="flight-strip" key={`${flight.id}-${moment}`} onClick={() => onEditFlight(flight)} type="button">
-                      <span className="flight-strip-icon"><Plane size={16} /></span>
-                      <span className="flight-strip-route"><small>{moment === "departing" ? "Departs today" : "Arrives today"} · {[flight.airline, flight.flightNumber].filter(Boolean).join(" · ") || "Flight"}</small><strong>{flight.departureAirport}<ArrowRight size={14} />{flight.arrivalAirport}</strong></span>
-                      <span className="flight-strip-times"><strong>{flight.departureTime} <span>→</span> {flight.arrivalTime}</strong><small>{flight.plannedDate === flight.arrivalDate ? "Same day" : `Lands ${formatDayHeading(flight.arrivalDate).date}`}</small></span>
+                      <span className="flight-strip-icon"><JourneyIcon mode={journeyModeOf(flight)} /></span>
+                      <span className="flight-strip-route"><small>{moment === "departing" ? "Departs today" : "Arrives today"} · {[flight.airline, flight.flightNumber].filter(Boolean).join(" · ") || journeyModeOf(flight)}</small><strong>{flight.departureAirport}<ArrowRight size={14} />{flight.arrivalAirport}</strong></span>
+                      <span className="flight-strip-times"><strong>{flight.departureTime} <span>→</span> {flight.arrivalTime}</strong><small>{flight.plannedDate === flight.arrivalDate ? "Same day" : `Arrives ${formatDayHeading(flight.arrivalDate).date}`}</small></span>
                     </button>
                   ))}
                 </div>
