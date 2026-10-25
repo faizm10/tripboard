@@ -136,26 +136,42 @@ export const removeDayNoteSchema = z.object({
 const optionalAgendaDate = z.iso.date().optional().or(z.literal(""));
 const optionalAgendaTime = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).optional().or(z.literal(""));
 const flightTime = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/);
-const airportCode = z.string().trim().toUpperCase().regex(/^[A-Z]{3}$/, "Use a three-letter airport code.");
+const journeyEndpoint = z.string().trim().min(2).max(80);
 
 const flightFields = {
   tripId: z.string().uuid(),
+  mode: z.enum(["flight", "train", "bus"]).default("flight"),
   plannedDate: z.iso.date(),
   arrivalDate: z.iso.date(),
   airline: z.string().trim().max(80).default(""),
   flightNumber: z.string().trim().max(20).default(""),
-  departureAirport: airportCode,
-  arrivalAirport: airportCode,
+  departureAirport: journeyEndpoint,
+  arrivalAirport: journeyEndpoint,
   departureTime: flightTime,
   arrivalTime: flightTime,
 };
 
-export const addFlightSchema = z.object(flightFields);
+function refineJourney(journey: { mode: "flight" | "train" | "bus"; departureAirport: string; arrivalAirport: string }, context: z.RefinementCtx) {
+  if (journey.mode !== "flight") return;
+  for (const field of ["departureAirport", "arrivalAirport"] as const) {
+    if (!/^[A-Za-z]{3}$/.test(journey[field])) {
+      context.addIssue({ code: "custom", path: [field], message: "Use a three-letter airport code." });
+    }
+  }
+}
+
+function normalizeJourney<T extends { mode: "flight" | "train" | "bus"; departureAirport: string; arrivalAirport: string }>(journey: T) {
+  return journey.mode === "flight"
+    ? { ...journey, departureAirport: journey.departureAirport.toUpperCase(), arrivalAirport: journey.arrivalAirport.toUpperCase() }
+    : journey;
+}
+
+export const addFlightSchema = z.object(flightFields).superRefine(refineJourney).transform(normalizeJourney);
 
 export const updateFlightSchema = z.object({
   ...flightFields,
   flightId: z.string().uuid(),
-});
+}).superRefine(refineJourney).transform(normalizeJourney);
 
 export const removeFlightSchema = z.object({
   tripId: z.string().uuid(),

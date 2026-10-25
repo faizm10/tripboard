@@ -173,6 +173,7 @@ export const tripFlights = pgTable(
     tripId: uuid("trip_id").notNull().references(() => trips.id, { onDelete: "cascade" }),
     plannedDate: date("planned_date").notNull(),
     arrivalDate: date("arrival_date").notNull(),
+    mode: text("mode").notNull().default("flight"),
     airline: text("airline").notNull().default(""),
     flightNumber: text("flight_number").notNull().default(""),
     departureAirport: text("departure_airport").notNull(),

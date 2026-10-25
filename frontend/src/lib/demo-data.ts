@@ -106,7 +106,10 @@ export const demoTrips: Trip[] = [
     endDate: "2026-04-13",
     cities: [{ id: "demo-nyc-city", name: "New York", country: "United States", startDate: "2026-04-10", endDate: "2026-04-13", sortOrder: 0 }],
     dayNotes: [{ id: "demo-note-1", cityId: "demo-nyc-city", plannedDate: "2026-04-10", note: "Land, drop bags, and keep dinner walkable from the hotel.", sortOrder: 0, addedBy: "FM" }],
-    flights: [{ id: "demo-flight-nyc", plannedDate: "2026-04-10", arrivalDate: "2026-04-10", airline: "Air Canada", flightNumber: "AC 704", departureAirport: "YYZ", arrivalAirport: "LGA", departureTime: "08:00", arrivalTime: "09:35" }],
+    flights: [
+      { id: "demo-flight-nyc", mode: "flight", plannedDate: "2026-04-10", arrivalDate: "2026-04-10", airline: "Air Canada", flightNumber: "AC 704", departureAirport: "YYZ", arrivalAirport: "LGA", departureTime: "08:00", arrivalTime: "09:35" },
+      { id: "demo-train-nyc", mode: "train", plannedDate: "2026-04-11", arrivalDate: "2026-04-11", airline: "LIRR", flightNumber: "2791", departureAirport: "Penn Station", arrivalAirport: "Jamaica", departureTime: "10:15", arrivalTime: "10:47" },
+    ],
     hotels: [{ id: "demo-hotel-nyc", name: "The Jane Hotel", address: "113 Jane St, New York", coordinates: [-74.0094, 40.7382], cityId: "demo-nyc-city", startDate: "2026-04-10", endDate: "2026-04-13" }],
     agenda: {
       brief: "Keep the first afternoon loose. Book the SoHo dinner before the flight and leave room for long coffee stops.",

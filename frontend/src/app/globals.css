@@ -1371,6 +1371,21 @@ input::placeholder, textarea::placeholder { color: #9b9b97; }
 .hotel-strip-route { color: var(--muted); font-size: 10px; font-weight: 650; }
 .hotel-map-link { display: inline-flex; min-height: 30px; padding: 0 9px; align-items: center; gap: 5px; border: 1px solid var(--line); color: var(--ink); font-size: 10px; font-weight: 700; text-decoration: none; white-space: nowrap; }
 .hotel-map-link:hover { border-color: var(--ink); }
+.journey-board {
+  display: grid;
+  margin: 0 28px 14px;
+  padding: 14px;
+  gap: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+}
+.journey-board-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.journey-board-head strong { font-size: 14px; letter-spacing: -.03em; }
+.journey-board-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.journey-board-actions button { min-height: 36px; padding-inline: 12px; }
+.journey-board-empty { margin: 0; color: var(--muted); font-size: 13px; }
+.journey-board .flight-list { gap: 8px; }
 .flight-list { display: grid; gap: 7px; }
 .day-logistics {
   display: grid;
@@ -1871,6 +1886,7 @@ input::placeholder, textarea::placeholder { color: #9b9b97; }
   .places-panel-find { margin-top: 10px; flex-wrap: wrap; }
   .place-find { max-width: none; flex: 1 1 100%; }
   .place-list { padding: 0 17px 20px; }
+  .journey-board { margin-inline: 17px; }
   .places-panel-logistics { padding: 12px 17px 16px; }
   .presence-dock { height: 38px; padding: 3px 5px; }
   .presence-tile { width: 28px; height: 28px; }
@@ -2228,6 +2244,7 @@ html {
   .mobile-find input, .mobile-find select { min-width: 0; width: 100%; min-height: 44px; padding: 8px 12px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--paper); color: var(--ink); font-size: 16px; }
   .places-panel-find { display: none; }
   .place-list { padding: 0 20px 24px; overflow: visible; overscroll-behavior: auto; }
+  .journey-board { margin-inline: 20px; }
   .day-plan-intro { position: static; min-height: 0; padding: 8px 0 16px; flex-direction: row; align-items: center; }
   .day-plan-intro > div:first-child { display: none; }
   .day-pagination { width: 100%; }

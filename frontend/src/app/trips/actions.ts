@@ -576,7 +576,18 @@ export async function addFlight(input: unknown) {
   try {
     const [flight] = await db
       .insert(tripFlights)
-      .values(data)
+      .values({
+        tripId: data.tripId,
+        mode: data.mode,
+        plannedDate: data.plannedDate,
+        arrivalDate: data.arrivalDate,
+        airline: data.airline,
+        flightNumber: data.flightNumber,
+        departureAirport: data.departureAirport,
+        arrivalAirport: data.arrivalAirport,
+        departureTime: data.departureTime,
+        arrivalTime: data.arrivalTime,
+      })
       .returning({ id: tripFlights.id });
     revalidateTrip(data.tripId);
     return { demo: false, id: flight.id };
@@ -596,6 +607,7 @@ export async function updateFlight(input: unknown) {
     const [flight] = await db
       .update(tripFlights)
       .set({
+        mode: data.mode,
         plannedDate: data.plannedDate,
         arrivalDate: data.arrivalDate,
         airline: data.airline,

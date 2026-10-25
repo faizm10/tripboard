@@ -62,8 +62,11 @@ export type DayNote = {
   addedBy: string;
 };
 
+export type JourneyMode = "flight" | "train" | "bus";
+
 export type Flight = {
   id: string;
+  mode?: JourneyMode;
   plannedDate: string;
   arrivalDate: string;
   airline: string;
