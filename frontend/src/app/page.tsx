@@ -6,7 +6,6 @@ import { LandingMap } from "@/components/landing-map";
 import { LandingStages } from "@/components/landing-stages";
 import { SiteHeader } from "@/components/site-header";
 import { getViewer } from "@/lib/auth";
-import { WalkingPairMark } from "@/components/travel-marks";
 
 export const dynamic = "force-dynamic";
 
@@ -32,16 +31,15 @@ export default async function Home() {
         <div className="hero-copy">
           <p className="hero-badge">
             <span aria-hidden="true" />
-            Free while we are in beta
+            Beta
           </p>
           <h1>
-            the places you save,
+            The places you save,
             <br />
-            on one map.
+            <em>on one map.</em>
           </h1>
           <p className="hero-lede">
-            Tripboard turns Instagram saves, group-chat links and half-written notes into a shared
-            trip you can actually walk.
+            Instagram saves, group chats, and notes, turned into one board the whole group can walk.
           </p>
           <div className="hero-actions">
             <Link className="button button-ink button-large" href={startHref}>
@@ -52,8 +50,7 @@ export default async function Home() {
             </a>
           </div>
           <div className="hero-note">
-            <WalkingPairMark />
-            <span>One shared shortlist for everyone going. No app to install.</span>
+            <span>One shared shortlist. No app to install.</span>
           </div>
         </div>
         <div className="hero-tray">

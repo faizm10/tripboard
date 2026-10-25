@@ -4,7 +4,7 @@ A self-contained context pack for redesigning the marketing home screen (`/`).
 Everything here is read off the actual source at `frontend/`, not from the older
 `PROJECT_OVERVIEW.md` (which is now stale on fonts and page structure).
 
-Live: https://tripboard-lovat.vercel.app · Repo: `faizm10/tripboard`
+Live: https://usetripboard.vercel.app · Repo: `faizm10/tripboard`
 
 ---
 

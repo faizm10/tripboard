@@ -2,7 +2,7 @@
 
 A shared visual trip board. Save places from notes and links, see them on a map, and turn the shortlist into a route.
 
-Live: [tripboard-lovat.vercel.app](https://tripboard-lovat.vercel.app)
+Live: [usetripboard.vercel.app](https://usetripboard.vercel.app)
 
 The Next.js app lives in `frontend/`.
 
