@@ -11,6 +11,7 @@ import {
   ChevronRight,
   MoreHorizontal,
   SlidersHorizontal,
+  Sparkles,
   ChevronUp,
   Coffee,
   FileText,
@@ -59,6 +60,7 @@ import {
 } from "@/app/trips/actions";
 import { AddPlaceDialog } from "@/components/add-place-dialog";
 import { AgendaPanel } from "@/components/agenda-panel";
+import { TripAssistant } from "@/components/trip-assistant";
 import { TransitEditor, TransitRideCard, transitLegs, type TransitDraft } from "@/components/day-transit-planner";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { CityField } from "@/components/city-field";
@@ -71,6 +73,7 @@ import { TripLogisticsDialog, type TripDetails } from "@/components/trip-logisti
 import { TripMap } from "@/components/trip-map";
 import { countryFromDestination } from "@/lib/dates";
 import { buildAppleMapsUrl, buildGoogleMapsPlaceUrl, buildGoogleMapsUrl } from "@/lib/navigation";
+import type { AssistantPick } from "@/lib/assistant/tools";
 import { resolvePersistedPlaceIds } from "@/lib/place-persistence";
 import { PLACE_CATEGORIES, categoryClass, isPersistedTripId, type CityStop, type DayNote, type Flight, type HotelStay, type JourneyMode, type Place, type PlaceCategory, type RouteStop, type TravelMode, type TransitPlan, type Trip, type TripViewer } from "@/lib/types";
 
@@ -167,6 +170,9 @@ export function TripWorkspace({
   const [placeQuery, setPlaceQuery] = useState("");
   const [mobileView, setMobileView] = useState<MobileView>("list");
   const [addOpen, setAddOpen] = useState(false);
+  const [assistantOpen, setAssistantOpen] = useState(false);
+  const closeAssistant = useCallback(() => setAssistantOpen(false), []);
+  const assistantAdds = useRef(0);
   const [cityOpen, setCityOpen] = useState(false);
   const [newCityForPlace, setNewCityForPlace] = useState(false);
   const [newestCityId, setNewestCityId] = useState<string | null>(null);
@@ -326,6 +332,27 @@ export function TripWorkspace({
         throw error;
       }
     });
+  }
+
+  function addAssistantPick(pick: AssistantPick) {
+    const day = pick.plannedDate;
+    const cityForDay = day
+      ? cities.find((city) => city.startDate && city.startDate <= day && (!city.endDate || day <= city.endDate))
+      : undefined;
+    addPlace({
+      id: `local-assistant-${(assistantAdds.current += 1)}`,
+      fsqPlaceId: pick.fsqPlaceId,
+      name: pick.name,
+      address: pick.address,
+      neighborhood: pick.neighborhood,
+      coordinates: pick.coordinates,
+      category: pick.category,
+      note: "",
+      saved: true,
+      plannedDate: day,
+      daySortOrder: 0,
+      addedBy: viewer?.name ?? "",
+    }, cityForDay?.id);
   }
 
   function savePlaceEdit(id: string, draft: PlaceEditDraft) {
@@ -672,7 +699,7 @@ export function TripWorkspace({
     : String(mapPlaces.findIndex((place) => place.id === selected?.id) + 1).padStart(2, "0");
 
   return (
-    <div className={`trip-workspace mobile-${mobileView}`}>
+    <div className={`trip-workspace mobile-${mobileView}${assistantOpen ? " assistant-open" : ""}`}>
       <div className="mobile-view-switch" role="tablist" aria-label="Trip view">
         <button role="tab" aria-selected={mobileView === "list"} className={mobileView === "list" ? "active" : ""} onClick={() => setMobileView("list")} type="button"><List size={15} /> List</button>
         <button role="tab" aria-selected={mobileView === "map"} className={mobileView === "map" ? "active" : ""} onClick={() => setMobileView("map")} type="button"><MapIcon size={15} /> Map</button>
@@ -681,6 +708,7 @@ export function TripWorkspace({
       <div className="places-panel-logistics">
         <div className="mobile-trip-context">
           <label><span className="sr-only">City stops</span><select value={activeCityId} onChange={(event) => setActiveCityId(event.target.value)}><option value="all">All stops</option>{cities.map((city) => <option key={city.id} value={city.id}>{city.name}</option>)}</select></label>
+          <button className="assistant-trigger assistant-trigger-mobile" aria-expanded={assistantOpen} onClick={() => setAssistantOpen(true)} type="button"><Sparkles size={15} /> Ask</button>
           <span className={`save-status${saveState === "error" ? " error" : ""}`} role="status">{saveState === "saving" ? "Saving…" : saveState === "saved" ? "Saved" : saveState === "error" ? (saveNotice || "Couldn’t save") : details.dateLabel}</span>
           <DropdownMenu><DropdownMenuTrigger asChild><button className="place-menu-trigger" aria-label="Trip options" type="button"><MoreHorizontal size={20} /></button></DropdownMenuTrigger>
             <DropdownMenuContent className="planner-menu" align="end">
@@ -724,6 +752,7 @@ export function TripWorkspace({
               <button role="tab" aria-selected={workspaceMode === "agenda"} className={workspaceMode === "agenda" ? "active" : ""} onClick={() => setWorkspaceMode("agenda")} type="button"><FileText size={14} /> Agenda</button>
             </div>
             <div className="trip-header-actions">
+              <button className="assistant-trigger" aria-expanded={assistantOpen} onClick={() => setAssistantOpen((current) => !current)} type="button"><Sparkles size={15} /> Ask AI</button>
               <button className="icon-button trip-options" aria-label="Add a place" onClick={() => setAddOpen(true)} type="button"><Plus size={19} /></button>
             </div>
           </div>
@@ -883,6 +912,15 @@ export function TripWorkspace({
       </section>
 
       <button className="mobile-add-button" onClick={() => setAddOpen(true)} aria-label="Add a place" type="button"><Plus size={22} /></button>
+      <TripAssistant
+        onAddPlace={addAssistantPick}
+        onClose={closeAssistant}
+        open={assistantOpen}
+        savedPlaceIds={new Set(places.map((place) => place.fsqPlaceId))}
+        signedIn={Boolean(viewer)}
+        trip={{ id: trip.id, title: details.title, destination: selectedCity?.name ?? details.destination, hotelName: hotels[0]?.name, firstDate: planDates[0] }}
+        viewerName={viewer?.name}
+      />
       {addOpen ? (
         <AddPlaceDialog
           cities={cities}
