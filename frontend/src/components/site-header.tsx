@@ -20,11 +20,8 @@ export async function SiteHeader() {
       <div className="site-actions">
         {signedIn ? (
           <>
-            <Link className="text-link" href="/trips">
+            <Link className="button button-small button-ink" href="/trips">
               My trips
-            </Link>
-            <Link className="button button-small button-ink" href="/trips/new">
-              New trip
             </Link>
             <AccountMenu email={viewer?.email} image={image} name={name} />
           </>

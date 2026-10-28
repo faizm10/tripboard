@@ -18,10 +18,8 @@ const sources = ["Instagram", "TikTok", "Group chats", "Notes app", "That one ar
  * JS on this route, so the board still renders without a Mapbox token.
  */
 export default async function Home() {
-  // Signed-in visitors get the app links; /sign-up is a dead end for them.
   const viewer = await getViewer();
   const signedIn = Boolean(viewer && !viewer.demo);
-  const startHref = signedIn ? "/trips/new" : "/sign-up";
 
   return (
     <main className="landing-page landing-page-scroll">
@@ -42,12 +40,14 @@ export default async function Home() {
             Instagram saves, group chats, and notes, turned into one board the whole group can walk.
           </p>
           <div className="hero-actions">
-            <Link className="button button-ink button-large" href={startHref}>
-              {signedIn ? "New trip" : "Start a trip"} <ArrowUpRight size={17} />
+            <Link className="button button-ink button-large" href={signedIn ? "/trips" : "/sign-up"}>
+              {signedIn ? "My trips" : "Start a trip"} <ArrowUpRight size={17} />
             </Link>
-            <a className="button button-large" href="#board">
-              See a real board
-            </a>
+            {!signedIn ? (
+              <a className="button button-large" href="#board">
+                See a real board
+              </a>
+            ) : null}
           </div>
           <div className="hero-note">
             <span>One shared shortlist. No app to install.</span>
@@ -92,16 +92,18 @@ export default async function Home() {
               Invite the group by email or share a link. Every save is attributed, every note stays
               with the place, and the map updates for everyone at once.
             </p>
-            <Link className="button button-ink" href={startHref}>
-              Start a shared board <ArrowUpRight size={16} />
-            </Link>
+            {!signedIn ? (
+              <Link className="button button-ink" href="/sign-up">
+                Start a shared board <ArrowUpRight size={16} />
+              </Link>
+            ) : null}
           </div>
           <CollabPreview />
         </div>
       </section>
 
       <section className="home-section" id="demo">
-        <LandingDemo />
+        <LandingDemo signedIn={signedIn} />
       </section>
 
       <footer className="site-footer">

@@ -7,7 +7,7 @@ import { AppHeader } from "@/components/app-header";
 import { TripCard } from "@/components/trip-card";
 import { getViewer } from "@/lib/auth";
 import { demoTrips } from "@/lib/demo-data";
-import { calendarDate, sortTrips } from "@/lib/trip-order";
+import { calendarDate, sortTrips, tripWhen } from "@/lib/trip-order";
 import { listViewerTrips, toTripViewer } from "@/lib/trips";
 import { isPersistedTripId } from "@/lib/types";
 
@@ -22,6 +22,12 @@ export default async function TripsPage() {
   const headerStore = await headers();
   const today = calendarDate(headerStore.get("x-vercel-ip-timezone") || Intl.DateTimeFormat().resolvedOptions().timeZone);
   const trips = sortTrips(viewer.demo ? demoTrips : await listViewerTrips(toTripViewer(viewer)), today);
+  const indexedTrips = trips.map((trip, index) => ({ trip, index }));
+  const sections = [
+    { title: "Upcoming", trips: indexedTrips.filter(({ trip }) => ["now", "upcoming"].includes(tripWhen(trip, today))) },
+    { title: "In planning", trips: indexedTrips.filter(({ trip }) => tripWhen(trip, today) === "open") },
+    { title: "Past", trips: indexedTrips.filter(({ trip }) => tripWhen(trip, today) === "past") },
+  ];
 
   return (
     <main className="app-page">
@@ -40,7 +46,7 @@ export default async function TripsPage() {
             <p>
               {trips.length === 0 && !viewer.demo
                 ? "Start with a place and keep the shortlist here."
-                : "A quiet index of everywhere you are considering."}
+                : "All your trips, from first ideas to past adventures."}
             </p>
             <Link className="button button-ink" href="/trips/new">
               {trips.length === 0 && !viewer.demo ? "Start a trip" : "New trip"} <Plus size={17} />
@@ -55,17 +61,27 @@ export default async function TripsPage() {
               <p>Create a trip, save the first place, and it will live here with your account.</p>
             </div>
           ) : (
-            trips.map((trip, index) => (
-              <TripCard
-                canDelete={
-                  isPersistedTripId(trip.id) &&
-                  trip.collaborators.some((person) => person.id === viewer.id && person.role === "owner")
-                }
-                index={index}
-                key={trip.id}
-                today={today}
-                trip={trip}
-              />
+            sections.filter((section) => section.trips.length > 0).map((section) => (
+              <section aria-label={section.title} className="trip-index-section" key={section.title}>
+                <div className="trip-index-section-heading">
+                  <h2>{section.title}</h2>
+                  <span>{section.trips.length}</span>
+                </div>
+                <div className="trip-index-section-cards">
+                  {section.trips.map(({ trip, index }) => (
+                    <TripCard
+                      canDelete={
+                        isPersistedTripId(trip.id) &&
+                        trip.collaborators.some((person) => person.id === viewer.id && person.role === "owner")
+                      }
+                      index={index}
+                      key={trip.id}
+                      today={today}
+                      trip={trip}
+                    />
+                  ))}
+                </div>
+              </section>
             ))
           )}
           <Link className="new-trip-card" href="/trips/new">

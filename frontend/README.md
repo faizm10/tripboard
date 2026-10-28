@@ -21,6 +21,8 @@ Copy `.env.example` to `.env.local` to connect live services:
 - `NEXT_PUBLIC_MAPBOX_TOKEN` and `MAPBOX_ACCESS_TOKEN`: Mapbox map rendering and Directions.
 - `GOOGLE_MAPS_API_KEY`: Google Places (New) and Geocoding for city search, place search, and photos. Server-only.
 - `FOURSQUARE_API_KEY`: Fallback place search if the Google key is missing.
+- `OPENROUTER_API_KEY`: the trip assistant sidebar ("Ask AI" on a trip). Server-only. Create a free key at [openrouter.ai/keys](https://openrouter.ai/keys).
+- `OPENROUTER_MODELS` (optional): comma-separated OpenRouter model ids, tried in order. Defaults to free tool-calling models in `src/lib/assistant/models.ts`. When a free model is retired, swap it here without a code change. Pick models tagged with tool support at [openrouter.ai/models](https://openrouter.ai/models?supported_parameters=tools&max_price=0).
 
 Create the Google key in [Google Cloud Console](https://console.cloud.google.com/google/maps-apis). Enable **Places API (New)** and **Geocoding API**, restrict the key to those APIs, and paste it into `frontend/.env.local` as `GOOGLE_MAPS_API_KEY`. Do not prefix it with `NEXT_PUBLIC_`. Restart `npm run dev` after adding it.
 
