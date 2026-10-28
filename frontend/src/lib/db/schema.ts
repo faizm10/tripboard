@@ -261,3 +261,44 @@ export const tripTransitPlans = pgTable("trip_transit_plans", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [index("trip_transit_plans_day_idx").on(table.tripId, table.plannedDate)]);
+
+/** Per-user assistant preferences. A missing row means the defaults. */
+export const assistantSettings = pgTable("assistant_settings", {
+  userId: text("user_id").primaryKey(),
+  saveConversations: boolean("save_conversations").notNull().default(false),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/** Saved assistant chats, only written while the user has saving turned on. */
+export const assistantConversations = pgTable(
+  "assistant_conversations",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id").notNull(),
+    tripId: uuid("trip_id").notNull().references(() => trips.id, { onDelete: "cascade" }),
+    title: text("title").notNull().default("New chat"),
+    messages: jsonb("messages").$type<unknown[]>().notNull(),
+    messageCount: integer("message_count").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("assistant_conversations_user_updated_idx").on(table.userId, table.updatedAt),
+    index("assistant_conversations_trip_user_idx").on(table.tripId, table.userId),
+  ],
+);
+
+/** One row per assistant reply: counts only, never message content. */
+export const assistantUsage = pgTable(
+  "assistant_usage",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id").notNull(),
+    tripId: uuid("trip_id").references(() => trips.id, { onDelete: "set null" }),
+    model: text("model").notNull().default(""),
+    inputTokens: integer("input_tokens").notNull().default(0),
+    outputTokens: integer("output_tokens").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("assistant_usage_user_created_idx").on(table.userId, table.createdAt)],
+);
