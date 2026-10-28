@@ -10,21 +10,23 @@ const stops: { index: string; name: string; category: PlaceCategory; area: strin
   { index: "04", name: "Chelsea Market", category: "Shop", area: "Chelsea" },
 ];
 
-export function LandingDemo() {
+export function LandingDemo({ signedIn = false }: { signedIn?: boolean }) {
   return (
     <div className="demo-block">
       <header className="demo-head">
         <div>
           <p className="eyebrow">Demo trip</p>
-          <h2>Open a finished board before you sign up.</h2>
+          <h2>{signedIn ? "See what a finished board looks like." : "Open a finished board before you sign up."}</h2>
           <p className="demo-lede">
-            New York, loosely — four places, three planners, one walkable Saturday. Nothing to
-            install, no account.
+            New York, loosely — four places, three planners, one walkable Saturday.
+            {!signedIn ? " Nothing to install, no account." : null}
           </p>
         </div>
-        <Link className="button button-ink button-large" href="/trips/nyc-weekender">
-          Open the demo trip <ArrowUpRight size={17} />
-        </Link>
+        {!signedIn ? (
+          <Link className="button button-ink button-large" href="/trips/nyc-weekender">
+            Open the demo trip <ArrowUpRight size={17} />
+          </Link>
+        ) : null}
       </header>
       <ul className="demo-stops">
         {stops.map((stop) => (
