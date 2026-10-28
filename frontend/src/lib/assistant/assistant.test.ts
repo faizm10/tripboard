@@ -90,3 +90,21 @@ describe("assistant tools", () => {
     expect(knownSearchResults(messages).get("p4")).toMatchObject({ fsqPlaceId: "g-4" });
   });
 });
+
+describe("saved chat helpers", () => {
+  it("titles a chat after the first question, trimmed for the list", async () => {
+    const { conversationTitle } = await import("@/lib/assistant/store");
+    const ask = (text: string) => [{ id: "u", role: "user", parts: [{ type: "text", text }] }] as unknown as AssistantMessage[];
+    expect(conversationTitle(ask("  plan   day one  "))).toBe("plan day one");
+    expect(conversationTitle(ask("x".repeat(120)))).toHaveLength(78);
+    expect(conversationTitle([])).toBe("New chat");
+  });
+
+  it("falls back to defaults when there is no database", async () => {
+    vi.stubEnv("DATABASE_URL", "");
+    const store = await import("@/lib/assistant/store");
+    expect(await store.getSaveConversations("user")).toBe(false);
+    expect(await store.listConversations("user")).toEqual([]);
+    expect(await store.getUsageSummary("user")).toMatchObject({ replies30d: 0, models: [] });
+  });
+});
