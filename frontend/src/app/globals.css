@@ -2660,3 +2660,33 @@ button.journey-board-toggle { cursor: pointer; }
   .workspace-mode button { gap: 4px; font-size: 11px; }
   .workspace-mode button svg { display: none; }
 }
+
+/* Trip bar export links sit beside Invite in the same quiet style. */
+.places-panel-logistics-row .trip-bar-link { display: inline-flex; align-items: center; gap: 6px; border-bottom: 1px solid var(--line); color: var(--ink); font-size: 11px; text-decoration: none; white-space: nowrap; }
+.places-panel-logistics-row .trip-bar-link:hover { border-color: var(--ink); }
+
+/* Printable itinerary: readable on screen, clean on paper. */
+.itinerary-page { max-width: 760px; margin: 0 auto; padding: 28px 20px 60px; background: var(--paper); color: var(--ink); }
+.itinerary-toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 28px; }
+.itinerary-toolbar .button { gap: 6px; }
+.itinerary-head p { margin: 0; color: var(--muted); font-size: 13px; }
+.itinerary-head h1 { margin: 6px 0; font-size: 34px; letter-spacing: -.04em; }
+.itinerary-brief { margin-top: 24px; }
+.itinerary-brief p { white-space: pre-wrap; font-size: 14px; line-height: 1.55; }
+.itinerary-day { padding: 18px 0; border-bottom: 1px solid var(--line); break-inside: avoid; }
+.itinerary-day h2, .itinerary-brief h2 { display: flex; margin: 0 0 10px; align-items: baseline; gap: 10px; font-size: 18px; letter-spacing: -.02em; }
+.itinerary-day h2 span { color: var(--accent-deep); font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.itinerary-line { margin: 4px 0; font-size: 14px; line-height: 1.5; }
+.itinerary-journey { font-variant-numeric: tabular-nums; }
+.itinerary-note { color: var(--muted); font-style: italic; }
+.itinerary-empty { color: var(--muted); }
+.itinerary-places { margin: 8px 0 0; padding-left: 22px; list-style: decimal; }
+ul.itinerary-places { list-style: disc; }
+.itinerary-places li { margin: 0 0 8px; font-size: 14px; line-height: 1.45; }
+.itinerary-places li span, .itinerary-places li em { display: block; color: var(--muted); font-size: 13px; }
+@media print {
+  .itinerary-toolbar, .offline-banner, nextjs-portal { display: none !important; }
+  .itinerary-page { max-width: none; padding: 0; }
+  .itinerary-head h1 { font-size: 26px; }
+  body { background: #fff; }
+}
