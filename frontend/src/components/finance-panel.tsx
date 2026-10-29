@@ -4,6 +4,7 @@ import { ArrowRight, BedDouble, Check, Pencil, Plus, Trash2, Undo2, UserPlus, X 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { JourneyIcon, journeyModeOf } from "@/components/flight-plan-dialog";
 import { addExpense, removeExpense, saveFinanceSettings, updateExpense } from "@/app/trips/actions";
+import { unwrap } from "@/lib/action-result";
 import { CURRENCIES, centsToInput, expenseShares, formatMoney, parseAmount, paymentFor, personBalances, settleUp, totalSpent, tripCents, unassignedCents, type Settlement } from "@/lib/finances";
 import type { ExpenseSplit, Flight, HotelStay, TripExpense, TripFinances } from "@/lib/types";
 
@@ -57,7 +58,7 @@ export function FinancePanel({ dates, defaultPeople, finances, flights = [], hot
     const previous = { people, currency };
     setPeople(nextPeople);
     setCurrency(nextCurrency);
-    void persist(() => saveFinanceSettings({ tripId, currency: nextCurrency, people: nextPeople }), () => { setPeople(previous.people); setCurrency(previous.currency); });
+    void persist(() => unwrap(saveFinanceSettings({ tripId, currency: nextCurrency, people: nextPeople })), () => { setPeople(previous.people); setCurrency(previous.currency); });
   }
 
   function addPerson() {
@@ -146,13 +147,13 @@ export function FinancePanel({ dates, defaultPeople, finances, flights = [], hot
     if (draft.id) {
       const id = draft.id;
       setExpenses((current) => current.map((expense) => expense.id === id ? { id, ...fields } : expense));
-      void persist(() => updateExpense({ tripId, expenseId: id, ...fields, spentOn: fields.spentOn ?? "" }), () => setExpenses(previous));
+      void persist(() => unwrap(updateExpense({ tripId, expenseId: id, ...fields, spentOn: fields.spentOn ?? "" })), () => setExpenses(previous));
     } else {
       localCounter.current += 1;
       const localId = `local-expense-${localCounter.current}`;
       setExpenses((current) => [...current, { id: localId, ...fields }]);
       void persist(async () => {
-        const saved = await addExpense({ tripId, ...fields, spentOn: fields.spentOn ?? "" });
+        const saved = await unwrap(addExpense({ tripId, ...fields, spentOn: fields.spentOn ?? "" }));
         setExpenses((current) => current.map((expense) => expense.id === localId ? { ...expense, id: saved.id } : expense));
       }, () => setExpenses(previous));
     }
@@ -166,7 +167,7 @@ export function FinancePanel({ dates, defaultPeople, finances, flights = [], hot
     const previous = expenses;
     setExpenses((current) => [...current, { id: localId, ...fields }]);
     void persist(async () => {
-      const saved = await addExpense({ tripId, ...fields, spentOn: fields.spentOn ?? "" });
+      const saved = await unwrap(addExpense({ tripId, ...fields, spentOn: fields.spentOn ?? "" }));
       setExpenses((current) => current.map((expense) => expense.id === localId ? { ...expense, id: saved.id } : expense));
     }, () => setExpenses(previous));
   }
@@ -179,7 +180,7 @@ export function FinancePanel({ dates, defaultPeople, finances, flights = [], hot
     const previous = expenses;
     setExpenses((current) => current.filter((expense) => expense.id !== id));
     setDraft(null);
-    void persist(() => removeExpense({ tripId, expenseId: id }), () => setExpenses(previous));
+    void persist(() => unwrap(removeExpense({ tripId, expenseId: id })), () => setExpenses(previous));
   }
 
   function splitLabel(expense: TripExpense) {

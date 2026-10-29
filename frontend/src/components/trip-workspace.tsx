@@ -33,6 +33,9 @@ import {
   ShoppingBag,
   Trash2,
   TramFront,
+  CalendarPlus,
+  Printer,
+  ClipboardPaste,
   Wallet,
   Utensils,
   X,
@@ -59,6 +62,7 @@ import {
   updatePlace as persistUpdatePlace,
   updatePlaceDetails as persistUpdatePlaceDetails,
 } from "@/app/trips/actions";
+import { unwrap } from "@/lib/action-result";
 import { AddPlaceDialog } from "@/components/add-place-dialog";
 import { AgendaPanel } from "@/components/agenda-panel";
 import { TripAssistant } from "@/components/trip-assistant";
@@ -66,9 +70,11 @@ import { TransitEditor, TransitRideCard, transitLegs, type TransitDraft } from "
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { CityField } from "@/components/city-field";
 import { EditPlaceDialog, type PlaceEditDraft } from "@/components/edit-place-dialog";
+import { DayWeather, PlaceHours } from "@/components/day-context";
 import { FlightPlanDialog, JourneyIcon, journeyModeOf, type FlightDraft } from "@/components/flight-plan-dialog";
 import { FinancePanel } from "@/components/finance-panel";
 import { HotelStayDialog, type HotelStayDraft } from "@/components/hotel-stay-dialog";
+import { ImportBookingDialog } from "@/components/import-booking-dialog";
 import { InviteDialog } from "@/components/invite-dialog";
 import { PlacePhoto } from "@/components/place-photo";
 import { TripLogisticsDialog, type TripDetails } from "@/components/trip-logistics-dialog";
@@ -183,6 +189,7 @@ export function TripWorkspace({
   const [placeEditor, setPlaceEditor] = useState<Place | null>(null);
   const [flightEditor, setFlightEditor] = useState<{ mode: JourneyMode; flight: Flight | null } | null>(null);
   const [hotelEditor, setHotelEditor] = useState<HotelStay | "new" | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
   const [routeMode, setRouteMode] = useState<TravelMode | null>(null);
   const [routeStats, setRouteStats] = useState<RouteStats | null>(null);
   const [navOpen, setNavOpen] = useState(false);
@@ -215,7 +222,10 @@ export function TripWorkspace({
     persistChain.current = persistChain.current
       .then(work)
       .then(() => setSaveState("saved"))
-      .catch(() => setSaveState("error"));
+      .catch((error) => {
+        if (error instanceof Error && error.message) setSaveNotice(error.message);
+        setSaveState("error");
+      });
   }
 
   const itineraryDates = useMemo(() => tripDates(details.startDate, details.endDate), [details.startDate, details.endDate]);
@@ -308,7 +318,7 @@ export function TripWorkspace({
     if (!persistable) return;
     enqueuePersist(async () => {
       try {
-        const saved = await persistPlace({
+        const saved = await unwrap(persistPlace({
           tripId: trip.id,
           cityId: isUuid(cityId) ? cityId : persistedCityIds.current.get(cityId ?? "") ?? "",
           fsqPlaceId: next.fsqPlaceId,
@@ -323,7 +333,7 @@ export function TripWorkspace({
           saved: true,
           plannedDate: next.plannedDate ?? "",
           daySortOrder: next.daySortOrder ?? 0,
-        });
+        }));
         if (!("id" in saved) || !saved.id) return;
         persistedIds.current.set(next.id, saved.id);
         setPlaces((current) => current.map((item) => (item.id === next.id ? { ...item, id: saved.id } : item)));
@@ -388,7 +398,7 @@ export function TripWorkspace({
       try {
         const placeId = persistedIds.current.get(id) ?? id;
         if (placeId.startsWith("local-")) return;
-        await persistUpdatePlaceDetails({
+        await unwrap(persistUpdatePlaceDetails({
           tripId: trip.id,
           placeId,
           cityId: isUuid(cityId) ? cityId : persistedCityIds.current.get(cityId ?? "") ?? "",
@@ -400,7 +410,7 @@ export function TripWorkspace({
           sourceUrl: next.sourceUrl ?? "",
           plannedDate: next.plannedDate ?? "",
           daySortOrder,
-        });
+        }));
       } catch (error) {
         setPlaces((current) => current.map((item) => (item.id === id ? previous : item)));
         if (error instanceof Error && error.message) setSaveNotice(error.message);
@@ -420,11 +430,11 @@ export function TripWorkspace({
     if (!persistable) return;
     enqueuePersist(async () => {
       try {
-        await persistReorderDayPlaces({
+        await unwrap(persistReorderDayPlaces({
           tripId: trip.id,
           plannedDate,
           placeIds: resolvePersistedPlaceIds(placeIds, persistedIds.current),
-        });
+        }));
       } catch (error) {
         setPlaces(previous);
         if (error instanceof Error && error.message) setSaveNotice(error.message);
@@ -442,7 +452,7 @@ export function TripWorkspace({
       try {
         const placeId = persistedIds.current.get(id) ?? id;
         if (placeId.startsWith("local-")) return;
-        await persistUpdatePlace({ tripId: trip.id, placeId, saved: nextSaved });
+        await unwrap(persistUpdatePlace({ tripId: trip.id, placeId, saved: nextSaved }));
       } catch (error) {
         setPlaces((current) => current.map((item) => (item.id === id ? { ...item, saved: place.saved } : item)));
         throw error;
@@ -462,7 +472,7 @@ export function TripWorkspace({
       try {
         const placeId = persistedIds.current.get(id) ?? id;
         if (placeId.startsWith("local-")) return;
-        await persistRemovePlace({ tripId: trip.id, placeId });
+        await unwrap(persistRemovePlace({ tripId: trip.id, placeId }));
       } catch (error) {
         if (removed) setPlaces((current) => (current.some((place) => place.id === removed.id) ? current : [...current, removed]));
         throw error;
@@ -479,13 +489,13 @@ export function TripWorkspace({
     if (!persistable) return next;
     enqueuePersist(async () => {
       try {
-        const saved = await persistAddTripCity({
+        const saved = await unwrap(persistAddTripCity({
           tripId: trip.id,
           name: next.name,
           country: next.country,
           startDate: next.startDate ?? "",
           endDate: next.endDate ?? "",
-        });
+        }));
         if (!("id" in saved) || !saved.id) return;
         persistedCityIds.current.set(localId, saved.id);
         setCities((current) => current.map((cityItem) => (cityItem.id === localId ? { ...cityItem, id: saved.id } : cityItem)));
@@ -513,7 +523,7 @@ export function TripWorkspace({
     if (!persistable || !isUuid(cityId)) return;
     enqueuePersist(async () => {
       try {
-        await persistRemoveTripCity({ tripId: trip.id, cityId });
+        await unwrap(persistRemoveTripCity({ tripId: trip.id, cityId }));
       } catch (error) {
         setCities((current) => [...current, removed].sort((left, right) => left.sortOrder - right.sortOrder));
         setPlaces(previousPlaces);
@@ -538,12 +548,12 @@ export function TripWorkspace({
     if (!persistable) return;
     enqueuePersist(async () => {
       try {
-        const saved = await persistAddDayNote({
+        const saved = await unwrap(persistAddDayNote({
           tripId: trip.id,
           cityId: isUuid(next.cityId) ? next.cityId : "",
           plannedDate,
           note,
-        });
+        }));
         if (!("id" in saved) || !saved.id) return;
         setDayNotes((current) => current.map((item) => (item.id === localId ? { ...item, id: saved.id } : item)));
       } catch (error) {
@@ -561,13 +571,13 @@ export function TripWorkspace({
     if (!persistable || noteId.startsWith("local-")) return;
     enqueuePersist(async () => {
       try {
-        await persistUpdateDayNote({
+        await unwrap(persistUpdateDayNote({
           tripId: trip.id,
           noteId,
           cityId: isUuid(next.cityId) ? next.cityId : "",
           plannedDate: next.plannedDate,
           note: next.note,
-        });
+        }));
       } catch (error) {
         setDayNotes((current) => current.map((item) => (item.id === noteId ? previous : item)));
         throw error;
@@ -581,7 +591,7 @@ export function TripWorkspace({
     if (!persistable || noteId.startsWith("local-")) return;
     enqueuePersist(async () => {
       try {
-        await persistRemoveDayNote({ tripId: trip.id, noteId });
+        await unwrap(persistRemoveDayNote({ tripId: trip.id, noteId }));
       } catch (error) {
         if (previous) setDayNotes((current) => [...current, previous]);
         throw error;
@@ -598,7 +608,7 @@ export function TripWorkspace({
       if (!persistable || existing.id.startsWith("local-")) return;
       enqueuePersist(async () => {
         try {
-          await persistUpdateFlight({ tripId: trip.id, flightId: existing.id, ...draft });
+          await unwrap(persistUpdateFlight({ tripId: trip.id, flightId: existing.id, ...draft }));
         } catch (error) {
           setFlights(previous);
           throw error;
@@ -612,7 +622,7 @@ export function TripWorkspace({
     if (!persistable) return;
     enqueuePersist(async () => {
       try {
-        const saved = await persistAddFlight({ tripId: trip.id, ...draft });
+        const saved = await unwrap(persistAddFlight({ tripId: trip.id, ...draft }));
         if (!("id" in saved) || !saved.id) return;
         setFlights((current) => current.map((flight) => flight.id === next.id ? { ...flight, id: saved.id } : flight));
       } catch (error) {
@@ -628,7 +638,7 @@ export function TripWorkspace({
     if (!persistable || id.startsWith("local-")) return;
     enqueuePersist(async () => {
       try {
-        await persistRemoveFlight({ tripId: trip.id, flightId: id });
+        await unwrap(persistRemoveFlight({ tripId: trip.id, flightId: id }));
       } catch (error) {
         setFlights(previous);
         throw error;
@@ -645,7 +655,7 @@ export function TripWorkspace({
       if (!persistable || existing.id.startsWith("local-")) return;
       enqueuePersist(async () => {
         try {
-          await persistUpdateHotelStay({ tripId: trip.id, hotelId: existing.id, cityId: isUuid(draft.cityId) ? draft.cityId : "", name: draft.name, address: draft.address, longitude: draft.coordinates[0], latitude: draft.coordinates[1], startDate: draft.startDate, endDate: draft.endDate });
+          await unwrap(persistUpdateHotelStay({ tripId: trip.id, hotelId: existing.id, cityId: isUuid(draft.cityId) ? draft.cityId : "", name: draft.name, address: draft.address, longitude: draft.coordinates[0], latitude: draft.coordinates[1], startDate: draft.startDate, endDate: draft.endDate }));
         } catch (error) { setHotels(previous); throw error; }
       });
       return;
@@ -656,7 +666,7 @@ export function TripWorkspace({
     if (!persistable) return;
     enqueuePersist(async () => {
       try {
-        const saved = await persistAddHotelStay({ tripId: trip.id, cityId: isUuid(draft.cityId) ? draft.cityId : "", name: draft.name, address: draft.address, longitude: draft.coordinates[0], latitude: draft.coordinates[1], startDate: draft.startDate, endDate: draft.endDate });
+        const saved = await unwrap(persistAddHotelStay({ tripId: trip.id, cityId: isUuid(draft.cityId) ? draft.cityId : "", name: draft.name, address: draft.address, longitude: draft.coordinates[0], latitude: draft.coordinates[1], startDate: draft.startDate, endDate: draft.endDate }));
         if (!("id" in saved) || !saved.id) return;
         setHotels((current) => current.map((hotel) => hotel.id === next.id ? { ...hotel, id: saved.id } : hotel));
       } catch (error) { setHotels((current) => current.filter((hotel) => hotel.id !== next.id)); throw error; }
@@ -668,7 +678,7 @@ export function TripWorkspace({
     setHotels((current) => current.filter((hotel) => hotel.id !== id));
     if (!persistable || id.startsWith("local-")) return;
     enqueuePersist(async () => {
-      try { await persistRemoveHotelStay({ tripId: trip.id, hotelId: id }); }
+      try { await unwrap(persistRemoveHotelStay({ tripId: trip.id, hotelId: id })); }
       catch (error) { setHotels(previous); throw error; }
     });
   }
@@ -676,7 +686,7 @@ export function TripWorkspace({
   async function saveTransit(draft: TransitDraft) {
     setSaveState("saving");
     try {
-      const saved = persistable ? await persistSaveTransitPlan({ ...draft, tripId: trip.id }) : { id: draft.id ?? `local-transit-${crypto.randomUUID()}` };
+      const saved = persistable ? await unwrap(persistSaveTransitPlan({ ...draft, tripId: trip.id })) : { id: draft.id ?? `local-transit-${crypto.randomUUID()}` };
       const next = { ...draft, id: saved.id };
       setTransitPlans((current) => draft.id ? current.map((plan) => plan.id === draft.id ? next : plan) : [...current, next]);
       setSaveState("saved");
@@ -686,7 +696,7 @@ export function TripWorkspace({
   async function removeTransit(id: string) {
     setSaveState("saving");
     try {
-      if (persistable) await persistRemoveTransitPlan({ tripId: trip.id, id });
+      if (persistable) await unwrap(persistRemoveTransitPlan({ tripId: trip.id, id }));
       setTransitPlans((current) => current.filter((plan) => plan.id !== id));
       setSaveState("saved");
     } catch (error) { setSaveState("error"); throw error; }
@@ -718,6 +728,8 @@ export function TripWorkspace({
             <DropdownMenuContent className="planner-menu" align="end">
               <DropdownMenuItem onSelect={() => setLogisticsOpen(true)}><Pencil size={16} /> Trip details</DropdownMenuItem>
               <DropdownMenuItem onSelect={() => setInviteOpen(true)}><Share2 size={16} /> Invite people</DropdownMenuItem>
+              <DropdownMenuItem asChild><a href={`/trips/${trip.id}/calendar`}><CalendarPlus size={16} /> Add to calendar</a></DropdownMenuItem>
+              <DropdownMenuItem asChild><a href={`/trips/${trip.id}/print`}><Printer size={16} /> Printable itinerary</a></DropdownMenuItem>
               <DropdownMenuItem onSelect={() => { setNewCityForPlace(false); setCityOpen(true); }}><Plus size={16} /> Add city stop</DropdownMenuItem>
               {activeCityId !== "all" && cities.length > 1 ? <DropdownMenuItem variant="destructive" onSelect={() => removeCity(activeCityId)}><Trash2 size={16} /> Remove this city</DropdownMenuItem> : null}
             </DropdownMenuContent>
@@ -742,6 +754,8 @@ export function TripWorkspace({
               {saveState === "saving" ? "Saving" : saveState === "saved" ? "Saved" : (saveNotice || "Couldn’t save")}
             </span>
           ) : null}
+          <a className="trip-bar-link" href={`/trips/${trip.id}/calendar`}><CalendarPlus size={14} /> Calendar</a>
+          <a className="trip-bar-link" href={`/trips/${trip.id}/print`}><Printer size={14} /> Print</a>
           <button onClick={() => setInviteOpen(true)} type="button"><Share2 size={14} /> Invite</button>
         </div>
       </div>
@@ -800,6 +814,7 @@ export function TripWorkspace({
             flights={flights}
             onAdd={(mode) => setFlightEditor({ mode, flight: null })}
             onEdit={(flight) => setFlightEditor({ mode: journeyModeOf(flight), flight })}
+            onImport={() => setImportOpen(true)}
           />}
           {workspaceMode === "saved" ? visiblePlaces.map((place) => {
             const originalIndex = places.findIndex((item) => item.id === place.id);
@@ -864,6 +879,7 @@ export function TripWorkspace({
               onAddNote={addNote}
               onFocusDate={setActiveDate}
               onAddJourney={(mode) => setFlightEditor({ mode, flight: null })}
+              onImportBookings={() => setImportOpen(true)}
               onEditFlight={(flight) => setFlightEditor({ mode: journeyModeOf(flight), flight })}
               onAddHotel={() => setHotelEditor("new")}
               onEditHotel={(hotel) => setHotelEditor(hotel)}
@@ -963,6 +979,7 @@ export function TripWorkspace({
           onSave={saveFlight}
         />
       ) : null}
+      {importOpen ? <ImportBookingDialog cities={cities} onAddHotel={saveHotel} onAddJourney={saveFlight} onClose={() => setImportOpen(false)} tripStart={planDates[0]} /> : null}
       {hotelEditor ? <HotelStayDialog cities={cities} dates={planDates} destination={selectedCity?.name ?? details.destination} flights={flights} hotel={hotelEditor === "new" ? null : hotelEditor} hotels={hotels} initialDate={activeDate ?? planDates[0] ?? ""} onClose={() => setHotelEditor(null)} onDelete={removeHotel} onSave={saveHotel} /> : null}
       {inviteOpen ? <InviteDialog demo={!persistable} onClose={() => setInviteOpen(false)} tripId={trip.id} /> : null}
       {logisticsOpen ? (
@@ -995,17 +1012,19 @@ function JourneyBoard({
   flights,
   onAdd,
   onEdit,
+  onImport,
 }: {
   flights: Flight[];
   onAdd: (mode: JourneyMode) => void;
   onEdit: (flight: Flight) => void;
+  onImport: () => void;
 }) {
   const sorted = [...flights].sort((left, right) => `${left.plannedDate} ${left.departureTime}`.localeCompare(`${right.plannedDate} ${right.departureTime}`));
   const [open, setOpen] = useState(false);
   const next = sorted[0];
   const summary = next
     ? `${sorted.length} ${sorted.length === 1 ? "trip" : "trips"} · ${next.departureAirport} → ${next.arrivalAirport}, ${formatDayHeading(next.plannedDate).date}`
-    : "Add flights, trains, or buses";
+    : "Add flights, trains, or buses, or paste a booking email";
   return (
     <section className={`journey-board${open && sorted.length ? " open" : ""}`} aria-label="Getting there">
       <div className="journey-board-head">
@@ -1023,6 +1042,7 @@ function JourneyBoard({
             <DropdownMenuItem onSelect={() => onAdd("flight")}><Plane size={16} /> Flight</DropdownMenuItem>
             <DropdownMenuItem onSelect={() => onAdd("train")}><TrainFront size={16} /> Train</DropdownMenuItem>
             <DropdownMenuItem onSelect={() => onAdd("bus")}><Bus size={16} /> Bus</DropdownMenuItem>
+            <DropdownMenuItem onSelect={onImport}><ClipboardPaste size={16} /> Import from email</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
@@ -1065,6 +1085,7 @@ function DayPlan({
   query,
   onAddNote,
   onAddJourney,
+  onImportBookings,
   onEditFlight,
   onAddHotel,
   onEditHotel,
@@ -1093,6 +1114,7 @@ function DayPlan({
   query: string;
   onAddNote: (plannedDate: string, note: string, cityId: string) => void;
   onAddJourney: (mode: JourneyMode) => void;
+  onImportBookings: () => void;
   onEditFlight: (flight: Flight) => void;
   onAddHotel: () => void;
   onEditHotel: (hotel: HotelStay) => void;
@@ -1163,7 +1185,11 @@ function DayPlan({
   const [transitDraft, setTransitDraft] = useState<{ fromId: string; toId: string; plan: TransitPlan | null } | null>(null);
   const [removingTransitId, setRemovingTransitId] = useState<string | null>(null);
   const [transitError, setTransitError] = useState("");
-  useEffect(() => { setTransitDraft(null); }, [currentDate]);
+  const [draftDate, setDraftDate] = useState(currentDate);
+  if (draftDate !== currentDate) {
+    setDraftDate(currentDate);
+    setTransitDraft(null);
+  }
 
   function movePage(delta: number) {
     const nextIndex = Math.min(Math.max(clampedPageIndex + delta, 0), Math.max(0, totalPages - 1));
@@ -1267,6 +1293,7 @@ function DayPlan({
       ) : null}
       {!searching && currentDate && label ? (
         <section className={`day-section${activeDate === currentDate ? " active" : ""}`}>
+          <DayWeather coordinates={dayHotel?.coordinates ?? dayPlaces[0]?.coordinates ?? null} date={currentDate} />
           <header className="day-section-bar">
             <h2 className="sr-only">{label.day}, {label.date}</h2>
             <details className="day-notes-disclosure">
@@ -1282,6 +1309,7 @@ function DayPlan({
                 <DropdownMenuItem onSelect={() => onAddJourney("flight")}><Plane size={16} /> Add flight</DropdownMenuItem>
                 <DropdownMenuItem onSelect={() => onAddJourney("train")}><TrainFront size={16} /> Add train</DropdownMenuItem>
                 <DropdownMenuItem onSelect={() => onAddJourney("bus")}><Bus size={16} /> Add bus</DropdownMenuItem>
+                <DropdownMenuItem onSelect={onImportBookings}><ClipboardPaste size={16} /> Import from email</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </header>
@@ -1487,6 +1515,7 @@ function DayPlaceRow({
             🗺️
           </a>
         </small>
+        {place.plannedDate && place.fsqPlaceId && place.category !== "Transit" ? <PlaceHours date={place.plannedDate} placeId={place.fsqPlaceId} /> : null}
         {place.note ? <p className="place-note">{place.note}</p> : null}
 
         <div className="place-actions">
