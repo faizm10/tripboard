@@ -2,7 +2,8 @@
 
 import { and, desc, eq, gt, gte, isNull, lte, or, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
+import { redirect, unstable_rethrow } from "next/navigation";
+import type { ActionResult } from "@/lib/action-result";
 import { getViewer } from "@/lib/auth";
 import { getDatabase } from "@/lib/db";
 import { countryFromDestination } from "@/lib/dates";
@@ -210,7 +211,7 @@ function toInviteSummary(row: {
   };
 }
 
-export async function createTrip(input: unknown) {
+async function createTripAction(input: unknown) {
   const viewer = await requireViewer();
   const data = createTripSchema.parse(input);
   const db = getDatabase();
@@ -256,7 +257,7 @@ export async function createTrip(input: unknown) {
   return { id: trip.id, demo: false };
 }
 
-export async function addPlace(input: unknown) {
+async function addPlaceAction(input: unknown) {
   const viewer = await requireViewer();
   const data = addPlaceSchema.parse(input);
   const db = getDatabase();
@@ -303,7 +304,7 @@ export async function addPlace(input: unknown) {
   }
 }
 
-export async function updatePlace(input: unknown) {
+async function updatePlaceAction(input: unknown) {
   const viewer = await requireViewer();
   const data = updatePlaceSchema.parse(input);
   const db = getDatabase();
@@ -319,7 +320,7 @@ export async function updatePlace(input: unknown) {
   return { demo: false };
 }
 
-export async function updatePlaceDetails(input: unknown) {
+async function updatePlaceDetailsAction(input: unknown) {
   const viewer = await requireViewer();
   const data = updatePlaceDetailsSchema.parse(input);
   const db = getDatabase();
@@ -351,7 +352,7 @@ export async function updatePlaceDetails(input: unknown) {
   return { demo: false };
 }
 
-export async function updatePlacePlanning(input: unknown) {
+async function updatePlacePlanningAction(input: unknown) {
   const viewer = await requireViewer();
   const data = updatePlacePlanningSchema.parse(input);
   const db = getDatabase();
@@ -386,7 +387,7 @@ export async function updatePlacePlanning(input: unknown) {
   return { demo: false };
 }
 
-export async function reorderDayPlaces(input: unknown) {
+async function reorderDayPlacesAction(input: unknown) {
   const viewer = await requireViewer();
   const data = reorderDayPlacesSchema.parse(input);
   const db = getDatabase();
@@ -416,7 +417,7 @@ export async function reorderDayPlaces(input: unknown) {
   return { demo: false };
 }
 
-export async function removePlace(input: unknown) {
+async function removePlaceAction(input: unknown) {
   const viewer = await requireViewer();
   const data = removePlaceSchema.parse(input);
   const db = getDatabase();
@@ -427,7 +428,7 @@ export async function removePlace(input: unknown) {
   return { demo: false };
 }
 
-export async function addTripCity(input: unknown) {
+async function addTripCityAction(input: unknown) {
   const viewer = await requireViewer();
   const data = addTripCitySchema.parse(input);
   const db = getDatabase();
@@ -458,7 +459,7 @@ export async function addTripCity(input: unknown) {
   return { demo: false, id: city.id };
 }
 
-export async function updateTripCity(input: unknown) {
+async function updateTripCityAction(input: unknown) {
   const viewer = await requireViewer();
   const data = updateTripCitySchema.parse(input);
   const db = getDatabase();
@@ -486,7 +487,7 @@ export async function updateTripCity(input: unknown) {
   return { demo: false };
 }
 
-export async function removeTripCity(input: unknown) {
+async function removeTripCityAction(input: unknown) {
   const viewer = await requireViewer();
   const data = removeTripCitySchema.parse(input);
   const db = getDatabase();
@@ -511,7 +512,7 @@ export async function removeTripCity(input: unknown) {
   return { demo: false };
 }
 
-export async function addDayNote(input: unknown) {
+async function addDayNoteAction(input: unknown) {
   const viewer = await requireViewer();
   const data = addDayNoteSchema.parse(input);
   const db = getDatabase();
@@ -542,7 +543,7 @@ export async function addDayNote(input: unknown) {
   return { demo: false, id: note.id };
 }
 
-export async function updateDayNote(input: unknown) {
+async function updateDayNoteAction(input: unknown) {
   const viewer = await requireViewer();
   const data = updateDayNoteSchema.parse(input);
   const db = getDatabase();
@@ -569,7 +570,7 @@ export async function updateDayNote(input: unknown) {
   return { demo: false };
 }
 
-export async function removeDayNote(input: unknown) {
+async function removeDayNoteAction(input: unknown) {
   const viewer = await requireViewer();
   const data = removeDayNoteSchema.parse(input);
   const db = getDatabase();
@@ -586,7 +587,7 @@ export async function removeDayNote(input: unknown) {
   return { demo: false };
 }
 
-export async function addFlight(input: unknown) {
+async function addFlightAction(input: unknown) {
   const viewer = await requireViewer();
   const data = addFlightSchema.parse(input);
   const db = getDatabase();
@@ -616,7 +617,7 @@ export async function addFlight(input: unknown) {
   }
 }
 
-export async function updateFlight(input: unknown) {
+async function updateFlightAction(input: unknown) {
   const viewer = await requireViewer();
   const data = updateFlightSchema.parse(input);
   const db = getDatabase();
@@ -648,7 +649,7 @@ export async function updateFlight(input: unknown) {
   }
 }
 
-export async function removeFlight(input: unknown) {
+async function removeFlightAction(input: unknown) {
   const viewer = await requireViewer();
   const data = removeFlightSchema.parse(input);
   const db = getDatabase();
@@ -664,7 +665,7 @@ export async function removeFlight(input: unknown) {
   }
 }
 
-export async function addHotelStay(input: unknown) {
+async function addHotelStayAction(input: unknown) {
   const viewer = await requireViewer();
   const data = addHotelStaySchema.parse(input);
   const db = getDatabase();
@@ -682,7 +683,7 @@ export async function addHotelStay(input: unknown) {
   }
 }
 
-export async function updateHotelStay(input: unknown) {
+async function updateHotelStayAction(input: unknown) {
   const viewer = await requireViewer();
   const data = updateHotelStaySchema.parse(input);
   const db = getDatabase();
@@ -704,7 +705,7 @@ export async function updateHotelStay(input: unknown) {
   }
 }
 
-export async function removeHotelStay(input: unknown) {
+async function removeHotelStayAction(input: unknown) {
   const viewer = await requireViewer();
   const data = removeHotelStaySchema.parse(input);
   const db = getDatabase();
@@ -720,7 +721,7 @@ export async function removeHotelStay(input: unknown) {
   }
 }
 
-export async function updateAgendaBrief(input: unknown) {
+async function updateAgendaBriefAction(input: unknown) {
   const viewer = await requireViewer();
   const data = updateAgendaBriefSchema.parse(input);
   const db = getDatabase();
@@ -742,7 +743,7 @@ export async function updateAgendaBrief(input: unknown) {
   return { demo: false };
 }
 
-export async function saveAgendaDayNote(input: unknown) {
+async function saveAgendaDayNoteAction(input: unknown) {
   const viewer = await requireViewer();
   const data = saveAgendaDayNoteSchema.parse(input);
   const db = getDatabase();
@@ -768,7 +769,7 @@ export async function saveAgendaDayNote(input: unknown) {
   return { demo: false };
 }
 
-export async function addAgendaItem(input: unknown) {
+async function addAgendaItemAction(input: unknown) {
   const viewer = await requireViewer();
   const data = addAgendaItemSchema.parse(input);
   const db = getDatabase();
@@ -800,7 +801,7 @@ export async function addAgendaItem(input: unknown) {
   }
 }
 
-export async function updateAgendaItem(input: unknown) {
+async function updateAgendaItemAction(input: unknown) {
   const viewer = await requireViewer();
   const data = updateAgendaItemSchema.parse(input);
   const db = getDatabase();
@@ -829,7 +830,7 @@ export async function updateAgendaItem(input: unknown) {
   return { demo: false };
 }
 
-export async function removeAgendaItem(input: unknown) {
+async function removeAgendaItemAction(input: unknown) {
   const viewer = await requireViewer();
   const data = removeAgendaItemSchema.parse(input);
   const db = getDatabase();
@@ -845,7 +846,7 @@ export async function removeAgendaItem(input: unknown) {
   return { demo: false };
 }
 
-export async function listTripInvites(input: unknown): Promise<{ demo: boolean; invites: TripInvitationSummary[] }> {
+async function listTripInvitesAction(input: unknown): Promise<{ demo: boolean; invites: TripInvitationSummary[] }> {
   const viewer = await requireViewer();
   const data = createShareInviteSchema.parse(input);
   const db = getDatabase();
@@ -877,7 +878,7 @@ export async function listTripInvites(input: unknown): Promise<{ demo: boolean; 
   }
 }
 
-export async function createEmailInvite(input: unknown) {
+async function createEmailInviteAction(input: unknown) {
   const viewer = await requireViewer();
   const data = createEmailInviteSchema.parse(input);
   const db = getDatabase();
@@ -906,7 +907,7 @@ export async function createEmailInvite(input: unknown) {
   }
 }
 
-export async function createShareInvite(input: unknown) {
+async function createShareInviteAction(input: unknown) {
   const viewer = await requireViewer();
   const data = createShareInviteSchema.parse(input);
   const db = getDatabase();
@@ -935,7 +936,7 @@ export async function createShareInvite(input: unknown) {
   }
 }
 
-export async function revokeInvite(input: unknown) {
+async function revokeInviteAction(input: unknown) {
   const viewer = await requireViewer();
   const data = revokeInviteSchema.parse(input);
   const db = getDatabase();
@@ -954,9 +955,9 @@ export async function revokeInvite(input: unknown) {
   }
 }
 
-export async function inviteCollaborator(input: unknown) {
+async function inviteCollaboratorAction(input: unknown) {
   const data = inviteSchema.parse(input);
-  return createEmailInvite(data);
+  return createEmailInviteAction(data);
 }
 
 export async function acceptInvitation(rawToken: string) {
@@ -1029,7 +1030,7 @@ export async function acceptInvitationForm(formData: FormData) {
   await acceptInvitation(String(formData.get("token") ?? ""));
 }
 
-export async function updateTrip(input: unknown) {
+async function updateTripAction(input: unknown) {
   const viewer = await requireViewer();
   const data = updateTripSchema.parse(input);
   const db = getDatabase();
@@ -1058,7 +1059,7 @@ export async function updateTrip(input: unknown) {
  * `onDelete: cascade`, so the single delete takes members, places, cities,
  * notes, logistics and invitations with it.
  */
-export async function deleteTrip(input: unknown) {
+async function deleteTripAction(input: unknown) {
   const viewer = await requireViewer();
   const data = deleteTripSchema.parse(input);
   const db = getDatabase();
@@ -1071,7 +1072,7 @@ export async function deleteTrip(input: unknown) {
   return { demo: false };
 }
 
-export async function saveTransitPlan(input: unknown) {
+async function saveTransitPlanAction(input: unknown) {
   const viewer = await requireViewer();
   const data = saveTransitPlanSchema.parse(input);
   const db = getDatabase();
@@ -1088,7 +1089,7 @@ export async function saveTransitPlan(input: unknown) {
   return saved;
 }
 
-export async function removeTransitPlan(input: unknown) {
+async function removeTransitPlanAction(input: unknown) {
   const viewer = await requireViewer();
   const data = removeTransitPlanSchema.parse(input);
   const db = getDatabase();
@@ -1116,7 +1117,7 @@ async function withFinanceSchema<T>(work: () => Promise<T>) {
   }
 }
 
-export async function saveFinanceSettings(input: unknown) {
+async function saveFinanceSettingsAction(input: unknown) {
   const viewer = await requireViewer();
   const data = saveFinanceSettingsSchema.parse(input);
   const db = getDatabase();
@@ -1131,7 +1132,7 @@ export async function saveFinanceSettings(input: unknown) {
   return { demo: false };
 }
 
-export async function addExpense(input: unknown) {
+async function addExpenseAction(input: unknown) {
   const viewer = await requireViewer();
   const data = addExpenseSchema.parse(input);
   const db = getDatabase();
@@ -1139,13 +1140,13 @@ export async function addExpense(input: unknown) {
   await requireEditor(data.tripId, viewer.id);
   const [row] = await withFinanceSchema(() => db
     .insert(tripExpenses)
-    .values({ tripId: data.tripId, title: data.title, amountCents: data.amountCents, paidBy: data.paidBy, split: data.split, spentOn: data.spentOn || null, createdBy: viewer.id })
+    .values({ tripId: data.tripId, title: data.title, amountCents: data.amountCents, paidBy: data.paidBy, split: data.split, spentOn: data.spentOn || null, kind: data.kind, currency: data.currency ?? null, rate: data.rate, createdBy: viewer.id })
     .returning({ id: tripExpenses.id }));
   await recordChange(data.tripId, viewer, `added ${data.title} to Money`);
   return { id: row.id, demo: false };
 }
 
-export async function updateExpense(input: unknown) {
+async function updateExpenseAction(input: unknown) {
   const viewer = await requireViewer();
   const data = updateExpenseSchema.parse(input);
   const db = getDatabase();
@@ -1153,13 +1154,13 @@ export async function updateExpense(input: unknown) {
   await requireEditor(data.tripId, viewer.id);
   await withFinanceSchema(() => db
     .update(tripExpenses)
-    .set({ title: data.title, amountCents: data.amountCents, paidBy: data.paidBy, split: data.split, spentOn: data.spentOn || null, updatedAt: new Date() })
+    .set({ title: data.title, amountCents: data.amountCents, paidBy: data.paidBy, split: data.split, spentOn: data.spentOn || null, kind: data.kind, currency: data.currency ?? null, rate: data.rate, updatedAt: new Date() })
     .where(and(eq(tripExpenses.id, data.expenseId), eq(tripExpenses.tripId, data.tripId))));
   await recordChange(data.tripId, viewer, `updated ${data.title} in Money`);
   return { demo: false };
 }
 
-export async function removeExpense(input: unknown) {
+async function removeExpenseAction(input: unknown) {
   const viewer = await requireViewer();
   const data = removeExpenseSchema.parse(input);
   const db = getDatabase();
@@ -1169,3 +1170,58 @@ export async function removeExpense(input: unknown) {
   await recordChange(data.tripId, viewer, "removed an expense");
   return { demo: false };
 }
+
+/** Messages we wrote for people (plain Errors) pass through; validation and database failures get a friendly fallback. */
+function publicMessage(error: unknown) {
+  if (error instanceof Error && error.name === "ZodError") return "Some of those details don’t look right. Check them and try again.";
+  if (error instanceof Error && error.constructor === Error && !error.cause && error.message) return error.message;
+  return "Something went wrong saving that. Try again in a moment.";
+}
+
+async function runAction<T>(work: () => Promise<T>): Promise<ActionResult<T>> {
+  try {
+    return { ok: true, data: await work() };
+  } catch (error) {
+    unstable_rethrow(error);
+    console.error(error);
+    return { ok: false, error: publicMessage(error) };
+  }
+}
+
+export async function createTrip(input: unknown) { return runAction(() => createTripAction(input)); }
+export async function addPlace(input: unknown) { return runAction(() => addPlaceAction(input)); }
+export async function updatePlace(input: unknown) { return runAction(() => updatePlaceAction(input)); }
+export async function updatePlaceDetails(input: unknown) { return runAction(() => updatePlaceDetailsAction(input)); }
+export async function updatePlacePlanning(input: unknown) { return runAction(() => updatePlacePlanningAction(input)); }
+export async function reorderDayPlaces(input: unknown) { return runAction(() => reorderDayPlacesAction(input)); }
+export async function removePlace(input: unknown) { return runAction(() => removePlaceAction(input)); }
+export async function addTripCity(input: unknown) { return runAction(() => addTripCityAction(input)); }
+export async function updateTripCity(input: unknown) { return runAction(() => updateTripCityAction(input)); }
+export async function removeTripCity(input: unknown) { return runAction(() => removeTripCityAction(input)); }
+export async function addDayNote(input: unknown) { return runAction(() => addDayNoteAction(input)); }
+export async function updateDayNote(input: unknown) { return runAction(() => updateDayNoteAction(input)); }
+export async function removeDayNote(input: unknown) { return runAction(() => removeDayNoteAction(input)); }
+export async function addFlight(input: unknown) { return runAction(() => addFlightAction(input)); }
+export async function updateFlight(input: unknown) { return runAction(() => updateFlightAction(input)); }
+export async function removeFlight(input: unknown) { return runAction(() => removeFlightAction(input)); }
+export async function addHotelStay(input: unknown) { return runAction(() => addHotelStayAction(input)); }
+export async function updateHotelStay(input: unknown) { return runAction(() => updateHotelStayAction(input)); }
+export async function removeHotelStay(input: unknown) { return runAction(() => removeHotelStayAction(input)); }
+export async function updateAgendaBrief(input: unknown) { return runAction(() => updateAgendaBriefAction(input)); }
+export async function saveAgendaDayNote(input: unknown) { return runAction(() => saveAgendaDayNoteAction(input)); }
+export async function addAgendaItem(input: unknown) { return runAction(() => addAgendaItemAction(input)); }
+export async function updateAgendaItem(input: unknown) { return runAction(() => updateAgendaItemAction(input)); }
+export async function removeAgendaItem(input: unknown) { return runAction(() => removeAgendaItemAction(input)); }
+export async function listTripInvites(input: unknown) { return runAction(() => listTripInvitesAction(input)); }
+export async function createEmailInvite(input: unknown) { return runAction(() => createEmailInviteAction(input)); }
+export async function createShareInvite(input: unknown) { return runAction(() => createShareInviteAction(input)); }
+export async function revokeInvite(input: unknown) { return runAction(() => revokeInviteAction(input)); }
+export async function inviteCollaborator(input: unknown) { return runAction(() => inviteCollaboratorAction(input)); }
+export async function updateTrip(input: unknown) { return runAction(() => updateTripAction(input)); }
+export async function deleteTrip(input: unknown) { return runAction(() => deleteTripAction(input)); }
+export async function saveTransitPlan(input: unknown) { return runAction(() => saveTransitPlanAction(input)); }
+export async function removeTransitPlan(input: unknown) { return runAction(() => removeTransitPlanAction(input)); }
+export async function saveFinanceSettings(input: unknown) { return runAction(() => saveFinanceSettingsAction(input)); }
+export async function addExpense(input: unknown) { return runAction(() => addExpenseAction(input)); }
+export async function updateExpense(input: unknown) { return runAction(() => updateExpenseAction(input)); }
+export async function removeExpense(input: unknown) { return runAction(() => removeExpenseAction(input)); }

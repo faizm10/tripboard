@@ -189,6 +189,12 @@ export type TripExpense = {
   paidBy: string;
   split: ExpenseSplit;
   spentOn?: string | null;
+  /** "payment" records one person paying another back; it settles balances but isn't spending. */
+  kind?: "expense" | "payment";
+  /** The currency it was paid in, when different from the trip's. */
+  currency?: string | null;
+  /** How many trip-currency units one unit of `currency` was worth. */
+  rate?: number;
 };
 
 export type TripFinances = {

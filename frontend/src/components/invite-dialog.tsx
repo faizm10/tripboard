@@ -8,6 +8,7 @@ import {
   listTripInvites,
   revokeInvite,
 } from "@/app/trips/actions";
+import { unwrap } from "@/lib/action-result";
 import type { TripInvitationSummary } from "@/lib/types";
 
 type InviteMode = "email" | "share";
@@ -63,7 +64,7 @@ export function InviteDialog({
   useEffect(() => {
     if (demo) return;
     let active = true;
-    listTripInvites({ tripId })
+    unwrap(listTripInvites({ tripId }))
       .then((result) => {
         if (!active) return;
         setInvites(result.invites);
@@ -93,12 +94,12 @@ export function InviteDialog({
         return;
       }
       const result = mode === "email"
-        ? await createEmailInvite({ tripId, email })
-        : await createShareInvite({ tripId });
+        ? await unwrap(createEmailInvite({ tripId, email }))
+        : await unwrap(createShareInvite({ tripId }));
       setGenerated(result);
       await copyInvite(result.inviteUrl);
       if (!result.demo) {
-        const refreshed = await listTripInvites({ tripId });
+        const refreshed = await unwrap(listTripInvites({ tripId }));
         setInvites(refreshed.invites);
       }
       if (mode === "email") setEmail("");
@@ -114,7 +115,7 @@ export function InviteDialog({
     setError("");
     setMessage("");
     try {
-      await revokeInvite({ tripId, invitationId });
+      await unwrap(revokeInvite({ tripId, invitationId }));
       setInvites((current) => current.filter((invite) => invite.id !== invitationId));
       setMessage("Invite revoked");
     } catch (reason) {

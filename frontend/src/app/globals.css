@@ -2661,6 +2661,84 @@ button.journey-board-toggle { cursor: pointer; }
   .workspace-mode button svg { display: none; }
 }
 
+/* Money: other currencies, trip quick-fill, and recorded payments. */
+.money-amount > div { display: grid; grid-template-columns: minmax(0, 1fr) 92px; gap: 6px; }
+.money-rate { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; padding: 10px 12px; border-radius: var(--radius-md); background: var(--surface); }
+.money-rate label { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 650; }
+.money-rate input { width: 120px; min-height: 36px; }
+.money-rate small { color: var(--muted); font-size: 12px; }
+.money-prefill { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.money-prefill small { margin-right: 2px; color: var(--muted); font-size: 11px; font-weight: 650; }
+.money-prefill button { display: inline-flex; min-height: 30px; padding: 0 10px; align-items: center; gap: 5px; border: 1px dashed var(--line); border-radius: var(--radius-round); background: var(--paper-raised); color: var(--ink); font-size: 12px; cursor: pointer; }
+.money-prefill button:hover { border-color: var(--ink); border-style: solid; }
+.money-settle li { grid-template-columns: auto auto auto 1fr auto; }
+.money-paid { display: inline-flex; min-height: 30px; padding: 0 10px; align-items: center; gap: 4px; border: 1px solid var(--accent); border-radius: var(--radius-round); background: var(--paper-raised); color: var(--accent-deep); font-size: 12px; font-weight: 650; cursor: pointer; }
+.money-paid:hover { background: var(--accent); color: var(--paper-raised); }
+.money-expenses b small { display: block; color: var(--muted); font-size: 11px; font-weight: 500; text-align: right; }
+.money-payments { display: grid; margin: 0; padding: 0; gap: 4px; list-style: none; }
+.money-payments li { display: grid; min-height: 42px; padding: 0 4px 0 12px; grid-template-columns: 16px minmax(0, 1fr) auto 32px; align-items: center; gap: 8px; border-radius: var(--radius-md); background: var(--surface); color: var(--muted); font-size: 13px; }
+.money-payments li > svg { color: #1b7a43; }
+.money-payments b { color: var(--ink); font-variant-numeric: tabular-nums; }
+@media (max-width: 640px) {
+  .money-settle li { grid-template-columns: auto auto 1fr auto; }
+  .money-settle li .money-paid { grid-column: 1 / -1; justify-self: start; }
+}
+/* Day context: weather for the day and whether each stop is open. */
+.day-weather { display: flex; margin: 4px 0 2px; align-items: center; gap: 6px; color: var(--ink); font-size: 13px; font-variant-numeric: tabular-nums; }
+.day-weather.typical { color: var(--muted); }
+.place-hours { display: inline-flex; margin-top: 4px; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; }
+.place-hours.open { color: #1b7a43; }
+.place-hours.closed { color: #b42318; }
+/* Trip bar export links sit beside Invite in the same quiet style. */
+.places-panel-logistics-row .trip-bar-link { display: inline-flex; align-items: center; gap: 6px; border-bottom: 1px solid var(--line); color: var(--ink); font-size: 11px; text-decoration: none; white-space: nowrap; }
+.places-panel-logistics-row .trip-bar-link:hover { border-color: var(--ink); }
+
+/* Printable itinerary: readable on screen, clean on paper. */
+.itinerary-page { max-width: 760px; margin: 0 auto; padding: 28px 20px 60px; background: var(--paper); color: var(--ink); }
+.itinerary-toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 28px; }
+.itinerary-toolbar .button { gap: 6px; }
+.itinerary-head p { margin: 0; color: var(--muted); font-size: 13px; }
+.itinerary-head h1 { margin: 6px 0; font-size: 34px; letter-spacing: -.04em; }
+.itinerary-brief { margin-top: 24px; }
+.itinerary-brief p { white-space: pre-wrap; font-size: 14px; line-height: 1.55; }
+.itinerary-day { padding: 18px 0; border-bottom: 1px solid var(--line); break-inside: avoid; }
+.itinerary-day h2, .itinerary-brief h2 { display: flex; margin: 0 0 10px; align-items: baseline; gap: 10px; font-size: 18px; letter-spacing: -.02em; }
+.itinerary-day h2 span { color: var(--accent-deep); font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.itinerary-line { margin: 4px 0; font-size: 14px; line-height: 1.5; }
+.itinerary-journey { font-variant-numeric: tabular-nums; }
+.itinerary-note { color: var(--muted); font-style: italic; }
+.itinerary-empty { color: var(--muted); }
+.itinerary-places { margin: 8px 0 0; padding-left: 22px; list-style: decimal; }
+ul.itinerary-places { list-style: disc; }
+.itinerary-places li { margin: 0 0 8px; font-size: 14px; line-height: 1.45; }
+.itinerary-places li span, .itinerary-places li em { display: block; color: var(--muted); font-size: 13px; }
+@media print {
+  .itinerary-toolbar, .offline-banner, nextjs-portal { display: none !important; }
+  .itinerary-page { max-width: none; padding: 0; }
+  .itinerary-head h1 { font-size: 26px; }
+  body { background: #fff; }
+}
+/* Import bookings from a pasted confirmation email. */
+.import-dialog { width: min(600px, calc(100vw - 32px)); }
+.import-hint { margin: 0 0 12px; color: var(--muted); font-size: 13px; line-height: 1.5; }
+.import-text { width: 100%; min-height: 180px; margin-bottom: 12px; font-size: 13px; }
+.import-results { display: grid; max-height: min(52vh, 460px); margin: 0 0 12px; padding: 0; gap: 8px; overflow-y: auto; list-style: none; }
+.import-results li { display: grid; padding: 10px 12px; gap: 8px; border: 1px solid var(--line); border-radius: var(--radius-md); }
+.import-results li.needs-attention { border-color: var(--accent); background: var(--accent-soft); }
+.import-pick { display: grid; grid-template-columns: 18px 32px minmax(0, 1fr); align-items: center; gap: 10px; cursor: pointer; }
+.import-pick input { width: 18px; height: 18px; min-height: 0; padding: 0; border: 0; appearance: auto; accent-color: var(--accent); }
+.import-pick > span:last-child { display: grid; min-width: 0; gap: 2px; }
+.import-pick strong { font-size: 14px; }
+.import-pick small { overflow: hidden; color: var(--muted); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.import-times { display: grid; padding-left: 60px; grid-template-columns: 1fr 1fr; gap: 8px; }
+.import-times label { display: grid; gap: 3px; color: var(--muted); font-size: 11px; font-weight: 650; }
+.import-times input { min-height: 38px; }
+.spin { animation: tripboard-spin 0.9s linear infinite; }
+@keyframes tripboard-spin { to { transform: rotate(360deg); } }
+@media (max-width: 640px) { .import-times { padding-left: 0; } }
+.admin-schema-warning { margin: 0 0 20px; padding: 14px 16px; border: 1px solid #f1b8b0; border-radius: var(--radius-md); background: #fff4f2; color: #7a1f14; }
+.admin-schema-warning p { margin: 4px 0 0; font-size: 13px; line-height: 1.5; }
+.admin-schema-warning code { font-family: var(--font-mono), monospace; font-size: 12px; }
 /* Collaboration: a nudge when someone else changes the trip, and a recent-changes list. */
 .activity-banner { display: flex; margin: 10px 28px 0; padding: 8px 8px 8px 14px; align-items: center; gap: 10px; border: 1px solid var(--accent-line); border-radius: var(--radius-md); background: var(--accent-soft); color: var(--ink); font-size: 13px; }
 .activity-banner > span { min-width: 0; flex: 1; }

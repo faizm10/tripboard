@@ -4,6 +4,7 @@ import { ArrowRight, CalendarDays } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { createTrip } from "@/app/trips/actions";
+import { unwrap } from "@/lib/action-result";
 import { CityField } from "@/components/city-field";
 import { createTripSchema } from "@/lib/validators";
 
@@ -27,7 +28,7 @@ export function NewTripForm() {
     setPending(true);
     setError("");
     try {
-      const result = await createTrip(parsed.data);
+      const result = await unwrap(createTrip(parsed.data));
       router.push(result.demo ? "/trips/nyc-weekender?fresh=1" : `/trips/${result.id}`);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "The trip could not be created.");
