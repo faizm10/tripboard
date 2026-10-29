@@ -33,6 +33,8 @@ import {
   ShoppingBag,
   Trash2,
   TramFront,
+  CalendarPlus,
+  Printer,
   ClipboardPaste,
   Wallet,
   Utensils,
@@ -725,6 +727,8 @@ export function TripWorkspace({
             <DropdownMenuContent className="planner-menu" align="end">
               <DropdownMenuItem onSelect={() => setLogisticsOpen(true)}><Pencil size={16} /> Trip details</DropdownMenuItem>
               <DropdownMenuItem onSelect={() => setInviteOpen(true)}><Share2 size={16} /> Invite people</DropdownMenuItem>
+              <DropdownMenuItem asChild><a href={`/trips/${trip.id}/calendar`}><CalendarPlus size={16} /> Add to calendar</a></DropdownMenuItem>
+              <DropdownMenuItem asChild><a href={`/trips/${trip.id}/print`}><Printer size={16} /> Printable itinerary</a></DropdownMenuItem>
               <DropdownMenuItem onSelect={() => { setNewCityForPlace(false); setCityOpen(true); }}><Plus size={16} /> Add city stop</DropdownMenuItem>
               {activeCityId !== "all" && cities.length > 1 ? <DropdownMenuItem variant="destructive" onSelect={() => removeCity(activeCityId)}><Trash2 size={16} /> Remove this city</DropdownMenuItem> : null}
             </DropdownMenuContent>
@@ -749,6 +753,8 @@ export function TripWorkspace({
               {saveState === "saving" ? "Saving" : saveState === "saved" ? "Saved" : (saveNotice || "Couldn’t save")}
             </span>
           ) : null}
+          <a className="trip-bar-link" href={`/trips/${trip.id}/calendar`}><CalendarPlus size={14} /> Calendar</a>
+          <a className="trip-bar-link" href={`/trips/${trip.id}/print`}><Printer size={14} /> Print</a>
           <button onClick={() => setInviteOpen(true)} type="button"><Share2 size={14} /> Invite</button>
         </div>
       </div>
