@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { updateAgendaBrief } from "@/app/trips/actions";
+import { unwrap } from "@/lib/action-result";
 import type { TripAgenda } from "@/lib/types";
 
 type SaveState = "idle" | "saving" | "saved" | "error";
@@ -28,7 +29,7 @@ export function AgendaPanel({
     if (!persistable) return;
     onSaveState("saving");
     try {
-      await updateAgendaBrief({ tripId, brief: value });
+      await unwrap(updateAgendaBrief({ tripId, brief: value }));
       onSaveState("saved");
     } catch {
       onSaveState("error");

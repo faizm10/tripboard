@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { deleteTrip, updateTrip } from "@/app/trips/actions";
+import { unwrap } from "@/lib/action-result";
 import { CityField } from "@/components/city-field";
 import { CountryFlag } from "@/components/country-flag";
 import { flagCodeForTrip } from "@/lib/country-flag";
@@ -88,7 +89,7 @@ export function TripLogisticsDialog({
     setPending(true);
     setError("");
     try {
-      await updateTrip({ ...parsed.data, tripId: trip.id });
+      await unwrap(updateTrip({ ...parsed.data, tripId: trip.id }));
       onSave(next);
       onClose();
     } catch (reason) {
@@ -101,7 +102,7 @@ export function TripLogisticsDialog({
     setDeleting(true);
     setError("");
     try {
-      await deleteTrip({ tripId: trip.id });
+      await unwrap(deleteTrip({ tripId: trip.id }));
       router.push("/trips");
       router.refresh();
     } catch (reason) {
