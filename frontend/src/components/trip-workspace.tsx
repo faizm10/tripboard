@@ -1165,7 +1165,11 @@ function DayPlan({
   const [transitDraft, setTransitDraft] = useState<{ fromId: string; toId: string; plan: TransitPlan | null } | null>(null);
   const [removingTransitId, setRemovingTransitId] = useState<string | null>(null);
   const [transitError, setTransitError] = useState("");
-  useEffect(() => { setTransitDraft(null); }, [currentDate]);
+  const [draftDate, setDraftDate] = useState(currentDate);
+  if (draftDate !== currentDate) {
+    setDraftDate(currentDate);
+    setTransitDraft(null);
+  }
 
   function movePage(delta: number) {
     const nextIndex = Math.min(Math.max(clampedPageIndex + delta, 0), Math.max(0, totalPages - 1));

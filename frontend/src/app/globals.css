@@ -2660,3 +2660,7 @@ button.journey-board-toggle { cursor: pointer; }
   .workspace-mode button { gap: 4px; font-size: 11px; }
   .workspace-mode button svg { display: none; }
 }
+
+.admin-schema-warning { margin: 0 0 20px; padding: 14px 16px; border: 1px solid #f1b8b0; border-radius: var(--radius-md); background: #fff4f2; color: #7a1f14; }
+.admin-schema-warning p { margin: 4px 0 0; font-size: 13px; line-height: 1.5; }
+.admin-schema-warning code { font-family: var(--font-mono), monospace; font-size: 12px; }
