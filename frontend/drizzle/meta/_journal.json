@@ -127,6 +127,13 @@
       "when": 1793313950887,
       "tag": "0017_expense_currency_payments",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1793315833739,
+      "tag": "0018_trip_activity",
+      "breakpoints": true
     }
   ]
 }

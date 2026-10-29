@@ -286,6 +286,16 @@ export const tripExpenses = pgTable("trip_expenses", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [index("trip_expenses_trip_idx").on(table.tripId, table.createdAt)]);
 
+/** A short, human-readable line per change, so collaborators can see what moved and refresh. */
+export const tripActivity = pgTable("trip_activity", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tripId: uuid("trip_id").notNull().references(() => trips.id, { onDelete: "cascade" }),
+  actorId: text("actor_id").notNull(),
+  actorName: text("actor_name").notNull(),
+  summary: text("summary").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [index("trip_activity_trip_created_idx").on(table.tripId, table.createdAt)]);
+
 /** Per-user assistant preferences. A missing row means the defaults. */
 export const assistantSettings = pgTable("assistant_settings", {
   userId: text("user_id").primaryKey(),

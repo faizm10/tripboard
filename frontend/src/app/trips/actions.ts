@@ -7,7 +7,7 @@ import type { ActionResult } from "@/lib/action-result";
 import { getViewer } from "@/lib/auth";
 import { getDatabase } from "@/lib/db";
 import { countryFromDestination } from "@/lib/dates";
-import { tripExpenses, tripFinances, tripTransitPlans, tripAgendaDayNotes, tripAgendaItems, tripAgendas, tripCities, tripDayNotes, tripFlights, tripHotels, tripInvitationAcceptances, tripInvitations, tripMembers, tripPlaces, trips } from "@/lib/db/schema";
+import { tripActivity, tripExpenses, tripFinances, tripTransitPlans, tripAgendaDayNotes, tripAgendaItems, tripAgendas, tripCities, tripDayNotes, tripFlights, tripHotels, tripInvitationAcceptances, tripInvitations, tripMembers, tripPlaces, trips } from "@/lib/db/schema";
 import { createInviteToken, hashInviteToken, inviteExpiresAt, inviteStatus } from "@/lib/invitations";
 import type { TripInvitationSummary } from "@/lib/types";
 import {
@@ -81,6 +81,21 @@ async function requireOwner(tripId: string, userId: string) {
 function revalidateTrip(tripId: string) {
   revalidatePath("/trips");
   revalidatePath(`/trips/${tripId}`);
+}
+
+/**
+ * Refreshes the trip like revalidateTrip and records a one-line summary for collaborators.
+ * Logging never blocks the save: before the activity migration runs it is silently skipped.
+ */
+async function recordChange(tripId: string, viewer: { id: string; name?: string | null }, summary: string) {
+  revalidateTrip(tripId);
+  const db = getDatabase();
+  if (!db) return;
+  try {
+    await db.insert(tripActivity).values({ tripId, actorId: viewer.id, actorName: viewer.name?.trim() || "Someone", summary: summary.slice(0, 200) });
+  } catch (error) {
+    console.warn("Couldn't record trip activity", error);
+  }
 }
 
 function optionalValue(value?: string) {
@@ -281,7 +296,7 @@ async function addPlaceAction(input: unknown) {
         if (!isPlanningSchemaMissing(error)) throw error;
         return db.insert(tripPlaces).values(values).returning({ id: tripPlaces.id });
       });
-    revalidateTrip(data.tripId);
+    await recordChange(data.tripId, viewer, `added ${data.name}`);
     return { demo: false, id: saved.id };
   } catch (error) {
     if (isPlaceDayConflict(error)) throw placeDayConflictError(data.plannedDate);
@@ -333,7 +348,7 @@ async function updatePlaceDetailsAction(input: unknown) {
     throw error;
   }
   if (!updated) throw new Error("This place could not be updated.");
-  revalidateTrip(data.tripId);
+  await recordChange(data.tripId, viewer, "edited a place");
   return { demo: false };
 }
 
@@ -368,7 +383,7 @@ async function updatePlacePlanningAction(input: unknown) {
     throw error;
   }
   if (!updated) throw new Error("This place could not be updated.");
-  revalidateTrip(data.tripId);
+  await recordChange(data.tripId, viewer, data.plannedDate ? `moved a place to ${data.plannedDate}` : "moved a place off its day");
   return { demo: false };
 }
 
@@ -398,7 +413,7 @@ async function reorderDayPlacesAction(input: unknown) {
     if (isPlanningSchemaMissing(error)) throw planningMigrationError();
     throw error;
   }
-  revalidateTrip(data.tripId);
+  await recordChange(data.tripId, viewer, "reordered a day");
   return { demo: false };
 }
 
@@ -409,7 +424,7 @@ async function removePlaceAction(input: unknown) {
   if (!db) return { demo: true };
   await requireEditor(data.tripId, viewer.id);
   await db.delete(tripPlaces).where(and(eq(tripPlaces.id, data.placeId), eq(tripPlaces.tripId, data.tripId)));
-  revalidateTrip(data.tripId);
+  await recordChange(data.tripId, viewer, "removed a place");
   return { demo: false };
 }
 
@@ -440,7 +455,7 @@ async function addTripCityAction(input: unknown) {
       sortOrder: Number(order?.next ?? 0),
     })
     .returning({ id: tripCities.id });
-  revalidateTrip(data.tripId);
+  await recordChange(data.tripId, viewer, `added ${data.name} as a stop`);
   return { demo: false, id: city.id };
 }
 
@@ -468,7 +483,7 @@ async function updateTripCityAction(input: unknown) {
     .where(and(eq(tripCities.id, data.cityId), eq(tripCities.tripId, data.tripId)))
     .returning({ id: tripCities.id });
   if (!updated) throw new Error("This city could not be updated.");
-  revalidateTrip(data.tripId);
+  await recordChange(data.tripId, viewer, "updated a city stop");
   return { demo: false };
 }
 
@@ -493,7 +508,7 @@ async function removeTripCityAction(input: unknown) {
     .set({ cityId: null, updatedAt: new Date() })
     .where(and(eq(tripDayNotes.tripId, data.tripId), eq(tripDayNotes.cityId, data.cityId)));
   await db.delete(tripCities).where(and(eq(tripCities.id, data.cityId), eq(tripCities.tripId, data.tripId)));
-  revalidateTrip(data.tripId);
+  await recordChange(data.tripId, viewer, "removed a city stop");
   return { demo: false };
 }
 
@@ -524,7 +539,7 @@ async function addDayNoteAction(input: unknown) {
       addedBy: viewer.id,
     })
     .returning({ id: tripDayNotes.id });
-  revalidateTrip(data.tripId);
+  await recordChange(data.tripId, viewer, "added a day note");
   return { demo: false, id: note.id };
 }
 
@@ -551,7 +566,7 @@ async function updateDayNoteAction(input: unknown) {
     .where(and(eq(tripDayNotes.id, data.noteId), eq(tripDayNotes.tripId, data.tripId)))
     .returning({ id: tripDayNotes.id });
   if (!updated) throw new Error("This note could not be updated.");
-  revalidateTrip(data.tripId);
+  await recordChange(data.tripId, viewer, "edited a day note");
   return { demo: false };
 }
 
@@ -568,7 +583,7 @@ async function removeDayNoteAction(input: unknown) {
     throw error;
   }
   await db.delete(tripDayNotes).where(and(eq(tripDayNotes.id, data.noteId), eq(tripDayNotes.tripId, data.tripId)));
-  revalidateTrip(data.tripId);
+  await recordChange(data.tripId, viewer, "removed a day note");
   return { demo: false };
 }
 
@@ -594,7 +609,7 @@ async function addFlightAction(input: unknown) {
         arrivalTime: data.arrivalTime,
       })
       .returning({ id: tripFlights.id });
-    revalidateTrip(data.tripId);
+    await recordChange(data.tripId, viewer, `added ${data.mode === "train" ? "a train" : data.mode === "bus" ? "a bus" : "a flight"} ${data.departureAirport} → ${data.arrivalAirport}`);
     return { demo: false, id: flight.id };
   } catch (error) {
     if (isFlightSchemaMissing(error)) throw flightMigrationError();
@@ -626,7 +641,7 @@ async function updateFlightAction(input: unknown) {
       .where(and(eq(tripFlights.id, data.flightId), eq(tripFlights.tripId, data.tripId)))
       .returning({ id: tripFlights.id });
     if (!flight) throw new Error("This flight could not be updated.");
-    revalidateTrip(data.tripId);
+    await recordChange(data.tripId, viewer, `updated ${data.departureAirport} → ${data.arrivalAirport}`);
     return { demo: false };
   } catch (error) {
     if (isFlightSchemaMissing(error)) throw flightMigrationError();
@@ -642,7 +657,7 @@ async function removeFlightAction(input: unknown) {
   await requireEditor(data.tripId, viewer.id);
   try {
     await db.delete(tripFlights).where(and(eq(tripFlights.id, data.flightId), eq(tripFlights.tripId, data.tripId)));
-    revalidateTrip(data.tripId);
+    await recordChange(data.tripId, viewer, "removed a trip leg");
     return { demo: false };
   } catch (error) {
     if (isFlightSchemaMissing(error)) throw flightMigrationError();
@@ -660,7 +675,7 @@ async function addHotelStayAction(input: unknown) {
     await ensureHotelCity(data.tripId, optionalValue(data.cityId));
     await ensureHotelDatesAvailable(data.tripId, data.startDate, data.endDate, optionalValue(data.cityId));
     const [stay] = await db.insert(tripHotels).values({ ...data, cityId: optionalValue(data.cityId) }).returning({ id: tripHotels.id });
-    revalidateTrip(data.tripId);
+    await recordChange(data.tripId, viewer, `added ${data.name} as a hotel`);
     return { demo: false, id: stay.id };
   } catch (error) {
     if (isHotelSchemaMissing(error)) throw hotelMigrationError();
@@ -682,7 +697,7 @@ async function updateHotelStayAction(input: unknown) {
       longitude: data.longitude, latitude: data.latitude, startDate: data.startDate, endDate: data.endDate, updatedAt: new Date(),
     }).where(and(eq(tripHotels.id, data.hotelId), eq(tripHotels.tripId, data.tripId))).returning({ id: tripHotels.id });
     if (!stay) throw new Error("This hotel stay could not be updated.");
-    revalidateTrip(data.tripId);
+    await recordChange(data.tripId, viewer, `updated the stay at ${data.name}`);
     return { demo: false };
   } catch (error) {
     if (isHotelSchemaMissing(error)) throw hotelMigrationError();
@@ -698,7 +713,7 @@ async function removeHotelStayAction(input: unknown) {
   await requireEditor(data.tripId, viewer.id);
   try {
     await db.delete(tripHotels).where(and(eq(tripHotels.id, data.hotelId), eq(tripHotels.tripId, data.tripId)));
-    revalidateTrip(data.tripId);
+    await recordChange(data.tripId, viewer, "removed a hotel stay");
     return { demo: false };
   } catch (error) {
     if (isHotelSchemaMissing(error)) throw hotelMigrationError();
@@ -724,7 +739,7 @@ async function updateAgendaBriefAction(input: unknown) {
     if (isAgendaSchemaMissing(error)) throw agendaMigrationError();
     throw error;
   }
-  revalidateTrip(data.tripId);
+  await recordChange(data.tripId, viewer, "edited the agenda");
   return { demo: false };
 }
 
@@ -778,7 +793,7 @@ async function addAgendaItemAction(input: unknown) {
         sortOrder: Number(order?.next ?? 0),
       })
       .returning({ id: tripAgendaItems.id, sortOrder: tripAgendaItems.sortOrder });
-    revalidateTrip(data.tripId);
+    await recordChange(data.tripId, viewer, `added “${data.title}” to the agenda`);
     return { demo: false, id: item.id, sortOrder: item.sortOrder };
   } catch (error) {
     if (isAgendaSchemaMissing(error)) throw agendaMigrationError();
@@ -827,7 +842,7 @@ async function removeAgendaItemAction(input: unknown) {
     if (isAgendaSchemaMissing(error)) throw agendaMigrationError();
     throw error;
   }
-  revalidateTrip(data.tripId);
+  await recordChange(data.tripId, viewer, "removed an agenda item");
   return { demo: false };
 }
 
@@ -1070,7 +1085,7 @@ async function saveTransitPlanAction(input: unknown) {
       .returning({ id: tripTransitPlans.id })
     : await db.insert(tripTransitPlans).values(values).returning({ id: tripTransitPlans.id });
   if (!saved) throw new Error("This transit plan could not be updated.");
-  revalidateTrip(data.tripId);
+  await recordChange(data.tripId, viewer, "planned a commute");
   return saved;
 }
 
@@ -1081,7 +1096,7 @@ async function removeTransitPlanAction(input: unknown) {
   if (!db) throw new Error("Transit plans could not be saved. Try again later.");
   await requireEditor(data.tripId, viewer.id);
   await db.delete(tripTransitPlans).where(and(eq(tripTransitPlans.id, data.id), eq(tripTransitPlans.tripId, data.tripId)));
-  revalidateTrip(data.tripId);
+  await recordChange(data.tripId, viewer, "removed a commute");
 }
 
 function isFinanceSchemaMissing(error: unknown) {
@@ -1113,7 +1128,7 @@ async function saveFinanceSettingsAction(input: unknown) {
     .insert(tripFinances)
     .values({ tripId: data.tripId, currency: data.currency, people })
     .onConflictDoUpdate({ target: tripFinances.tripId, set: { currency: data.currency, people, updatedAt: new Date() } }));
-  revalidateTrip(data.tripId);
+  await recordChange(data.tripId, viewer, "updated who’s splitting costs");
   return { demo: false };
 }
 
@@ -1127,7 +1142,7 @@ async function addExpenseAction(input: unknown) {
     .insert(tripExpenses)
     .values({ tripId: data.tripId, title: data.title, amountCents: data.amountCents, paidBy: data.paidBy, split: data.split, spentOn: data.spentOn || null, kind: data.kind, currency: data.currency ?? null, rate: data.rate, createdBy: viewer.id })
     .returning({ id: tripExpenses.id }));
-  revalidateTrip(data.tripId);
+  await recordChange(data.tripId, viewer, `added ${data.title} to Money`);
   return { id: row.id, demo: false };
 }
 
@@ -1141,7 +1156,7 @@ async function updateExpenseAction(input: unknown) {
     .update(tripExpenses)
     .set({ title: data.title, amountCents: data.amountCents, paidBy: data.paidBy, split: data.split, spentOn: data.spentOn || null, kind: data.kind, currency: data.currency ?? null, rate: data.rate, updatedAt: new Date() })
     .where(and(eq(tripExpenses.id, data.expenseId), eq(tripExpenses.tripId, data.tripId))));
-  revalidateTrip(data.tripId);
+  await recordChange(data.tripId, viewer, `updated ${data.title} in Money`);
   return { demo: false };
 }
 
@@ -1152,7 +1167,7 @@ async function removeExpenseAction(input: unknown) {
   if (!db) return { demo: true };
   await requireEditor(data.tripId, viewer.id);
   await withFinanceSchema(() => db.delete(tripExpenses).where(and(eq(tripExpenses.id, data.expenseId), eq(tripExpenses.tripId, data.tripId))));
-  revalidateTrip(data.tripId);
+  await recordChange(data.tripId, viewer, "removed an expense");
   return { demo: false };
 }
 

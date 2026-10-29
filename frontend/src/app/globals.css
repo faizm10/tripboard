@@ -2739,3 +2739,14 @@ ul.itinerary-places { list-style: disc; }
 .admin-schema-warning { margin: 0 0 20px; padding: 14px 16px; border: 1px solid #f1b8b0; border-radius: var(--radius-md); background: #fff4f2; color: #7a1f14; }
 .admin-schema-warning p { margin: 4px 0 0; font-size: 13px; line-height: 1.5; }
 .admin-schema-warning code { font-family: var(--font-mono), monospace; font-size: 12px; }
+/* Collaboration: a nudge when someone else changes the trip, and a recent-changes list. */
+.activity-banner { display: flex; margin: 10px 28px 0; padding: 8px 8px 8px 14px; align-items: center; gap: 10px; border: 1px solid var(--accent-line); border-radius: var(--radius-md); background: var(--accent-soft); color: var(--ink); font-size: 13px; }
+.activity-banner > span { min-width: 0; flex: 1; }
+.activity-banner .button { flex: none; gap: 5px; }
+.activity-menu { width: min(340px, calc(100vw - 32px)); padding: 6px 4px; }
+.activity-menu-title { margin: 4px 10px 6px; color: var(--muted); font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.activity-menu ul { max-height: 320px; margin: 0; padding: 0; overflow-y: auto; list-style: none; }
+.activity-menu li { padding: 7px 10px; border-top: 1px solid var(--line-soft); font-size: 13px; line-height: 1.4; }
+.activity-menu li small { display: block; color: var(--muted); font-size: 11px; }
+.activity-menu-empty { margin: 4px 10px 8px; color: var(--muted); font-size: 13px; }
+@media (max-width: 1099px) { .activity-banner { margin: 8px 20px 0; } }
