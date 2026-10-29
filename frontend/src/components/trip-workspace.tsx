@@ -66,6 +66,7 @@ import { TransitEditor, TransitRideCard, transitLegs, type TransitDraft } from "
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { CityField } from "@/components/city-field";
 import { EditPlaceDialog, type PlaceEditDraft } from "@/components/edit-place-dialog";
+import { DayWeather, PlaceHours } from "@/components/day-context";
 import { FlightPlanDialog, JourneyIcon, journeyModeOf, type FlightDraft } from "@/components/flight-plan-dialog";
 import { FinancePanel } from "@/components/finance-panel";
 import { HotelStayDialog, type HotelStayDraft } from "@/components/hotel-stay-dialog";
@@ -1265,6 +1266,7 @@ function DayPlan({
       ) : null}
       {!searching && currentDate && label ? (
         <section className={`day-section${activeDate === currentDate ? " active" : ""}`}>
+          <DayWeather coordinates={dayHotel?.coordinates ?? dayPlaces[0]?.coordinates ?? null} date={currentDate} />
           <header className="day-section-bar">
             <h2 className="sr-only">{label.day}, {label.date}</h2>
             <details className="day-notes-disclosure">
@@ -1485,6 +1487,7 @@ function DayPlaceRow({
             🗺️
           </a>
         </small>
+        {place.plannedDate && place.fsqPlaceId && place.category !== "Transit" ? <PlaceHours date={place.plannedDate} placeId={place.fsqPlaceId} /> : null}
         {place.note ? <p className="place-note">{place.note}</p> : null}
 
         <div className="place-actions">

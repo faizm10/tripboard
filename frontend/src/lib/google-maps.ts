@@ -328,3 +328,16 @@ export async function googlePlacePhotoUrl(placeId: string, placeName: string) {
 function componentOf(place: GooglePlace, type: string) {
   return place.addressComponents?.find((component) => component.types?.includes(type))?.longText?.trim();
 }
+
+/** The place's regular weekly hours as Google words them ("Monday: 9:00 AM – 5:00 PM"), or null if unknown. */
+export async function googleOpeningHours(placeId: string): Promise<string[] | null> {
+  const key = getGoogleMapsKey();
+  if (!key || placeId.startsWith("demo-")) return null;
+  const response = await fetch(`https://places.googleapis.com/v1/places/${encodeURIComponent(placeId)}`, {
+    headers: { "X-Goog-Api-Key": key, "X-Goog-FieldMask": "regularOpeningHours.weekdayDescriptions" },
+    cache: "no-store",
+  });
+  if (!response.ok) return null;
+  const body = (await response.json()) as { regularOpeningHours?: { weekdayDescriptions?: string[] } };
+  return body.regularOpeningHours?.weekdayDescriptions ?? null;
+}
