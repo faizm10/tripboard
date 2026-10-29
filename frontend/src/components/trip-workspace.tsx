@@ -33,6 +33,7 @@ import {
   ShoppingBag,
   Trash2,
   TramFront,
+  ClipboardPaste,
   Wallet,
   Utensils,
   X,
@@ -69,6 +70,7 @@ import { EditPlaceDialog, type PlaceEditDraft } from "@/components/edit-place-di
 import { FlightPlanDialog, JourneyIcon, journeyModeOf, type FlightDraft } from "@/components/flight-plan-dialog";
 import { FinancePanel } from "@/components/finance-panel";
 import { HotelStayDialog, type HotelStayDraft } from "@/components/hotel-stay-dialog";
+import { ImportBookingDialog } from "@/components/import-booking-dialog";
 import { InviteDialog } from "@/components/invite-dialog";
 import { PlacePhoto } from "@/components/place-photo";
 import { TripLogisticsDialog, type TripDetails } from "@/components/trip-logistics-dialog";
@@ -183,6 +185,7 @@ export function TripWorkspace({
   const [placeEditor, setPlaceEditor] = useState<Place | null>(null);
   const [flightEditor, setFlightEditor] = useState<{ mode: JourneyMode; flight: Flight | null } | null>(null);
   const [hotelEditor, setHotelEditor] = useState<HotelStay | "new" | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
   const [routeMode, setRouteMode] = useState<TravelMode | null>(null);
   const [routeStats, setRouteStats] = useState<RouteStats | null>(null);
   const [navOpen, setNavOpen] = useState(false);
@@ -800,6 +803,7 @@ export function TripWorkspace({
             flights={flights}
             onAdd={(mode) => setFlightEditor({ mode, flight: null })}
             onEdit={(flight) => setFlightEditor({ mode: journeyModeOf(flight), flight })}
+            onImport={() => setImportOpen(true)}
           />}
           {workspaceMode === "saved" ? visiblePlaces.map((place) => {
             const originalIndex = places.findIndex((item) => item.id === place.id);
@@ -864,6 +868,7 @@ export function TripWorkspace({
               onAddNote={addNote}
               onFocusDate={setActiveDate}
               onAddJourney={(mode) => setFlightEditor({ mode, flight: null })}
+              onImportBookings={() => setImportOpen(true)}
               onEditFlight={(flight) => setFlightEditor({ mode: journeyModeOf(flight), flight })}
               onAddHotel={() => setHotelEditor("new")}
               onEditHotel={(hotel) => setHotelEditor(hotel)}
@@ -961,6 +966,7 @@ export function TripWorkspace({
           onSave={saveFlight}
         />
       ) : null}
+      {importOpen ? <ImportBookingDialog cities={cities} onAddHotel={saveHotel} onAddJourney={saveFlight} onClose={() => setImportOpen(false)} tripStart={planDates[0]} /> : null}
       {hotelEditor ? <HotelStayDialog cities={cities} dates={planDates} destination={selectedCity?.name ?? details.destination} flights={flights} hotel={hotelEditor === "new" ? null : hotelEditor} hotels={hotels} initialDate={activeDate ?? planDates[0] ?? ""} onClose={() => setHotelEditor(null)} onDelete={removeHotel} onSave={saveHotel} /> : null}
       {inviteOpen ? <InviteDialog demo={!persistable} onClose={() => setInviteOpen(false)} tripId={trip.id} /> : null}
       {logisticsOpen ? (
@@ -993,17 +999,19 @@ function JourneyBoard({
   flights,
   onAdd,
   onEdit,
+  onImport,
 }: {
   flights: Flight[];
   onAdd: (mode: JourneyMode) => void;
   onEdit: (flight: Flight) => void;
+  onImport: () => void;
 }) {
   const sorted = [...flights].sort((left, right) => `${left.plannedDate} ${left.departureTime}`.localeCompare(`${right.plannedDate} ${right.departureTime}`));
   const [open, setOpen] = useState(false);
   const next = sorted[0];
   const summary = next
     ? `${sorted.length} ${sorted.length === 1 ? "trip" : "trips"} · ${next.departureAirport} → ${next.arrivalAirport}, ${formatDayHeading(next.plannedDate).date}`
-    : "Add flights, trains, or buses";
+    : "Add flights, trains, or buses, or paste a booking email";
   return (
     <section className={`journey-board${open && sorted.length ? " open" : ""}`} aria-label="Getting there">
       <div className="journey-board-head">
@@ -1021,6 +1029,7 @@ function JourneyBoard({
             <DropdownMenuItem onSelect={() => onAdd("flight")}><Plane size={16} /> Flight</DropdownMenuItem>
             <DropdownMenuItem onSelect={() => onAdd("train")}><TrainFront size={16} /> Train</DropdownMenuItem>
             <DropdownMenuItem onSelect={() => onAdd("bus")}><Bus size={16} /> Bus</DropdownMenuItem>
+            <DropdownMenuItem onSelect={onImport}><ClipboardPaste size={16} /> Import from email</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
@@ -1063,6 +1072,7 @@ function DayPlan({
   query,
   onAddNote,
   onAddJourney,
+  onImportBookings,
   onEditFlight,
   onAddHotel,
   onEditHotel,
@@ -1091,6 +1101,7 @@ function DayPlan({
   query: string;
   onAddNote: (plannedDate: string, note: string, cityId: string) => void;
   onAddJourney: (mode: JourneyMode) => void;
+  onImportBookings: () => void;
   onEditFlight: (flight: Flight) => void;
   onAddHotel: () => void;
   onEditHotel: (hotel: HotelStay) => void;
@@ -1280,6 +1291,7 @@ function DayPlan({
                 <DropdownMenuItem onSelect={() => onAddJourney("flight")}><Plane size={16} /> Add flight</DropdownMenuItem>
                 <DropdownMenuItem onSelect={() => onAddJourney("train")}><TrainFront size={16} /> Add train</DropdownMenuItem>
                 <DropdownMenuItem onSelect={() => onAddJourney("bus")}><Bus size={16} /> Add bus</DropdownMenuItem>
+                <DropdownMenuItem onSelect={onImportBookings}><ClipboardPaste size={16} /> Import from email</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </header>
