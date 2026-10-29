@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, CalendarPlus } from "lucide-react";
 import { PrintButton } from "@/components/print-button";
-import { formatMoney, personBalances, settleUp } from "@/lib/finances";
+import { formatMoney, personBalances, settleUp, totalSpent } from "@/lib/finances";
 import { buildItinerary } from "@/lib/itinerary";
 import { loadVisibleTrip } from "@/lib/trip-access";
 import type { Flight } from "@/lib/types";
@@ -32,10 +32,7 @@ export default async function PrintItineraryPage({ params }: { params: Promise<{
   const { days, unplanned } = buildItinerary(trip);
   const finances = trip.finances;
   const balances = finances ? settleUp(personBalances(finances.people, finances.expenses)) : [];
-  // Paybacks between people (kind "payment") settle balances but aren't trip spending.
-  const spentCents = (finances?.expenses ?? [])
-    .filter((expense) => (expense as { kind?: string }).kind !== "payment")
-    .reduce((sum, expense) => sum + Math.round(expense.amountCents * ((expense as { rate?: number }).rate ?? 1)), 0);
+  const spentCents = totalSpent(finances?.expenses ?? []);
 
   return (
     <main className="itinerary-page">

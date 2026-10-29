@@ -2661,6 +2661,28 @@ button.journey-board-toggle { cursor: pointer; }
   .workspace-mode button svg { display: none; }
 }
 
+/* Money: other currencies, trip quick-fill, and recorded payments. */
+.money-amount > div { display: grid; grid-template-columns: minmax(0, 1fr) 92px; gap: 6px; }
+.money-rate { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; padding: 10px 12px; border-radius: var(--radius-md); background: var(--surface); }
+.money-rate label { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 650; }
+.money-rate input { width: 120px; min-height: 36px; }
+.money-rate small { color: var(--muted); font-size: 12px; }
+.money-prefill { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.money-prefill small { margin-right: 2px; color: var(--muted); font-size: 11px; font-weight: 650; }
+.money-prefill button { display: inline-flex; min-height: 30px; padding: 0 10px; align-items: center; gap: 5px; border: 1px dashed var(--line); border-radius: var(--radius-round); background: var(--paper-raised); color: var(--ink); font-size: 12px; cursor: pointer; }
+.money-prefill button:hover { border-color: var(--ink); border-style: solid; }
+.money-settle li { grid-template-columns: auto auto auto 1fr auto; }
+.money-paid { display: inline-flex; min-height: 30px; padding: 0 10px; align-items: center; gap: 4px; border: 1px solid var(--accent); border-radius: var(--radius-round); background: var(--paper-raised); color: var(--accent-deep); font-size: 12px; font-weight: 650; cursor: pointer; }
+.money-paid:hover { background: var(--accent); color: var(--paper-raised); }
+.money-expenses b small { display: block; color: var(--muted); font-size: 11px; font-weight: 500; text-align: right; }
+.money-payments { display: grid; margin: 0; padding: 0; gap: 4px; list-style: none; }
+.money-payments li { display: grid; min-height: 42px; padding: 0 4px 0 12px; grid-template-columns: 16px minmax(0, 1fr) auto 32px; align-items: center; gap: 8px; border-radius: var(--radius-md); background: var(--surface); color: var(--muted); font-size: 13px; }
+.money-payments li > svg { color: #1b7a43; }
+.money-payments b { color: var(--ink); font-variant-numeric: tabular-nums; }
+@media (max-width: 640px) {
+  .money-settle li { grid-template-columns: auto auto 1fr auto; }
+  .money-settle li .money-paid { grid-column: 1 / -1; justify-self: start; }
+}
 /* Day context: weather for the day and whether each stop is open. */
 .day-weather { display: flex; margin: 4px 0 2px; align-items: center; gap: 6px; color: var(--ink); font-size: 13px; font-variant-numeric: tabular-nums; }
 .day-weather.typical { color: var(--muted); }

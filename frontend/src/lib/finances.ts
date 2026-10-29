@@ -1,12 +1,17 @@
 import type { ExpenseSplit, TripExpense } from "@/lib/types";
 
-export const CURRENCIES = ["USD", "CAD", "EUR", "GBP", "AUD", "JPY", "MXN", "INR", "CHF"] as const;
+export const CURRENCIES = ["USD", "CAD", "EUR", "GBP", "AUD", "NZD", "JPY", "KRW", "CNY", "HKD", "SGD", "THB", "INR", "MXN", "BRL", "CHF", "SEK", "NOK", "DKK", "PLN", "CZK", "TRY", "ZAR"] as const;
 
 export type PersonBalance = { name: string; paidCents: number; owedCents: number; netCents: number };
 export type Settlement = { from: string; to: string; amountCents: number };
 
-/** Each person's share of one expense, in cents. Leftover cents go to the first people so shares always add up. */
-export function expenseShares(expense: Pick<TripExpense, "amountCents" | "split">): Map<string, number> {
+/** The expense in trip-currency cents. */
+export function tripCents(expense: Pick<TripExpense, "amountCents" | "rate">) {
+  return Math.round(expense.amountCents * (expense.rate ?? 1));
+}
+
+/** Shares in the currency the expense was paid in. Leftover cents go to the first people so shares always add up. */
+function originalShares(expense: Pick<TripExpense, "amountCents" | "split">): Map<string, number> {
   const shares = new Map<string, number>();
   if (expense.split.mode === "exact") {
     for (const [name, cents] of Object.entries(expense.split.shares)) if (cents > 0) shares.set(name, cents);
@@ -20,12 +25,38 @@ export function expenseShares(expense: Pick<TripExpense, "amountCents" | "split"
   return shares;
 }
 
+/** Each person's share of one expense in trip-currency cents, rounded so the shares still add up to the converted total. */
+export function expenseShares(expense: Pick<TripExpense, "amountCents" | "split" | "rate">): Map<string, number> {
+  const shares = originalShares(expense);
+  const rate = expense.rate ?? 1;
+  if (rate === 1) return shares;
+  const exact = [...shares].map(([name, cents]) => ({ name, value: cents * rate }));
+  const rounded = new Map(exact.map(({ name, value }) => [name, Math.floor(value)]));
+  let leftover = tripCents(expense) - [...rounded.values()].reduce((sum, cents) => sum + cents, 0);
+  for (const { name } of [...exact].sort((left, right) => (right.value % 1) - (left.value % 1))) {
+    if (leftover <= 0) break;
+    rounded.set(name, rounded.get(name)! + 1);
+    leftover -= 1;
+  }
+  return rounded;
+}
+
+/** Real spending only; paying someone back moves money but isn't a trip cost. */
+export function totalSpent(expenses: TripExpense[]) {
+  return expenses.filter((expense) => expense.kind !== "payment").reduce((sum, expense) => sum + tripCents(expense), 0);
+}
+
+/** A settle-up suggestion recorded as done: the debtor "pays" an expense owed entirely by the creditor. */
+export function paymentFor(settlement: Settlement, spentOn?: string | null): Omit<TripExpense, "id"> {
+  return { kind: "payment", title: `${settlement.from} paid ${settlement.to}`, amountCents: settlement.amountCents, paidBy: settlement.from, split: { mode: "exact", shares: { [settlement.to]: settlement.amountCents } }, spentOn: spentOn ?? null };
+}
+
 /** What each person paid, what they owe, and the difference. Positive net means they are owed money. */
 export function personBalances(people: string[], expenses: TripExpense[]): PersonBalance[] {
   const names = Array.from(new Set([...people, ...expenses.flatMap((expense) => [expense.paidBy, ...expenseShares(expense).keys()])]));
   const balances = new Map(names.map((name) => [name, { name, paidCents: 0, owedCents: 0, netCents: 0 }]));
   for (const expense of expenses) {
-    balances.get(expense.paidBy)!.paidCents += expense.amountCents;
+    balances.get(expense.paidBy)!.paidCents += tripCents(expense);
     for (const [name, cents] of expenseShares(expense)) balances.get(name)!.owedCents += cents;
   }
   return names.map((name) => {

@@ -80,6 +80,24 @@ function isAgendaSchemaMissing(error: unknown) {
   return /trip_agendas|trip_agenda_day_notes|trip_agenda_items|agenda/i.test(message);
 }
 
+const baseExpenseColumns = {
+  id: tripExpenses.id, title: tripExpenses.title, amountCents: tripExpenses.amountCents,
+  paidBy: tripExpenses.paidBy, split: tripExpenses.split, spentOn: tripExpenses.spentOn,
+};
+
+/** Reads expenses, falling back to the original columns while migration 0017 (currency, payments) is pending. */
+async function loadExpenses(db: NonNullable<ReturnType<typeof getDatabase>>, tripId: string) {
+  const query = (columns: typeof baseExpenseColumns) => db.select(columns).from(tripExpenses).where(eq(tripExpenses.tripId, tripId)).orderBy(tripExpenses.createdAt);
+  try {
+    return await db.select({ ...baseExpenseColumns, kind: tripExpenses.kind, currency: tripExpenses.currency, rate: tripExpenses.rate })
+      .from(tripExpenses).where(eq(tripExpenses.tripId, tripId)).orderBy(tripExpenses.createdAt);
+  } catch (error) {
+    const message = error instanceof Error ? `${error.message} ${error.cause ?? ""}` : String(error);
+    if (!/column .* does not exist|"kind"|"rate"|"currency"/i.test(message)) throw error;
+    return (await query(baseExpenseColumns)).map((expense) => ({ ...expense, kind: "expense", currency: null, rate: 1 }));
+  }
+}
+
 function isFlightSchemaMissing(error: unknown) {
   const message = error instanceof Error ? `${error.message} ${error.cause ?? ""}` : String(error);
   return /trip_flights|arrival_date|departure_airport|arrival_airport|departure_time|arrival_time|relation .* does not exist|column .* does not exist/i.test(message);
@@ -564,22 +582,24 @@ export async function getViewerTrip(tripId: string, viewer: TripViewer): Promise
   try {
     const [settings, expenses] = await Promise.all([
       db.select({ currency: tripFinances.currency, people: tripFinances.people }).from(tripFinances).where(eq(tripFinances.tripId, tripId)).limit(1),
-      db.select({
-        id: tripExpenses.id, title: tripExpenses.title, amountCents: tripExpenses.amountCents,
-        paidBy: tripExpenses.paidBy, split: tripExpenses.split, spentOn: tripExpenses.spentOn,
-      }).from(tripExpenses).where(eq(tripExpenses.tripId, tripId)).orderBy(tripExpenses.createdAt),
+      loadExpenses(db, tripId),
     ]);
     if (settings[0] || expenses.length) {
       trip.finances = {
         currency: settings[0]?.currency ?? "USD",
         people: settings[0]?.people ?? [],
-        expenses: expenses.map((expense) => ({ ...expense, spentOn: expense.spentOn ? asIsoDate(expense.spentOn) : null })),
+        expenses: expenses.map((expense) => ({
+          ...expense,
+          kind: expense.kind === "payment" ? "payment" as const : "expense" as const,
+          rate: Number(expense.rate) || 1,
+          spentOn: expense.spentOn ? asIsoDate(expense.spentOn) : null,
+        })),
       };
     }
   } catch (error) {
     // Trips keep loading before the finance migration is applied; Money just starts empty.
     const message = error instanceof Error ? `${error.message} ${error.cause ?? ""}` : String(error);
-    if (!/trip_finances|trip_expenses|relation .* does not exist/i.test(message)) throw error;
+    if (!/trip_finances|trip_expenses|relation .* does not exist|column .* does not exist/i.test(message)) throw error;
   }
   trip.places = savedPlaces.map((place) => ({
     id: place.id,

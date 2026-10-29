@@ -310,6 +310,9 @@ const expenseFields = z.object({
   paidBy: financePerson,
   split: expenseSplitSchema,
   spentOn: optionalIsoDate,
+  kind: z.enum(["expense", "payment"]).default("expense"),
+  currency: z.string().regex(/^[A-Z]{3}$/).nullable().optional(),
+  rate: z.number().positive().max(1_000_000).default(1),
 });
 
 const exactSharesAddUp = (expense: z.infer<typeof expenseFields>) =>

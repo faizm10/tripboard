@@ -1125,7 +1125,7 @@ async function addExpenseAction(input: unknown) {
   await requireEditor(data.tripId, viewer.id);
   const [row] = await withFinanceSchema(() => db
     .insert(tripExpenses)
-    .values({ tripId: data.tripId, title: data.title, amountCents: data.amountCents, paidBy: data.paidBy, split: data.split, spentOn: data.spentOn || null, createdBy: viewer.id })
+    .values({ tripId: data.tripId, title: data.title, amountCents: data.amountCents, paidBy: data.paidBy, split: data.split, spentOn: data.spentOn || null, kind: data.kind, currency: data.currency ?? null, rate: data.rate, createdBy: viewer.id })
     .returning({ id: tripExpenses.id }));
   revalidateTrip(data.tripId);
   return { id: row.id, demo: false };
@@ -1139,7 +1139,7 @@ async function updateExpenseAction(input: unknown) {
   await requireEditor(data.tripId, viewer.id);
   await withFinanceSchema(() => db
     .update(tripExpenses)
-    .set({ title: data.title, amountCents: data.amountCents, paidBy: data.paidBy, split: data.split, spentOn: data.spentOn || null, updatedAt: new Date() })
+    .set({ title: data.title, amountCents: data.amountCents, paidBy: data.paidBy, split: data.split, spentOn: data.spentOn || null, kind: data.kind, currency: data.currency ?? null, rate: data.rate, updatedAt: new Date() })
     .where(and(eq(tripExpenses.id, data.expenseId), eq(tripExpenses.tripId, data.tripId))));
   revalidateTrip(data.tripId);
   return { demo: false };
