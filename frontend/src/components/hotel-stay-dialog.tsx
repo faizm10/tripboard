@@ -3,7 +3,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, BedDouble, MapPin, Search, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import type { CityStop, HotelStay, PlaceSearchResult } from "@/lib/types";
+import { suggestHotelRange } from "@/lib/hotel-dates";
+import type { CityStop, Flight, HotelStay, PlaceSearchResult } from "@/lib/types";
 
 export type HotelStayDraft = Omit<HotelStay, "id">;
 
@@ -11,11 +12,13 @@ function dayLabel(date: string) {
   return new Date(`${date}T00:00:00.000Z`).toLocaleDateString("en", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" });
 }
 
-export function HotelStayDialog({ cities, dates, destination, hotel, initialDate, onClose, onDelete, onSave }: {
+export function HotelStayDialog({ cities, dates, destination, flights, hotel, hotels, initialDate, onClose, onDelete, onSave }: {
   cities: CityStop[];
   dates: string[];
   destination: string;
+  flights: Flight[];
   hotel?: HotelStay | null;
+  hotels: HotelStay[];
   initialDate: string;
   onClose: () => void;
   onDelete?: (id: string) => void;
@@ -28,9 +31,16 @@ export function HotelStayDialog({ cities, dates, destination, hotel, initialDate
   const [name, setName] = useState(hotel?.name ?? "");
   const [address, setAddress] = useState(hotel?.address ?? "");
   const [coordinates, setCoordinates] = useState<[number, number] | null>(hotel?.coordinates ?? null);
-  const [cityId, setCityId] = useState(hotel?.cityId ?? cities[0]?.id ?? "");
-  const [startDate, setStartDate] = useState(hotel?.startDate ?? initialDate);
-  const [endDate, setEndDate] = useState(hotel?.endDate ?? initialDate);
+  const initialCity = cities.find((city) => city.id === hotel?.cityId)
+    ?? cities.find((city) => city.startDate && city.endDate && city.startDate <= initialDate && city.endDate >= initialDate)
+    ?? cities[0];
+  const suggestRange = (city: CityStop | undefined) => suggestHotelRange({ city, dates, flights, hotels: hotels.filter((stay) => stay.id !== hotel?.id), startDate: initialDate });
+  const [cityId, setCityId] = useState(hotel?.cityId ?? initialCity?.id ?? "");
+  const [suggested] = useState(() => hotel ? null : suggestRange(initialCity));
+  const [startDate, setStartDate] = useState(hotel?.startDate ?? suggested?.startDate ?? initialDate);
+  const [endDate, setEndDate] = useState(hotel?.endDate ?? suggested?.endDate ?? initialDate);
+  // New stays follow the city until someone picks the days themselves.
+  const [datesAuto, setDatesAuto] = useState(!hotel);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -58,6 +68,22 @@ export function HotelStayDialog({ cities, dates, destination, hotel, initialDate
     setCoordinates(body.coordinates);
     setError("");
   }
+
+  function chooseCity(nextCityId: string) {
+    setCityId(nextCityId);
+    if (!datesAuto) return;
+    const range = suggestRange(cities.find((city) => city.id === nextCityId));
+    setStartDate(range.startDate);
+    setEndDate(range.endDate);
+  }
+
+  function chooseStart(date: string) {
+    setDatesAuto(false);
+    setStartDate(date);
+    if (endDate < date) setEndDate(date);
+  }
+
+  const dayCount = Math.round((Date.parse(endDate) - Date.parse(startDate)) / 86_400_000) + 1;
 
   function save() {
     const source = selected ?? (coordinates ? { name, address, coordinates } : null);
@@ -89,11 +115,11 @@ export function HotelStayDialog({ cities, dates, destination, hotel, initialDate
           <button className="button button-ghost hotel-locate" onClick={locateAddress} type="button">{coordinates ? "Address pinned" : "Pin this address"} <MapPin size={16} /></button>
         </> : <p className="selected-address"><MapPin size={15} /> {selected?.address}</p>}
         <div className="hotel-date-grid">
-          <label className="field-label"><span>City</span><select value={cityId} onChange={(event) => setCityId(event.target.value)}>{cities.map((city) => <option key={city.id} value={city.id}>{city.name}</option>)}</select></label>
-          <label className="field-label"><span>From</span><select value={startDate} onChange={(event) => setStartDate(event.target.value)}>{dates.map((date) => <option key={date} value={date}>{dayLabel(date)}</option>)}</select></label>
-          <label className="field-label"><span>Through</span><select value={endDate} onChange={(event) => setEndDate(event.target.value)}>{dates.map((date) => <option key={date} value={date}>{dayLabel(date)}</option>)}</select></label>
+          <label className="field-label"><span>City</span><select value={cityId} onChange={(event) => chooseCity(event.target.value)}>{cities.map((city) => <option key={city.id} value={city.id}>{city.name}</option>)}</select></label>
+          <label className="field-label"><span>From</span><select value={startDate} onChange={(event) => chooseStart(event.target.value)}>{dates.map((date) => <option key={date} value={date}>{dayLabel(date)}</option>)}</select></label>
+          <label className="field-label"><span>Through</span><select value={endDate} onChange={(event) => { setDatesAuto(false); setEndDate(event.target.value); }}>{dates.map((date) => <option key={date} value={date}>{dayLabel(date)}</option>)}</select></label>
         </div>
-        <p className="hotel-date-hint">The hotel is your route start on every included day.</p>
+        <p className="hotel-date-hint">{datesAuto && dayCount > 0 ? `Filled in ${dayCount} ${dayCount === 1 ? "day" : "days"} from your trip. ` : ""}The hotel is your route start on every included day.</p>
         {error ? <p className="form-error">{error}</p> : null}
         <div className="flight-dialog-actions">{hotel && onDelete ? <button className="button button-ghost" onClick={() => { onDelete(hotel.id); onClose(); }} type="button">Remove stay</button> : <span />}<button className="button button-ink" onClick={save} type="button">Save hotel</button></div>
       </>}

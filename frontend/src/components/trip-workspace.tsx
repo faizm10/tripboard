@@ -947,7 +947,7 @@ export function TripWorkspace({
           onSave={saveFlight}
         />
       ) : null}
-      {hotelEditor ? <HotelStayDialog cities={cities} dates={planDates} destination={selectedCity?.name ?? details.destination} hotel={hotelEditor === "new" ? null : hotelEditor} initialDate={activeDate ?? planDates[0] ?? ""} onClose={() => setHotelEditor(null)} onDelete={removeHotel} onSave={saveHotel} /> : null}
+      {hotelEditor ? <HotelStayDialog cities={cities} dates={planDates} destination={selectedCity?.name ?? details.destination} flights={flights} hotel={hotelEditor === "new" ? null : hotelEditor} hotels={hotels} initialDate={activeDate ?? planDates[0] ?? ""} onClose={() => setHotelEditor(null)} onDelete={removeHotel} onSave={saveHotel} /> : null}
       {inviteOpen ? <InviteDialog demo={!persistable} onClose={() => setInviteOpen(false)} tripId={trip.id} /> : null}
       {logisticsOpen ? (
         <TripLogisticsDialog
