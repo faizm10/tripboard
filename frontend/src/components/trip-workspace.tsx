@@ -853,7 +853,7 @@ export function TripWorkspace({
                       rel="noreferrer"
                       target="_blank"
                     >
-                      🗺️
+                      <MapPin size={13} />
                     </a>
                   </small>
                   {place.note ? <p className="place-note">{place.note}</p> : null}
@@ -1516,7 +1516,7 @@ function DayPlaceRow({
             rel="noreferrer"
             target="_blank"
           >
-            🗺️
+            <MapPin size={13} />
           </a>
         </small>
         {place.plannedDate && place.fsqPlaceId && place.category !== "Transit" ? <PlaceHours date={place.plannedDate} placeId={place.fsqPlaceId} /> : null}
