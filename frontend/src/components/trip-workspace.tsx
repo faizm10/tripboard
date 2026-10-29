@@ -60,6 +60,7 @@ import {
   updatePlace as persistUpdatePlace,
   updatePlaceDetails as persistUpdatePlaceDetails,
 } from "@/app/trips/actions";
+import { unwrap } from "@/lib/action-result";
 import { AddPlaceDialog } from "@/components/add-place-dialog";
 import { AgendaPanel } from "@/components/agenda-panel";
 import { TripAssistant } from "@/components/trip-assistant";
@@ -218,7 +219,10 @@ export function TripWorkspace({
     persistChain.current = persistChain.current
       .then(work)
       .then(() => setSaveState("saved"))
-      .catch(() => setSaveState("error"));
+      .catch((error) => {
+        if (error instanceof Error && error.message) setSaveNotice(error.message);
+        setSaveState("error");
+      });
   }
 
   const itineraryDates = useMemo(() => tripDates(details.startDate, details.endDate), [details.startDate, details.endDate]);
@@ -311,7 +315,7 @@ export function TripWorkspace({
     if (!persistable) return;
     enqueuePersist(async () => {
       try {
-        const saved = await persistPlace({
+        const saved = await unwrap(persistPlace({
           tripId: trip.id,
           cityId: isUuid(cityId) ? cityId : persistedCityIds.current.get(cityId ?? "") ?? "",
           fsqPlaceId: next.fsqPlaceId,
@@ -326,7 +330,7 @@ export function TripWorkspace({
           saved: true,
           plannedDate: next.plannedDate ?? "",
           daySortOrder: next.daySortOrder ?? 0,
-        });
+        }));
         if (!("id" in saved) || !saved.id) return;
         persistedIds.current.set(next.id, saved.id);
         setPlaces((current) => current.map((item) => (item.id === next.id ? { ...item, id: saved.id } : item)));
@@ -391,7 +395,7 @@ export function TripWorkspace({
       try {
         const placeId = persistedIds.current.get(id) ?? id;
         if (placeId.startsWith("local-")) return;
-        await persistUpdatePlaceDetails({
+        await unwrap(persistUpdatePlaceDetails({
           tripId: trip.id,
           placeId,
           cityId: isUuid(cityId) ? cityId : persistedCityIds.current.get(cityId ?? "") ?? "",
@@ -403,7 +407,7 @@ export function TripWorkspace({
           sourceUrl: next.sourceUrl ?? "",
           plannedDate: next.plannedDate ?? "",
           daySortOrder,
-        });
+        }));
       } catch (error) {
         setPlaces((current) => current.map((item) => (item.id === id ? previous : item)));
         if (error instanceof Error && error.message) setSaveNotice(error.message);
@@ -423,11 +427,11 @@ export function TripWorkspace({
     if (!persistable) return;
     enqueuePersist(async () => {
       try {
-        await persistReorderDayPlaces({
+        await unwrap(persistReorderDayPlaces({
           tripId: trip.id,
           plannedDate,
           placeIds: resolvePersistedPlaceIds(placeIds, persistedIds.current),
-        });
+        }));
       } catch (error) {
         setPlaces(previous);
         if (error instanceof Error && error.message) setSaveNotice(error.message);
@@ -445,7 +449,7 @@ export function TripWorkspace({
       try {
         const placeId = persistedIds.current.get(id) ?? id;
         if (placeId.startsWith("local-")) return;
-        await persistUpdatePlace({ tripId: trip.id, placeId, saved: nextSaved });
+        await unwrap(persistUpdatePlace({ tripId: trip.id, placeId, saved: nextSaved }));
       } catch (error) {
         setPlaces((current) => current.map((item) => (item.id === id ? { ...item, saved: place.saved } : item)));
         throw error;
@@ -465,7 +469,7 @@ export function TripWorkspace({
       try {
         const placeId = persistedIds.current.get(id) ?? id;
         if (placeId.startsWith("local-")) return;
-        await persistRemovePlace({ tripId: trip.id, placeId });
+        await unwrap(persistRemovePlace({ tripId: trip.id, placeId }));
       } catch (error) {
         if (removed) setPlaces((current) => (current.some((place) => place.id === removed.id) ? current : [...current, removed]));
         throw error;
@@ -482,13 +486,13 @@ export function TripWorkspace({
     if (!persistable) return next;
     enqueuePersist(async () => {
       try {
-        const saved = await persistAddTripCity({
+        const saved = await unwrap(persistAddTripCity({
           tripId: trip.id,
           name: next.name,
           country: next.country,
           startDate: next.startDate ?? "",
           endDate: next.endDate ?? "",
-        });
+        }));
         if (!("id" in saved) || !saved.id) return;
         persistedCityIds.current.set(localId, saved.id);
         setCities((current) => current.map((cityItem) => (cityItem.id === localId ? { ...cityItem, id: saved.id } : cityItem)));
@@ -516,7 +520,7 @@ export function TripWorkspace({
     if (!persistable || !isUuid(cityId)) return;
     enqueuePersist(async () => {
       try {
-        await persistRemoveTripCity({ tripId: trip.id, cityId });
+        await unwrap(persistRemoveTripCity({ tripId: trip.id, cityId }));
       } catch (error) {
         setCities((current) => [...current, removed].sort((left, right) => left.sortOrder - right.sortOrder));
         setPlaces(previousPlaces);
@@ -541,12 +545,12 @@ export function TripWorkspace({
     if (!persistable) return;
     enqueuePersist(async () => {
       try {
-        const saved = await persistAddDayNote({
+        const saved = await unwrap(persistAddDayNote({
           tripId: trip.id,
           cityId: isUuid(next.cityId) ? next.cityId : "",
           plannedDate,
           note,
-        });
+        }));
         if (!("id" in saved) || !saved.id) return;
         setDayNotes((current) => current.map((item) => (item.id === localId ? { ...item, id: saved.id } : item)));
       } catch (error) {
@@ -564,13 +568,13 @@ export function TripWorkspace({
     if (!persistable || noteId.startsWith("local-")) return;
     enqueuePersist(async () => {
       try {
-        await persistUpdateDayNote({
+        await unwrap(persistUpdateDayNote({
           tripId: trip.id,
           noteId,
           cityId: isUuid(next.cityId) ? next.cityId : "",
           plannedDate: next.plannedDate,
           note: next.note,
-        });
+        }));
       } catch (error) {
         setDayNotes((current) => current.map((item) => (item.id === noteId ? previous : item)));
         throw error;
@@ -584,7 +588,7 @@ export function TripWorkspace({
     if (!persistable || noteId.startsWith("local-")) return;
     enqueuePersist(async () => {
       try {
-        await persistRemoveDayNote({ tripId: trip.id, noteId });
+        await unwrap(persistRemoveDayNote({ tripId: trip.id, noteId }));
       } catch (error) {
         if (previous) setDayNotes((current) => [...current, previous]);
         throw error;
@@ -601,7 +605,7 @@ export function TripWorkspace({
       if (!persistable || existing.id.startsWith("local-")) return;
       enqueuePersist(async () => {
         try {
-          await persistUpdateFlight({ tripId: trip.id, flightId: existing.id, ...draft });
+          await unwrap(persistUpdateFlight({ tripId: trip.id, flightId: existing.id, ...draft }));
         } catch (error) {
           setFlights(previous);
           throw error;
@@ -615,7 +619,7 @@ export function TripWorkspace({
     if (!persistable) return;
     enqueuePersist(async () => {
       try {
-        const saved = await persistAddFlight({ tripId: trip.id, ...draft });
+        const saved = await unwrap(persistAddFlight({ tripId: trip.id, ...draft }));
         if (!("id" in saved) || !saved.id) return;
         setFlights((current) => current.map((flight) => flight.id === next.id ? { ...flight, id: saved.id } : flight));
       } catch (error) {
@@ -631,7 +635,7 @@ export function TripWorkspace({
     if (!persistable || id.startsWith("local-")) return;
     enqueuePersist(async () => {
       try {
-        await persistRemoveFlight({ tripId: trip.id, flightId: id });
+        await unwrap(persistRemoveFlight({ tripId: trip.id, flightId: id }));
       } catch (error) {
         setFlights(previous);
         throw error;
@@ -648,7 +652,7 @@ export function TripWorkspace({
       if (!persistable || existing.id.startsWith("local-")) return;
       enqueuePersist(async () => {
         try {
-          await persistUpdateHotelStay({ tripId: trip.id, hotelId: existing.id, cityId: isUuid(draft.cityId) ? draft.cityId : "", name: draft.name, address: draft.address, longitude: draft.coordinates[0], latitude: draft.coordinates[1], startDate: draft.startDate, endDate: draft.endDate });
+          await unwrap(persistUpdateHotelStay({ tripId: trip.id, hotelId: existing.id, cityId: isUuid(draft.cityId) ? draft.cityId : "", name: draft.name, address: draft.address, longitude: draft.coordinates[0], latitude: draft.coordinates[1], startDate: draft.startDate, endDate: draft.endDate }));
         } catch (error) { setHotels(previous); throw error; }
       });
       return;
@@ -659,7 +663,7 @@ export function TripWorkspace({
     if (!persistable) return;
     enqueuePersist(async () => {
       try {
-        const saved = await persistAddHotelStay({ tripId: trip.id, cityId: isUuid(draft.cityId) ? draft.cityId : "", name: draft.name, address: draft.address, longitude: draft.coordinates[0], latitude: draft.coordinates[1], startDate: draft.startDate, endDate: draft.endDate });
+        const saved = await unwrap(persistAddHotelStay({ tripId: trip.id, cityId: isUuid(draft.cityId) ? draft.cityId : "", name: draft.name, address: draft.address, longitude: draft.coordinates[0], latitude: draft.coordinates[1], startDate: draft.startDate, endDate: draft.endDate }));
         if (!("id" in saved) || !saved.id) return;
         setHotels((current) => current.map((hotel) => hotel.id === next.id ? { ...hotel, id: saved.id } : hotel));
       } catch (error) { setHotels((current) => current.filter((hotel) => hotel.id !== next.id)); throw error; }
@@ -671,7 +675,7 @@ export function TripWorkspace({
     setHotels((current) => current.filter((hotel) => hotel.id !== id));
     if (!persistable || id.startsWith("local-")) return;
     enqueuePersist(async () => {
-      try { await persistRemoveHotelStay({ tripId: trip.id, hotelId: id }); }
+      try { await unwrap(persistRemoveHotelStay({ tripId: trip.id, hotelId: id })); }
       catch (error) { setHotels(previous); throw error; }
     });
   }
@@ -679,7 +683,7 @@ export function TripWorkspace({
   async function saveTransit(draft: TransitDraft) {
     setSaveState("saving");
     try {
-      const saved = persistable ? await persistSaveTransitPlan({ ...draft, tripId: trip.id }) : { id: draft.id ?? `local-transit-${crypto.randomUUID()}` };
+      const saved = persistable ? await unwrap(persistSaveTransitPlan({ ...draft, tripId: trip.id })) : { id: draft.id ?? `local-transit-${crypto.randomUUID()}` };
       const next = { ...draft, id: saved.id };
       setTransitPlans((current) => draft.id ? current.map((plan) => plan.id === draft.id ? next : plan) : [...current, next]);
       setSaveState("saved");
@@ -689,7 +693,7 @@ export function TripWorkspace({
   async function removeTransit(id: string) {
     setSaveState("saving");
     try {
-      if (persistable) await persistRemoveTransitPlan({ tripId: trip.id, id });
+      if (persistable) await unwrap(persistRemoveTransitPlan({ tripId: trip.id, id }));
       setTransitPlans((current) => current.filter((plan) => plan.id !== id));
       setSaveState("saved");
     } catch (error) { setSaveState("error"); throw error; }
@@ -1172,7 +1176,11 @@ function DayPlan({
   const [transitDraft, setTransitDraft] = useState<{ fromId: string; toId: string; plan: TransitPlan | null } | null>(null);
   const [removingTransitId, setRemovingTransitId] = useState<string | null>(null);
   const [transitError, setTransitError] = useState("");
-  useEffect(() => { setTransitDraft(null); }, [currentDate]);
+  const [draftDate, setDraftDate] = useState(currentDate);
+  if (draftDate !== currentDate) {
+    setDraftDate(currentDate);
+    setTransitDraft(null);
+  }
 
   function movePage(delta: number) {
     const nextIndex = Math.min(Math.max(clampedPageIndex + delta, 0), Math.max(0, totalPages - 1));

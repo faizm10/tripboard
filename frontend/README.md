@@ -26,7 +26,15 @@ Copy `.env.example` to `.env.local` to connect live services:
 
 Create the Google key in [Google Cloud Console](https://console.cloud.google.com/google/maps-apis). Enable **Places API (New)** and **Geocoding API**, restrict the key to those APIs, and paste it into `frontend/.env.local` as `GOOGLE_MAPS_API_KEY`. Do not prefix it with `NEXT_PUBLIC_`. Restart `npm run dev` after adding it.
 
-For a linked Vercel project, `vercel env pull .env.local` is the quickest setup path. Secrets stay server-only; the only browser-exposed value is the intentionally public `NEXT_PUBLIC_MAPBOX_TOKEN`. Drizzle loads `.env.local` for its CLI commands.
+For a linked Vercel project, `vercel env pull .env.local` fills in the non-secret values. Vercel won't download secrets, so it writes `[SENSITIVE]` for them (including `DATABASE_URL` and `NEON_AUTH_COOKIE_SECRET`). Tripboard treats `[SENSITIVE]`, blank values, and a cookie secret shorter than 32 characters as "not set" and stays in demo mode, logging a warning that says which one. Paste real values from the Neon console to connect live data. Secrets stay server-only; the only browser-exposed value is the intentionally public `NEXT_PUBLIC_MAPBOX_TOKEN`. Drizzle loads `.env.local` for its CLI commands.
+
+## Database migrations
+
+Schema changes live in `src/lib/db/schema.ts`. Run `npm run db:generate -- --name <change>` to write a new SQL file in `drizzle/`. Migrations are **not** applied on deploy. After merging one, run the new SQL file on the production branch, either in the Neon SQL editor or with `DATABASE_URL='<direct url>' npx drizzle-kit push`. If the database falls behind the code, `/admin` shows a warning listing the missing tables and columns.
+
+## Checks
+
+GitHub Actions runs `npm run typecheck`, `npm run lint`, and `npm test` on every pull request. Run the same three locally before pushing.
 
 ## Administration
 

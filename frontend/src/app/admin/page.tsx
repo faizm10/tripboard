@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { AdminDashboard } from "@/components/admin-dashboard";
 import { AdminShell } from "@/components/admin-shell";
 import { adminRange, getAdminDashboard, getAdminViewer } from "@/lib/admin";
+import { checkSchemaHealth } from "@/lib/db/schema-health";
 
 export const metadata: Metadata = { title: "Admin" };
 export const dynamic = "force-dynamic";
@@ -11,7 +12,19 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
   const admin = await getAdminViewer();
   if (!admin) redirect("/trips");
   const { days: rawDays } = await searchParams;
-  const dashboard = await getAdminDashboard(adminRange(rawDays));
+  const [dashboard, schemaHealth] = await Promise.all([
+    getAdminDashboard(adminRange(rawDays)),
+    checkSchemaHealth().catch(() => null),
+  ]);
   if (!dashboard) return null;
-  return <AdminShell active="overview" admin={admin}><AdminDashboard dashboard={dashboard} /></AdminShell>;
+  const missing = schemaHealth ? [...schemaHealth.tables, ...schemaHealth.columns] : [];
+  return <AdminShell active="overview" admin={admin}>
+    {missing.length ? (
+      <aside className="admin-schema-warning" role="alert">
+        <strong>The database is behind the code.</strong>
+        <p>Saving will fail for features that use: {missing.join(", ")}. Run the newest SQL files in <code>frontend/drizzle/</code> on the production branch in Neon.</p>
+      </aside>
+    ) : null}
+    <AdminDashboard dashboard={dashboard} />
+  </AdminShell>;
 }

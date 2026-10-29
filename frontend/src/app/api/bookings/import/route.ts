@@ -4,6 +4,7 @@ import { z } from "zod";
 import { assistantModels } from "@/lib/assistant/models";
 import { getViewer } from "@/lib/auth";
 import { bookingPrompt, parseBookingReply } from "@/lib/booking-import";
+import { envValue } from "@/lib/env";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -18,7 +19,7 @@ export async function POST(request: Request) {
   if (!viewer) return Response.json({ error: "Sign in to import bookings." }, { status: 401 });
   if (viewer.restricted) return Response.json({ error: "Your account has been restricted." }, { status: 403 });
 
-  const apiKey = process.env.OPENROUTER_API_KEY;
+  const apiKey = envValue("OPENROUTER_API_KEY");
   if (!apiKey) return Response.json({ error: "Booking import isn't set up yet. Add OPENROUTER_API_KEY." }, { status: 503 });
 
   const parsed = requestSchema.safeParse(await request.json().catch(() => null));

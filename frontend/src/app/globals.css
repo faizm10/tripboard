@@ -2679,3 +2679,6 @@ button.journey-board-toggle { cursor: pointer; }
 .spin { animation: tripboard-spin 0.9s linear infinite; }
 @keyframes tripboard-spin { to { transform: rotate(360deg); } }
 @media (max-width: 640px) { .import-times { padding-left: 0; } }
+.admin-schema-warning { margin: 0 0 20px; padding: 14px 16px; border: 1px solid #f1b8b0; border-radius: var(--radius-md); background: #fff4f2; color: #7a1f14; }
+.admin-schema-warning p { margin: 4px 0 0; font-size: 13px; line-height: 1.5; }
+.admin-schema-warning code { font-family: var(--font-mono), monospace; font-size: 12px; }

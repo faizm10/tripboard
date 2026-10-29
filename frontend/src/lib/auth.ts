@@ -1,6 +1,7 @@
 import { createNeonAuth } from "@neondatabase/auth/next/server";
 import { eq } from "drizzle-orm";
 import { isReadonlyCookieStoreError } from "@/lib/auth-errors";
+import { neonAuthSettings } from "@/lib/env";
 import { getDatabase } from "@/lib/db";
 import { neonAuthUsers } from "@/lib/db/neon-auth-schema";
 
@@ -14,13 +15,13 @@ type Viewer = {
 };
 
 export function isNeonAuthConfigured() {
-  return Boolean(process.env.NEON_AUTH_BASE_URL && process.env.NEON_AUTH_COOKIE_SECRET);
+  return Boolean(neonAuthSettings());
 }
 
 export function getNeonAuth() {
-  const baseUrl = process.env.NEON_AUTH_BASE_URL;
-  const secret = process.env.NEON_AUTH_COOKIE_SECRET;
-  if (!baseUrl || !secret) return null;
+  const settings = neonAuthSettings();
+  if (!settings) return null;
+  const { baseUrl, secret } = settings;
   return createNeonAuth({
     baseUrl,
     cookies: { secret, sessionDataTtl: 300 },
