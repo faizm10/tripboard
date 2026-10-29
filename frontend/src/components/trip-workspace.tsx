@@ -790,12 +790,12 @@ export function TripWorkspace({
           ) : null}
         </div>
 
-        <JourneyBoard
-          flights={flights}
-          onAdd={(mode) => setFlightEditor({ mode, flight: null })}
-          onEdit={(flight) => setFlightEditor({ mode: journeyModeOf(flight), flight })}
-        />
         <div className="place-list">
+          <JourneyBoard
+            flights={flights}
+            onAdd={(mode) => setFlightEditor({ mode, flight: null })}
+            onEdit={(flight) => setFlightEditor({ mode: journeyModeOf(flight), flight })}
+          />
           {workspaceMode === "saved" ? visiblePlaces.map((place) => {
             const originalIndex = places.findIndex((item) => item.id === place.id);
             const number = String(originalIndex + 1).padStart(2, "0");
@@ -985,17 +985,32 @@ function JourneyBoard({
   onEdit: (flight: Flight) => void;
 }) {
   const sorted = [...flights].sort((left, right) => `${left.plannedDate} ${left.departureTime}`.localeCompare(`${right.plannedDate} ${right.departureTime}`));
+  const [open, setOpen] = useState(false);
+  const next = sorted[0];
+  const summary = next
+    ? `${sorted.length} ${sorted.length === 1 ? "trip" : "trips"} · ${next.departureAirport} → ${next.arrivalAirport}, ${formatDayHeading(next.plannedDate).date}`
+    : "Add flights, trains, or buses";
   return (
-    <section className="journey-board" aria-label="Getting there">
+    <section className={`journey-board${open && sorted.length ? " open" : ""}`} aria-label="Getting there">
       <div className="journey-board-head">
-        <strong>Getting there</strong>
-        <div className="journey-board-actions">
-          <button className="button button-small" onClick={() => onAdd("flight")} type="button"><Plane size={14} /> Flight</button>
-          <button className="button button-small" onClick={() => onAdd("train")} type="button"><TrainFront size={14} /> Train</button>
-          <button className="button button-small" onClick={() => onAdd("bus")} type="button"><Bus size={14} /> Bus</button>
-        </div>
+        {sorted.length ? (
+          <button className="journey-board-toggle" aria-expanded={open} onClick={() => setOpen((current) => !current)} type="button">
+            <Plane size={15} />
+            <span><strong>Getting there</strong><small>{summary}</small></span>
+            <ChevronDown className="journey-board-chevron" size={16} />
+          </button>
+        ) : (
+          <span className="journey-board-toggle"><Plane size={15} /><span><strong>Getting there</strong><small>{summary}</small></span></span>
+        )}
+        <DropdownMenu><DropdownMenuTrigger asChild><button className="button button-small journey-board-add" type="button"><Plus size={14} /> Add</button></DropdownMenuTrigger>
+          <DropdownMenuContent className="planner-menu" align="end">
+            <DropdownMenuItem onSelect={() => onAdd("flight")}><Plane size={16} /> Flight</DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => onAdd("train")}><TrainFront size={16} /> Train</DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => onAdd("bus")}><Bus size={16} /> Bus</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
-      {sorted.length ? (
+      {open && sorted.length ? (
         <div className="flight-list">
           {sorted.map((flight) => {
             const mode = journeyModeOf(flight);
@@ -1014,7 +1029,7 @@ function JourneyBoard({
             );
           })}
         </div>
-      ) : <p className="journey-board-empty">Add the flights, trains, and buses that get you there.</p>}
+      ) : null}
     </section>
   );
 }
@@ -1182,14 +1197,13 @@ function DayPlan({
     <div className="day-plan">
       <div className="day-plan-intro">
         <div>
-          <p className="eyebrow">Day plan</p>
           <strong>{searching ? `${matchedPlaces.length} ${matchedPlaces.length === 1 ? "match" : "matches"}` : `${plannedCount} planned · ${dates.length} ${dates.length === 1 ? "day" : "days"}`}</strong>
         </div>
         {searching ? null : (
           <div className="day-pagination" aria-label="Day pages">
             <button aria-label="Previous day" onClick={() => movePage(-1)} disabled={clampedPageIndex === 0} type="button"><ChevronLeft size={17} /></button>
             <select aria-label="Choose day" value={currentDate ?? ""} onChange={(event) => onFocusDate(event.target.value || null)}>
-              {dates.map((date, index) => <option key={date} value={date}>Day {index + 1} · {formatDayHeading(date).date}</option>)}
+              {dates.map((date, index) => <option key={date} value={date}>Day {index + 1} · {formatDayHeading(date).day.slice(0, 3)}, {formatDayHeading(date).date}</option>)}
               {hasUnplannedPage ? <option value="">Saved for later</option> : null}
             </select>
             <button aria-label="Next day" onClick={() => movePage(1)} disabled={clampedPageIndex >= totalPages - 1} type="button"><ChevronRight size={17} /></button>
@@ -1237,12 +1251,16 @@ function DayPlan({
       ) : null}
       {!searching && currentDate && label ? (
         <section className={`day-section${activeDate === currentDate ? " active" : ""}`}>
-          <header>
-            <div>
-              <span>{label.day}</span>
-              <h2>{label.date}</h2>
-            </div>
-            <DropdownMenu><DropdownMenuTrigger asChild><button className="place-menu-trigger" aria-label="Day options" type="button"><MoreHorizontal size={20} /></button></DropdownMenuTrigger>
+          <header className="day-section-bar">
+            <h2 className="sr-only">{label.day}, {label.date}</h2>
+            <details className="day-notes-disclosure">
+              <summary><FileText size={14} /> {notes.length ? `${notes.length} day ${notes.length === 1 ? "note" : "notes"}` : "Add a day note"}<ChevronDown size={14} /></summary>
+              <div className="day-notes">
+                {notes.map((note) => <DayNoteRow key={note.id} note={note} onRemove={onRemoveNote} onUpdate={onUpdateNote} />)}
+                <NoteComposer activeCityId={activeCityId} cities={cities} onAdd={(note, cityId) => onAddNote(currentDate, note, cityId)} />
+              </div>
+            </details>
+            <DropdownMenu><DropdownMenuTrigger asChild><button className="day-add-button" type="button"><Plus size={14} /> Add to day</button></DropdownMenuTrigger>
               <DropdownMenuContent className="planner-menu" align="end">
                 <DropdownMenuItem onSelect={() => dayHotel ? onEditHotel(dayHotel) : onAddHotel()}><BedDouble size={16} /> {dayHotel ? "Edit hotel stay" : "Add hotel stay"}</DropdownMenuItem>
                 <DropdownMenuItem onSelect={() => onAddJourney("flight")}><Plane size={16} /> Add flight</DropdownMenuItem>
@@ -1251,13 +1269,6 @@ function DayPlan({
               </DropdownMenuContent>
             </DropdownMenu>
           </header>
-          <details className="day-notes-disclosure">
-            <summary><FileText size={14} /> {notes.length ? `${notes.length} day ${notes.length === 1 ? "note" : "notes"}` : "Add a day note"}<ChevronDown size={14} /></summary>
-            <div className="day-notes">
-              {notes.map((note) => <DayNoteRow key={note.id} note={note} onRemove={onRemoveNote} onUpdate={onUpdateNote} />)}
-              <NoteComposer activeCityId={activeCityId} cities={cities} onAdd={(note, cityId) => onAddNote(currentDate, note, cityId)} />
-            </div>
-          </details>
           <div className="day-place-list">
             {itineraryStops.map((stop, index) => {
               const place = dayPlaces.find((item) => item.id === stop.id);

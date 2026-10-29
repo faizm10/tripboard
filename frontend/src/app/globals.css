@@ -1169,7 +1169,7 @@ input[type="date"]:invalid::-webkit-datetime-edit, input[type="time"]:invalid::-
 .city-strip > button.active, .city-chip.active button:first-child { background: var(--paper-raised); box-shadow: 0 0 0 1px var(--line); color: var(--ink); border-radius: var(--radius-round); }
 .city-chip { display: inline-flex; align-items: center; }
 .city-chip button:first-child { padding: 0 10px; border-right: 0; }
-.city-chip button:last-child { display: grid; width: 28px; padding: 0; place-items: center; }
+.city-chip button:last-child:not(:first-child) { display: grid; width: 28px; padding: 0; place-items: center; }
 .city-add { color: var(--accent) !important; }
 .collab-row { display: flex; margin-top: 24px; align-items: center; gap: 10px; color: var(--muted); font-size: 11px; }
 .mini-avatars { display: flex; align-items: center; }
@@ -1381,9 +1381,9 @@ input[type="date"]:invalid::-webkit-datetime-edit, input[type="time"]:invalid::-
 .hotel-map-link:hover { border-color: var(--ink); }
 .journey-board {
   display: grid;
-  margin: 0 28px 14px;
-  padding: 14px;
-  gap: 12px;
+  margin: 4px 0;
+  padding: 8px 8px 8px 12px;
+  gap: 10px;
   border: 1px solid var(--line);
   border-radius: 12px;
   background: #fff;
@@ -1894,7 +1894,6 @@ input[type="date"]:invalid::-webkit-datetime-edit, input[type="time"]:invalid::-
   .places-panel-find { margin-top: 10px; flex-wrap: wrap; }
   .place-find { max-width: none; flex: 1 1 100%; }
   .place-list { padding: 0 17px 20px; }
-  .journey-board { margin-inline: 17px; }
   .places-panel-logistics { padding: 12px 17px 16px; }
   .presence-dock { height: 38px; padding: 3px 5px; }
   .presence-tile { width: 28px; height: 28px; }
@@ -2252,7 +2251,6 @@ html {
   .mobile-find input, .mobile-find select { min-width: 0; width: 100%; min-height: 44px; padding: 8px 12px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--paper); color: var(--ink); font-size: 16px; }
   .places-panel-find { display: none; }
   .place-list { padding: 0 20px 24px; overflow: visible; overscroll-behavior: auto; }
-  .journey-board { margin-inline: 20px; }
   .day-plan-intro { position: static; min-height: 0; padding: 8px 0 16px; flex-direction: row; align-items: center; }
   .day-plan-intro > div:first-child { display: none; }
   .day-pagination { width: 100%; }
@@ -2557,4 +2555,39 @@ html {
   .account-stats { grid-template-columns: 1fr 1fr; }
   .account-stats div:last-child { grid-column: 1 / -1; }
   .account-stats dd { font-size: 22px; }
+}
+
+/* ----------------------------------------------------------------------------
+   Compact workspace: one-line trip bar, collapsible "Getting there", and a
+   single day header row so the plan itself gets the space.
+---------------------------------------------------------------------------- */
+.places-panel-logistics { display: flex; align-items: center; gap: 16px; }
+.places-panel-logistics-row { min-width: 0; flex: 1; margin-top: 0; }
+.city-strip > button, .city-chip button { white-space: nowrap; font-size: 11px; }
+
+/* Fade the chip row's edge so it reads as scrollable instead of cut off. */
+.filter-scroll { padding-right: 24px; -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); }
+
+.journey-board-head { gap: 10px; }
+.journey-board-toggle { display: flex; min-width: 0; flex: 1; min-height: 40px; padding: 0; align-items: center; gap: 10px; border: 0; background: transparent; color: var(--ink); text-align: left; }
+button.journey-board-toggle { cursor: pointer; }
+.journey-board-toggle > span { display: grid; min-width: 0; gap: 1px; }
+.journey-board-toggle strong { font-size: 13px; letter-spacing: -.02em; }
+.journey-board-toggle small { overflow: hidden; color: var(--muted); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.journey-board-toggle > svg:first-child { flex: none; color: var(--muted); }
+.journey-board-chevron { flex: none; margin-left: auto; color: var(--muted); transition: transform .15s ease; }
+.journey-board.open .journey-board-chevron { transform: rotate(180deg); }
+.journey-board-add { flex: none; min-height: 34px; gap: 5px; }
+
+.day-plan-intro { min-height: 56px; }
+.day-plan-intro strong { margin-top: 0; color: var(--muted); font-size: 12px; }
+.day-section { padding-top: 10px; }
+.day-section > header.day-section-bar { align-items: flex-start; gap: 12px; }
+.day-section-bar .day-notes-disclosure { min-width: 0; flex: 1; margin: 0; }
+.day-section header .day-add-button { display: inline-flex; flex: none; min-height: 36px; margin-top: 4px; padding: 0 12px; align-items: center; gap: 5px; border: 1px solid var(--accent); border-radius: var(--radius-round); background: var(--accent-soft); color: var(--accent-deep); font-size: 12px; font-weight: 650; }
+.day-section header .day-add-button:hover { background: var(--accent); color: var(--paper-raised); }
+
+@media (max-width: 1099px) {
+  .day-section { padding-top: 4px; }
+  .day-plan-intro { padding-bottom: 8px; }
 }
