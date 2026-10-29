@@ -2661,6 +2661,12 @@ button.journey-board-toggle { cursor: pointer; }
   .workspace-mode button svg { display: none; }
 }
 
+/* Day context: weather for the day and whether each stop is open. */
+.day-weather { display: flex; margin: 4px 0 2px; align-items: center; gap: 6px; color: var(--ink); font-size: 13px; font-variant-numeric: tabular-nums; }
+.day-weather.typical { color: var(--muted); }
+.place-hours { display: inline-flex; margin-top: 4px; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; }
+.place-hours.open { color: #1b7a43; }
+.place-hours.closed { color: #b42318; }
 /* Trip bar export links sit beside Invite in the same quiet style. */
 .places-panel-logistics-row .trip-bar-link { display: inline-flex; align-items: center; gap: 6px; border-bottom: 1px solid var(--line); color: var(--ink); font-size: 11px; text-decoration: none; white-space: nowrap; }
 .places-panel-logistics-row .trip-bar-link:hover { border-color: var(--ink); }
