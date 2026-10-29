@@ -3,6 +3,7 @@
 import { ArrowRight, Pencil, Plus, Trash2, UserPlus, X } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import { addExpense, removeExpense, saveFinanceSettings, updateExpense } from "@/app/trips/actions";
+import { unwrap } from "@/lib/action-result";
 import { CURRENCIES, centsToInput, expenseShares, formatMoney, parseAmount, personBalances, settleUp, unassignedCents } from "@/lib/finances";
 import type { ExpenseSplit, TripExpense, TripFinances } from "@/lib/types";
 
@@ -52,7 +53,7 @@ export function FinancePanel({ dates, defaultPeople, finances, onSaveState, pers
     const previous = { people, currency };
     setPeople(nextPeople);
     setCurrency(nextCurrency);
-    void persist(() => saveFinanceSettings({ tripId, currency: nextCurrency, people: nextPeople }), () => { setPeople(previous.people); setCurrency(previous.currency); });
+    void persist(() => unwrap(saveFinanceSettings({ tripId, currency: nextCurrency, people: nextPeople })), () => { setPeople(previous.people); setCurrency(previous.currency); });
   }
 
   function addPerson() {
@@ -116,13 +117,13 @@ export function FinancePanel({ dates, defaultPeople, finances, onSaveState, pers
     if (draft.id) {
       const id = draft.id;
       setExpenses((current) => current.map((expense) => expense.id === id ? { id, ...fields } : expense));
-      void persist(() => updateExpense({ tripId, expenseId: id, ...fields, spentOn: fields.spentOn ?? "" }), () => setExpenses(previous));
+      void persist(() => unwrap(updateExpense({ tripId, expenseId: id, ...fields, spentOn: fields.spentOn ?? "" })), () => setExpenses(previous));
     } else {
       localCounter.current += 1;
       const localId = `local-expense-${localCounter.current}`;
       setExpenses((current) => [...current, { id: localId, ...fields }]);
       void persist(async () => {
-        const saved = await addExpense({ tripId, ...fields, spentOn: fields.spentOn ?? "" });
+        const saved = await unwrap(addExpense({ tripId, ...fields, spentOn: fields.spentOn ?? "" }));
         setExpenses((current) => current.map((expense) => expense.id === localId ? { ...expense, id: saved.id } : expense));
       }, () => setExpenses(previous));
     }
@@ -133,7 +134,7 @@ export function FinancePanel({ dates, defaultPeople, finances, onSaveState, pers
     const previous = expenses;
     setExpenses((current) => current.filter((expense) => expense.id !== id));
     setDraft(null);
-    void persist(() => removeExpense({ tripId, expenseId: id }), () => setExpenses(previous));
+    void persist(() => unwrap(removeExpense({ tripId, expenseId: id })), () => setExpenses(previous));
   }
 
   function splitLabel(expense: TripExpense) {
