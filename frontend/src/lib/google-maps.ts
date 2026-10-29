@@ -1,10 +1,11 @@
 import { formatCityLabel, type CityLocation, type CitySuggestion } from "@/lib/cities";
+import { envValue } from "@/lib/env";
 import type { PlaceCategory, PlaceSearchResult } from "@/lib/types";
 
 const MAX_CITY_BBOX_SPAN_DEGREES = 4;
 
 export function getGoogleMapsKey() {
-  return process.env.GOOGLE_MAPS_API_KEY?.trim() || "";
+  return envValue("GOOGLE_MAPS_API_KEY") ?? "";
 }
 
 export function googleMapsConfigured() {

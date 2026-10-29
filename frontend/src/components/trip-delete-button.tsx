@@ -4,6 +4,7 @@ import { Trash2, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { deleteTrip } from "@/app/trips/actions";
+import { unwrap } from "@/lib/action-result";
 
 /**
  * Sits beside the trip card rather than inside it: the card itself is one big
@@ -30,7 +31,7 @@ export function TripDeleteButton({ tripId, title }: { tripId: string; title: str
     setDeleting(true);
     setError("");
     try {
-      await deleteTrip({ tripId });
+      await unwrap(deleteTrip({ tripId }));
       setOpen(false);
       router.refresh();
     } catch (reason) {
