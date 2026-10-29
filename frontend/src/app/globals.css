@@ -1252,6 +1252,16 @@ input[type="date"]:invalid::-webkit-datetime-edit, input[type="time"]:invalid::-
 }
 .filter-pill.active, .category-tag.active { border-color: var(--line); }
 .filter-pill.filter-all.active { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+/* The selected category fills with its own ink colour so it stands out from the pastel chips. */
+.filter-pill.active:not(.filter-all) { border-color: var(--pill-ink, var(--ink)); background: var(--pill-ink, var(--ink)); color: var(--paper-raised); box-shadow: 0 1px 3px rgb(17 17 17 / .18); }
+.filter-pill.category-eat.active { --pill-ink: var(--cat-eat-ink); }
+.filter-pill.category-drink.active { --pill-ink: var(--cat-drink-ink); }
+.filter-pill.category-see.active { --pill-ink: var(--cat-see-ink); }
+.filter-pill.category-shop.active { --pill-ink: var(--cat-shop-ink); }
+.filter-pill.category-stay.active { --pill-ink: var(--cat-stay-ink); }
+.filter-pill.category-transit.active { --pill-ink: var(--cat-transit-ink); }
+.filter-pill.category-other.active { --pill-ink: var(--cat-other-ink); }
+.filter-pill.filter-all.active { border-color: var(--accent); background: var(--accent); color: var(--paper-raised); }
 .category-tag { min-height: 22px; padding: 0 7px; font-size: 8px; }
 .category-eat { background: var(--cat-eat); color: var(--cat-eat-ink); }
 .category-drink { background: var(--cat-drink); color: var(--cat-drink-ink); }
@@ -2566,7 +2576,7 @@ html {
 .city-strip > button, .city-chip button { white-space: nowrap; font-size: 11px; }
 
 /* Fade the chip row's edge so it reads as scrollable instead of cut off. */
-.filter-scroll { padding-right: 24px; -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); }
+.filter-scroll { padding: 3px 24px 3px 3px; -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); }
 
 .journey-board-head { gap: 10px; }
 .journey-board-toggle { display: flex; min-width: 0; flex: 1; min-height: 40px; padding: 0; align-items: center; gap: 10px; border: 0; background: transparent; color: var(--ink); text-align: left; }

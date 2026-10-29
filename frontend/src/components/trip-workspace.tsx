@@ -767,10 +767,10 @@ export function TripWorkspace({
             </details>
             <div className="places-panel-find">
               <div className="filter-scroll" aria-label="Filter places">
-                <button className={`filter-pill filter-all${filter === "All" ? " active" : ""}`} onClick={() => setFilter("All")} type="button">All</button>
+                <button aria-pressed={filter === "All"} className={`filter-pill filter-all${filter === "All" ? " active" : ""}`} onClick={() => setFilter("All")} type="button">All</button>
                 {PLACE_CATEGORIES.map((item) => {
                   const Icon = categoryIcons[item];
-                  return <button className={`filter-pill ${categoryClass(item)}${filter === item ? " active" : ""}`} onClick={() => setFilter(item)} key={item} type="button"><Icon size={13} /> {item}</button>;
+                  return <button aria-pressed={filter === item} className={`filter-pill ${categoryClass(item)}${filter === item ? " active" : ""}`} onClick={() => setFilter(item)} key={item} type="button"><Icon size={13} /> {item}</button>;
                 })}
               </div>
               <div className="place-find">
