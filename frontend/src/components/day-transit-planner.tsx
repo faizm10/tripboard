@@ -75,11 +75,12 @@ export function TransitRideCard({ plan, removing, onEdit, onRemove }: {
     <article className="transit-plan transit-leg">
       <span className="transit-leg-mark" aria-hidden="true"><TramFront size={16} /></span>
       <div className="transit-leg-copy">
-        <small>{plan.departureTime ? `Depart around ${plan.departureTime} · local time` : "Departure time flexible"}</small>
         <strong className="transit-leg-route">{plan.from.name} → {plan.to.name}</strong>
-        <span className="transit-leg-commute">Commute to {plan.to.name}{plan.departureTime ? ` · ${plan.departureTime}` : ""}</span>
+        <span className="transit-leg-meta">
+          <span>{plan.departureTime ? `Leave around ${plan.departureTime}` : "Any time"}</span>
+          <a href={buildGoogleMapsLegUrl(plan.from, plan.to, "transit")} target="_blank" rel="noreferrer">Directions <ExternalLink size={12} /></a>
+        </span>
         {plan.note ? <p>{plan.note}</p> : null}
-        <a href={buildGoogleMapsLegUrl(plan.from, plan.to, "transit")} target="_blank" rel="noreferrer">Check Google Maps <ExternalLink size={13} /></a>
       </div>
       <DropdownMenu><DropdownMenuTrigger asChild><button className="place-menu-trigger" disabled={removing} aria-label={`Transit options from ${plan.from.name} to ${plan.to.name}`} type="button"><MoreHorizontal size={19} /></button></DropdownMenuTrigger>
         <DropdownMenuContent className="planner-menu" align="end">

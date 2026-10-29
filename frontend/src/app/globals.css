@@ -2310,12 +2310,6 @@ html {
 .transit-plan { display: grid; grid-template-columns: minmax(0, 1fr) 44px; gap: 8px; margin-top: 12px; padding: 12px; border: 1px solid var(--accent-line); border-radius: var(--radius-sm); background: var(--accent-soft); }
 .day-place-list .day-home-base { display: grid; min-height: 0; margin: 0; padding: 10px 0; grid-template-columns: 28px 96px minmax(0, 1fr) 44px; gap: 14px; align-items: center; border: 0; border-top: 1px solid var(--line); border-radius: 0; background: transparent; }
 .day-place-list .day-home-base > span:nth-child(2) { grid-column: 2 / 4; }
-.day-place-list .transit-leg { grid-template-columns: 28px 96px minmax(0, 1fr) 44px; gap: 14px; align-items: center; margin: 0; padding: 0; border: 0; border-radius: 0; background: transparent; }
-.transit-leg-mark { display: grid; width: 28px; height: 28px; place-items: center; color: var(--accent-strong); }
-.day-place-list .transit-leg-copy { grid-column: 2 / 4; min-width: 0; padding: 6px 0 8px; border: 0; border-radius: 0; background: transparent; }
-.day-place-list .transit-leg-copy strong { display: inline; margin: 0; font-size: 13px; font-weight: 650; line-height: 1.4; }
-.day-place-list .transit-leg-copy small { display: inline; margin-left: 8px; }
-.day-place-list .transit-leg a { display: inline-flex; min-height: 0; margin-left: 8px; }
 .transit-leg-editor { margin: 0 0 8px 42px; }
 .day-place-list .transit-gap { display: inline-flex; min-height: 32px; margin: 0 0 2px 138px; padding: 0; align-items: center; gap: 8px; border: 0; background: transparent; color: var(--muted); font-size: 12px; cursor: pointer; }
 .transit-gap-commute, .transit-leg-commute { display: none; }
@@ -2335,23 +2329,6 @@ html {
 .transit-editor :disabled, .day-transit-planner .transit-add:disabled { opacity: .5; cursor: not-allowed; }
 
 @media (max-width: 1099px) {
-  .day-place-list .transit-leg {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    margin: 8px 0;
-    padding: 10px 4px 10px 12px;
-    border: 1px solid var(--line);
-    border-radius: var(--radius-sm);
-    background: var(--surface);
-  }
-  .day-place-list .transit-leg-mark,
-  .day-place-list .transit-leg-copy .transit-leg-route,
-  .day-place-list .transit-leg-copy > small,
-  .day-place-list .transit-leg-copy > p,
-  .day-place-list .transit-leg-copy > a { display: none; }
-  .day-place-list .transit-leg-copy { display: block; flex: 1; min-width: 0; padding: 0; }
-  .day-place-list .transit-leg-commute { display: block; font-size: 14px; font-weight: 650; line-height: 1.35; }
   .day-place-list .transit-gap {
     display: flex;
     width: 100%;
@@ -2750,3 +2727,46 @@ ul.itinerary-places { list-style: disc; }
 .activity-menu li small { display: block; color: var(--muted); font-size: 11px; }
 .activity-menu-empty { margin: 4px 10px 8px; color: var(--muted); font-size: 13px; }
 @media (max-width: 1099px) { .activity-banner { margin: 8px 20px 0; } }
+
+/* ----------------------------------------------------------------------------
+   Day plan rows: one rail, one rhythm. Stops, the hotel, and the commutes
+   between them share the same columns at every width.
+---------------------------------------------------------------------------- */
+.day-place-list .day-place { grid-template-columns: 28px 88px minmax(0, 1fr) 36px; gap: 14px; padding: 14px 0; align-items: start; }
+.day-place-list .day-place .place-photo { width: 88px; height: 88px; border-radius: 10px; }
+.saved-place-copy h2 { margin: 6px 0 3px; font-size: 18px; font-weight: 650; letter-spacing: -.02em; line-height: 1.25; overflow-wrap: anywhere; }
+.saved-place-copy .place-address { color: var(--muted); font-size: 13px; line-height: 1.4; }
+.place-address a { display: inline-grid; width: 22px; height: 22px; place-items: center; border-radius: 50%; color: var(--muted); opacity: 1; }
+.place-address a:hover { background: var(--surface); color: var(--ink); }
+.saved-place-copy .place-note { margin: 6px 0 0; font-size: 13px; line-height: 1.45; }
+.saved-place-copy .place-actions { margin-top: 8px; }
+.contributor { font-size: 10px; letter-spacing: .04em; }
+.place-actions a { font-size: 11px; }
+
+.day-place-list .day-home-base { grid-template-columns: 28px minmax(0, 1fr) 36px; gap: 14px; padding: 12px 0; align-items: center; }
+.day-place-list .day-home-base > span:nth-child(2) { grid-column: auto; }
+.day-place-list .day-home-base small { margin-bottom: 2px; color: var(--muted); font-size: 10px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; }
+.day-place-list .day-home-base strong { font-size: 15px; font-weight: 650; }
+.day-place-list .day-home-base > svg { justify-self: center; color: var(--muted); }
+
+.day-place-list .transit-leg { display: grid; margin: 0; padding: 4px 0; grid-template-columns: 28px minmax(0, 1fr) 36px; gap: 14px; align-items: center; border: 0; border-radius: 0; background: transparent; }
+.day-place-list .transit-leg-mark { display: grid; width: 28px; height: 28px; place-items: center; border-radius: 50%; background: var(--accent-soft); color: var(--accent-strong); }
+.day-place-list .transit-leg-copy { display: flex; min-width: 0; padding: 8px 12px; flex-wrap: wrap; align-items: center; gap: 2px 14px; border: 0; border-radius: 10px; background: var(--surface); }
+.day-place-list .transit-leg-route { display: block; min-width: 0; max-width: 100%; margin: 0; overflow: hidden; font-size: 13px; font-weight: 600; line-height: 1.35; text-overflow: ellipsis; white-space: nowrap; }
+.transit-leg-meta { display: inline-flex; align-items: center; gap: 12px; color: var(--muted); font-size: 12px; }
+.transit-leg-meta a { display: inline-flex; min-height: 28px; align-items: center; gap: 4px; color: var(--accent-strong); font-size: 12px; font-weight: 600; text-decoration: none; }
+.transit-leg-meta a:hover { text-decoration: underline; text-underline-offset: 3px; }
+.day-place-list .transit-leg-copy > p { flex-basis: 100%; margin: 2px 0 0; color: var(--muted); font-size: 12px; }
+.day-place-list .transit-gap { margin: 0 0 2px 42px; }
+
+@media (max-width: 1099px) {
+  .day-place-list .day-place { grid-template-columns: 28px minmax(0, 1fr) 44px; gap: 12px; padding: 14px 0; }
+  .day-place-list .day-place .place-photo { display: none; }
+  .saved-place-copy h2 { margin: 6px 0 3px; font-size: 17px; line-height: 1.3; }
+  .day-place-list .day-home-base, .day-place-list .transit-leg { grid-template-columns: 28px minmax(0, 1fr) 44px; gap: 12px; }
+  .day-place-list .transit-leg { margin: 2px 0; }
+  .day-place-list .transit-leg-copy { padding: 8px 10px; }
+  .day-place-list .transit-leg-route { white-space: normal; overflow-wrap: anywhere; }
+  .transit-leg-meta a { min-height: 36px; }
+  .day-place-list .transit-gap { margin: 6px 0; }
+}
