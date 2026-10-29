@@ -290,3 +290,32 @@ export const saveTransitPlanSchema = z.object({
 }).refine((plan) => plan.from.id !== plan.to.id, { message: "Choose a different destination.", path: ["to"] });
 
 export const removeTransitPlanSchema = z.object({ tripId: z.string().uuid(), id: z.string().uuid() });
+
+const financePerson = z.string().trim().min(1).max(40);
+const expenseSplitSchema = z.discriminatedUnion("mode", [
+  z.object({ mode: z.literal("equal"), people: z.array(financePerson).min(1).max(30) }),
+  z.object({ mode: z.literal("exact"), shares: z.record(financePerson, z.number().int().min(0).max(100_000_000)) }),
+]);
+
+export const saveFinanceSettingsSchema = z.object({
+  tripId: z.string().uuid(),
+  currency: z.string().regex(/^[A-Z]{3}$/),
+  people: z.array(financePerson).max(30),
+});
+
+const expenseFields = z.object({
+  tripId: z.string().uuid(),
+  title: z.string().trim().min(1).max(80),
+  amountCents: z.number().int().min(1).max(100_000_000),
+  paidBy: financePerson,
+  split: expenseSplitSchema,
+  spentOn: optionalIsoDate,
+});
+
+const exactSharesAddUp = (expense: z.infer<typeof expenseFields>) =>
+  expense.split.mode === "equal" || Object.values(expense.split.shares).reduce((sum, cents) => sum + cents, 0) === expense.amountCents;
+const sharesMessage = { message: "Custom shares must add up to the total.", path: ["split"] };
+
+export const addExpenseSchema = expenseFields.refine(exactSharesAddUp, sharesMessage);
+export const updateExpenseSchema = expenseFields.extend({ expenseId: z.string().uuid() }).refine(exactSharesAddUp, sharesMessage);
+export const removeExpenseSchema = z.object({ tripId: z.string().uuid(), expenseId: z.string().uuid() });

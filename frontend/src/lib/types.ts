@@ -158,6 +158,8 @@ export type Trip = {
   flights: Flight[];
   hotels: HotelStay[];
   agenda: TripAgenda;
+  /** Missing until someone opens Money; the workspace starts from the trip members. */
+  finances?: TripFinances;
   transitPlans?: TransitPlan[];
   places: Place[];
   collaborators: Collaborator[];
@@ -174,3 +176,23 @@ export type PlaceSearchResult = Pick<
   Place,
   "fsqPlaceId" | "name" | "address" | "neighborhood" | "coordinates" | "category"
 >;
+
+/** How an expense is shared. Equal splits divide evenly; exact splits list each share in cents. */
+export type ExpenseSplit =
+  | { mode: "equal"; people: string[] }
+  | { mode: "exact"; shares: Record<string, number> };
+
+export type TripExpense = {
+  id: string;
+  title: string;
+  amountCents: number;
+  paidBy: string;
+  split: ExpenseSplit;
+  spentOn?: string | null;
+};
+
+export type TripFinances = {
+  currency: string;
+  people: string[];
+  expenses: TripExpense[];
+};

@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 import { getViewer } from "@/lib/auth";
 import { getDatabase } from "@/lib/db";
 import { countryFromDestination } from "@/lib/dates";
-import { tripTransitPlans, tripAgendaDayNotes, tripAgendaItems, tripAgendas, tripCities, tripDayNotes, tripFlights, tripHotels, tripInvitationAcceptances, tripInvitations, tripMembers, tripPlaces, trips } from "@/lib/db/schema";
+import { tripExpenses, tripFinances, tripTransitPlans, tripAgendaDayNotes, tripAgendaItems, tripAgendas, tripCities, tripDayNotes, tripFlights, tripHotels, tripInvitationAcceptances, tripInvitations, tripMembers, tripPlaces, trips } from "@/lib/db/schema";
 import { createInviteToken, hashInviteToken, inviteExpiresAt, inviteStatus } from "@/lib/invitations";
 import type { TripInvitationSummary } from "@/lib/types";
 import {
@@ -36,6 +36,10 @@ import {
   updateFlightSchema,
   updateHotelStaySchema,
   updateAgendaBriefSchema,
+  addExpenseSchema,
+  removeExpenseSchema,
+  saveFinanceSettingsSchema,
+  updateExpenseSchema,
   updateAgendaItemSchema,
   updatePlaceDetailsSchema,
   updatePlacePlanningSchema,
@@ -1077,4 +1081,76 @@ export async function removeTransitPlan(input: unknown) {
   await requireEditor(data.tripId, viewer.id);
   await db.delete(tripTransitPlans).where(and(eq(tripTransitPlans.id, data.id), eq(tripTransitPlans.tripId, data.tripId)));
   revalidateTrip(data.tripId);
+}
+
+function isFinanceSchemaMissing(error: unknown) {
+  const message = error instanceof Error ? `${error.message} ${error.cause ?? ""}` : String(error);
+  return /trip_finances|trip_expenses|relation .* does not exist/i.test(message);
+}
+
+function financeMigrationError() {
+  return new Error("Money needs the latest database migration before it can be saved.");
+}
+
+async function withFinanceSchema<T>(work: () => Promise<T>) {
+  try {
+    return await work();
+  } catch (error) {
+    if (isFinanceSchemaMissing(error)) throw financeMigrationError();
+    throw error;
+  }
+}
+
+export async function saveFinanceSettings(input: unknown) {
+  const viewer = await requireViewer();
+  const data = saveFinanceSettingsSchema.parse(input);
+  const db = getDatabase();
+  if (!db) return { demo: true };
+  await requireEditor(data.tripId, viewer.id);
+  const people = Array.from(new Set(data.people));
+  await withFinanceSchema(() => db
+    .insert(tripFinances)
+    .values({ tripId: data.tripId, currency: data.currency, people })
+    .onConflictDoUpdate({ target: tripFinances.tripId, set: { currency: data.currency, people, updatedAt: new Date() } }));
+  revalidateTrip(data.tripId);
+  return { demo: false };
+}
+
+export async function addExpense(input: unknown) {
+  const viewer = await requireViewer();
+  const data = addExpenseSchema.parse(input);
+  const db = getDatabase();
+  if (!db) return { id: crypto.randomUUID(), demo: true };
+  await requireEditor(data.tripId, viewer.id);
+  const [row] = await withFinanceSchema(() => db
+    .insert(tripExpenses)
+    .values({ tripId: data.tripId, title: data.title, amountCents: data.amountCents, paidBy: data.paidBy, split: data.split, spentOn: data.spentOn || null, createdBy: viewer.id })
+    .returning({ id: tripExpenses.id }));
+  revalidateTrip(data.tripId);
+  return { id: row.id, demo: false };
+}
+
+export async function updateExpense(input: unknown) {
+  const viewer = await requireViewer();
+  const data = updateExpenseSchema.parse(input);
+  const db = getDatabase();
+  if (!db) return { demo: true };
+  await requireEditor(data.tripId, viewer.id);
+  await withFinanceSchema(() => db
+    .update(tripExpenses)
+    .set({ title: data.title, amountCents: data.amountCents, paidBy: data.paidBy, split: data.split, spentOn: data.spentOn || null, updatedAt: new Date() })
+    .where(and(eq(tripExpenses.id, data.expenseId), eq(tripExpenses.tripId, data.tripId))));
+  revalidateTrip(data.tripId);
+  return { demo: false };
+}
+
+export async function removeExpense(input: unknown) {
+  const viewer = await requireViewer();
+  const data = removeExpenseSchema.parse(input);
+  const db = getDatabase();
+  if (!db) return { demo: true };
+  await requireEditor(data.tripId, viewer.id);
+  await withFinanceSchema(() => db.delete(tripExpenses).where(and(eq(tripExpenses.id, data.expenseId), eq(tripExpenses.tripId, data.tripId))));
+  revalidateTrip(data.tripId);
+  return { demo: false };
 }

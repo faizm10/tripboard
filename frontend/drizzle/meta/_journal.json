@@ -113,6 +113,13 @@
       "when": 1793218013215,
       "tag": "0015_assistant_history",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1793311823259,
+      "tag": "0016_trip_finances",
+      "breakpoints": true
     }
   ]
 }
