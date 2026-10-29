@@ -69,6 +69,7 @@ import { EditPlaceDialog, type PlaceEditDraft } from "@/components/edit-place-di
 import { FlightPlanDialog, JourneyIcon, journeyModeOf, type FlightDraft } from "@/components/flight-plan-dialog";
 import { FinancePanel } from "@/components/finance-panel";
 import { HotelStayDialog, type HotelStayDraft } from "@/components/hotel-stay-dialog";
+import { ActivityBanner, ActivityMenu, useTripActivity } from "@/components/trip-activity";
 import { InviteDialog } from "@/components/invite-dialog";
 import { PlacePhoto } from "@/components/place-photo";
 import { TripLogisticsDialog, type TripDetails } from "@/components/trip-logistics-dialog";
@@ -692,6 +693,7 @@ export function TripWorkspace({
     } catch (error) { setSaveState("error"); throw error; }
   }
 
+  const activity = useTripActivity(trip.id, viewer?.id, persistable);
   const moneyPeople = Array.from(new Set(trip.collaborators.map((person) => person.name.trim()).filter(Boolean)));
   if (!moneyPeople.length) moneyPeople.push(viewer?.name?.trim() || "Me");
   const selected = mapPlaces.find((place) => place.id === selectedId) ?? mapPlaces[0];
@@ -742,11 +744,13 @@ export function TripWorkspace({
               {saveState === "saving" ? "Saving" : saveState === "saved" ? "Saved" : (saveNotice || "Couldn’t save")}
             </span>
           ) : null}
+          {persistable ? <ActivityMenu items={activity.items} now={activity.dataUpdatedAt} /> : null}
           <button onClick={() => setInviteOpen(true)} type="button"><Share2 size={14} /> Invite</button>
         </div>
       </div>
 
       <aside className="places-panel">
+        <ActivityBanner unseen={activity.unseen} />
         <div className="places-panel-header">
           <h1 className="sr-only">{details.title}</h1>
           <div className="places-panel-toolbar">
