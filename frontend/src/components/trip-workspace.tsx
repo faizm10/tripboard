@@ -882,6 +882,8 @@ export function TripWorkspace({
               dates={itineraryDates}
               defaultPeople={moneyPeople}
               finances={trip.finances}
+              flights={flights}
+              hotels={hotels}
               onSaveState={setSaveState}
               persistable={persistable}
               tripId={trip.id}

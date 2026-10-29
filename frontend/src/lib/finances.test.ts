@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { expenseShares, parseAmount, personBalances, settleUp, unassignedCents } from "@/lib/finances";
+import { expenseShares, parseAmount, paymentFor, personBalances, settleUp, totalSpent, tripCents, unassignedCents } from "@/lib/finances";
 import type { TripExpense } from "@/lib/types";
 
 const expense = (overrides: Partial<TripExpense>): TripExpense => ({ id: "e", title: "Dinner", amountCents: 9000, paidBy: "Ana", split: { mode: "equal", people: ["Ana", "Ben", "Cy"] }, ...overrides });
@@ -39,5 +39,23 @@ describe("amount helpers", () => {
   it("reports what is left to assign in a custom split", () => {
     expect(unassignedCents(9000, { mode: "exact", shares: { Ana: 5000, Ben: 1000 } })).toBe(3000);
     expect(unassignedCents(9000, { mode: "equal", people: ["Ana"] })).toBe(0);
+  });
+});
+
+describe("other currencies and payments", () => {
+  it("converts to the trip currency and keeps shares adding up", () => {
+    const dinner = expense({ amountCents: 10_000_00, rate: 0.00075, currency: "KRW" });
+    expect(tripCents(dinner)).toBe(750);
+    const shares = [...expenseShares(dinner).values()];
+    expect(shares.reduce((sum, cents) => sum + cents, 0)).toBe(750);
+    expect(shares).toEqual([250, 250, 250]);
+  });
+
+  it("settles a balance once the payment is recorded, without counting it as spending", () => {
+    const meals = [expense({})];
+    const [owed] = settleUp(personBalances(["Ana", "Ben", "Cy"], meals));
+    const withPayment = [...meals, { id: "p", ...paymentFor(owed) }];
+    expect(settleUp(personBalances(["Ana", "Ben", "Cy"], withPayment))).toHaveLength(1);
+    expect(totalSpent(withPayment)).toBe(9000);
   });
 });
