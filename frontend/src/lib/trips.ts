@@ -1,7 +1,7 @@
 import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { countryFromDestination, formatDateLabel } from "@/lib/dates";
 import { getDatabase } from "@/lib/db";
-import { tripTransitPlans, tripAgendaDayNotes, tripAgendaItems, tripAgendas, tripCities, tripDayNotes, tripFlights, tripHotels, tripInvitationAcceptances, tripInvitations, tripMembers, tripPlaces, trips } from "@/lib/db/schema";
+import { tripExpenses, tripFinances, tripTransitPlans, tripAgendaDayNotes, tripAgendaItems, tripAgendas, tripCities, tripDayNotes, tripFlights, tripHotels, tripInvitationAcceptances, tripInvitations, tripMembers, tripPlaces, trips } from "@/lib/db/schema";
 import type { CityStop, Collaborator, DayNote, Flight, HotelStay, PlaceCategory, Trip, TripAgenda, TripViewer } from "@/lib/types";
 
 function asIsoDate(value: string | Date) {
@@ -560,6 +560,26 @@ export async function getViewerTrip(tripId: string, viewer: TripViewer): Promise
     const cause = (error as { cause?: { code?: string } })?.cause;
     if (cause?.code !== "42P01" && (error as { code?: string })?.code !== "42P01") throw error;
     trip.transitPlans = [];
+  }
+  try {
+    const [settings, expenses] = await Promise.all([
+      db.select({ currency: tripFinances.currency, people: tripFinances.people }).from(tripFinances).where(eq(tripFinances.tripId, tripId)).limit(1),
+      db.select({
+        id: tripExpenses.id, title: tripExpenses.title, amountCents: tripExpenses.amountCents,
+        paidBy: tripExpenses.paidBy, split: tripExpenses.split, spentOn: tripExpenses.spentOn,
+      }).from(tripExpenses).where(eq(tripExpenses.tripId, tripId)).orderBy(tripExpenses.createdAt),
+    ]);
+    if (settings[0] || expenses.length) {
+      trip.finances = {
+        currency: settings[0]?.currency ?? "USD",
+        people: settings[0]?.people ?? [],
+        expenses: expenses.map((expense) => ({ ...expense, spentOn: expense.spentOn ? asIsoDate(expense.spentOn) : null })),
+      };
+    }
+  } catch (error) {
+    // Trips keep loading before the finance migration is applied; Money just starts empty.
+    const message = error instanceof Error ? `${error.message} ${error.cause ?? ""}` : String(error);
+    if (!/trip_finances|trip_expenses|relation .* does not exist/i.test(message)) throw error;
   }
   trip.places = savedPlaces.map((place) => ({
     id: place.id,

@@ -33,6 +33,7 @@ import {
   ShoppingBag,
   Trash2,
   TramFront,
+  Wallet,
   Utensils,
   X,
 } from "lucide-react";
@@ -66,6 +67,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { CityField } from "@/components/city-field";
 import { EditPlaceDialog, type PlaceEditDraft } from "@/components/edit-place-dialog";
 import { FlightPlanDialog, JourneyIcon, journeyModeOf, type FlightDraft } from "@/components/flight-plan-dialog";
+import { FinancePanel } from "@/components/finance-panel";
 import { HotelStayDialog, type HotelStayDraft } from "@/components/hotel-stay-dialog";
 import { InviteDialog } from "@/components/invite-dialog";
 import { PlacePhoto } from "@/components/place-photo";
@@ -80,7 +82,7 @@ import { PLACE_CATEGORIES, categoryClass, isPersistedTripId, type CityStop, type
 type RouteStats = { durationSeconds: number; distanceMeters: number };
 type MobileView = "list" | "map";
 type SaveState = "idle" | "saving" | "saved" | "error";
-type WorkspaceMode = "saved" | "day" | "agenda";
+type WorkspaceMode = "saved" | "day" | "agenda" | "money";
 
 const categoryIcons = {
   Eat: Utensils,
@@ -690,6 +692,8 @@ export function TripWorkspace({
     } catch (error) { setSaveState("error"); throw error; }
   }
 
+  const moneyPeople = Array.from(new Set(trip.collaborators.map((person) => person.name.trim()).filter(Boolean)));
+  if (!moneyPeople.length) moneyPeople.push(viewer?.name?.trim() || "Me");
   const selected = mapPlaces.find((place) => place.id === selectedId) ?? mapPlaces[0];
   const activeRouteStats = routeMode && routeStops.length >= 2 ? routeStats : null;
   const minutes = activeRouteStats ? Math.max(1, Math.round(activeRouteStats.durationSeconds / 60)) : null;
@@ -750,13 +754,14 @@ export function TripWorkspace({
               <button role="tab" aria-selected={workspaceMode === "saved"} className={workspaceMode === "saved" ? "active" : ""} onClick={() => { setWorkspaceMode("saved"); }} type="button"><Bookmark size={14} /> Saved places</button>
               <button role="tab" aria-selected={workspaceMode === "day"} className={workspaceMode === "day" ? "active" : ""} onClick={() => { setWorkspaceMode("day"); setActiveDate((current) => current ?? planDates[0] ?? null); }} type="button"><CalendarDays size={14} /> Day plan</button>
               <button role="tab" aria-selected={workspaceMode === "agenda"} className={workspaceMode === "agenda" ? "active" : ""} onClick={() => setWorkspaceMode("agenda")} type="button"><FileText size={14} /> Agenda</button>
+              <button role="tab" aria-selected={workspaceMode === "money"} className={workspaceMode === "money" ? "active" : ""} onClick={() => setWorkspaceMode("money")} type="button"><Wallet size={14} /> Money</button>
             </div>
             <div className="trip-header-actions">
               <button className="assistant-trigger" aria-expanded={assistantOpen} onClick={() => setAssistantOpen((current) => !current)} type="button"><Sparkles size={15} /> Ask AI</button>
               <button className="icon-button trip-options" aria-label="Add a place" onClick={() => setAddOpen(true)} type="button"><Plus size={19} /></button>
             </div>
           </div>
-          {workspaceMode !== "agenda" ? (
+          {workspaceMode === "saved" || workspaceMode === "day" ? (
             <>
             <details className="mobile-find">
               <summary><Search size={15} />{placeQuery || filter !== "All" ? "Search & filters active" : "Search & filter"}<SlidersHorizontal size={15} /></summary>
@@ -767,10 +772,10 @@ export function TripWorkspace({
             </details>
             <div className="places-panel-find">
               <div className="filter-scroll" aria-label="Filter places">
-                <button className={`filter-pill filter-all${filter === "All" ? " active" : ""}`} onClick={() => setFilter("All")} type="button">All</button>
+                <button aria-pressed={filter === "All"} className={`filter-pill filter-all${filter === "All" ? " active" : ""}`} onClick={() => setFilter("All")} type="button">All</button>
                 {PLACE_CATEGORIES.map((item) => {
                   const Icon = categoryIcons[item];
-                  return <button className={`filter-pill ${categoryClass(item)}${filter === item ? " active" : ""}`} onClick={() => setFilter(item)} key={item} type="button"><Icon size={13} /> {item}</button>;
+                  return <button aria-pressed={filter === item} className={`filter-pill ${categoryClass(item)}${filter === item ? " active" : ""}`} onClick={() => setFilter(item)} key={item} type="button"><Icon size={13} /> {item}</button>;
                 })}
               </div>
               <div className="place-find">
@@ -791,11 +796,11 @@ export function TripWorkspace({
         </div>
 
         <div className="place-list">
-          <JourneyBoard
+          {workspaceMode === "money" ? null : <JourneyBoard
             flights={flights}
             onAdd={(mode) => setFlightEditor({ mode, flight: null })}
             onEdit={(flight) => setFlightEditor({ mode: journeyModeOf(flight), flight })}
-          />
+          />}
           {workspaceMode === "saved" ? visiblePlaces.map((place) => {
             const originalIndex = places.findIndex((item) => item.id === place.id);
             const number = String(originalIndex + 1).padStart(2, "0");
@@ -871,6 +876,15 @@ export function TripWorkspace({
               onUpdateNote={updateNote}
               places={places}
               selectedId={selectedId}
+            />
+          ) : workspaceMode === "money" ? (
+            <FinancePanel
+              dates={itineraryDates}
+              defaultPeople={moneyPeople}
+              finances={trip.finances}
+              onSaveState={setSaveState}
+              persistable={persistable}
+              tripId={trip.id}
             />
           ) : (
             <AgendaPanel

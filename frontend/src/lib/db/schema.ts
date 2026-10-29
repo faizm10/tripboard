@@ -1,4 +1,4 @@
-import type { RouteStop } from "@/lib/types";
+import type { ExpenseSplit, RouteStop } from "@/lib/types";
 import {
   boolean,
   date,
@@ -261,6 +261,27 @@ export const tripTransitPlans = pgTable("trip_transit_plans", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [index("trip_transit_plans_day_idx").on(table.tripId, table.plannedDate)]);
+
+/** Trip-wide money settings: the currency and everyone splitting costs, including people without an account. */
+export const tripFinances = pgTable("trip_finances", {
+  tripId: uuid("trip_id").primaryKey().references(() => trips.id, { onDelete: "cascade" }),
+  currency: text("currency").notNull().default("USD"),
+  people: jsonb("people").$type<string[]>().notNull().default([]),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const tripExpenses = pgTable("trip_expenses", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tripId: uuid("trip_id").notNull().references(() => trips.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  amountCents: integer("amount_cents").notNull(),
+  paidBy: text("paid_by").notNull(),
+  split: jsonb("split").$type<ExpenseSplit>().notNull(),
+  spentOn: date("spent_on"),
+  createdBy: text("created_by").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [index("trip_expenses_trip_idx").on(table.tripId, table.createdAt)]);
 
 /** Per-user assistant preferences. A missing row means the defaults. */
 export const assistantSettings = pgTable("assistant_settings", {
