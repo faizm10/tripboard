@@ -45,6 +45,15 @@ async function timed<T>(work: () => Promise<T>) {
   }
 }
 
+/** One retry absorbs a cold start (a waking Neon compute or auth server) so a single slow first call isn't reported as an outage. */
+async function withRetry<T>(work: () => Promise<T>) {
+  try {
+    return await timed(work);
+  } catch {
+    return timed(work);
+  }
+}
+
 function message(error: unknown) {
   return error instanceof Error ? error.message : String(error);
 }
@@ -58,7 +67,7 @@ async function databaseCheck(): Promise<HealthCheck> {
   const db = getDatabase();
   if (!db) return { ...base, status: "not_configured", detail: "DATABASE_URL isn't set, so trips are demo data." };
   try {
-    const { latencyMs } = await timed(() => db.execute(sql`select 1`));
+    const { latencyMs } = await withRetry(() => db.execute(sql`select 1`));
     return { ...base, status: latencyMs > SLOW_MS ? "degraded" : "operational", latencyMs, detail: latencyMs > SLOW_MS ? "Answering slowly. Neon may be waking from suspend." : "Neon Postgres answered." };
   } catch (error) {
     return { ...base, status: "down", detail: message(error) };
@@ -84,9 +93,11 @@ async function authCheck(): Promise<HealthCheck> {
   const settings = neonAuthSettings();
   if (!settings) return { ...base, status: "not_configured", detail: "Neon Auth isn't set up, so everyone uses the demo account." };
   try {
-    const { result: response, latencyMs } = await timed(() => fetch(`${settings.baseUrl.replace(/\/$/, "")}/ok`, { cache: "no-store" }));
-    // Any answer below 500 means the auth server is up and routing requests.
-    if (response.status >= 500) return { ...base, status: "down", latencyMs, detail: `Neon Auth answered ${response.status}.` };
+    // Any answer below 500 means the auth server is up and routing requests; a 5xx throws so it gets one retry.
+    const { latencyMs } = await withRetry(async () => {
+      const response = await fetch(`${settings.baseUrl.replace(/\/$/, "")}/ok`, { cache: "no-store" });
+      if (response.status >= 500) throw new Error(`Neon Auth answered ${response.status}.`);
+    });
     return { ...base, status: latencyMs > SLOW_MS ? "degraded" : "operational", latencyMs, detail: "Neon Auth answered." };
   } catch (error) {
     return { ...base, status: "down", detail: message(error) };
