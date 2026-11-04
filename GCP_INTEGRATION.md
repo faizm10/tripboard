@@ -206,16 +206,17 @@ Google and Vercel results are cached in memory for 60 seconds.
 
 The Google traffic only counts API keys that belong to `tripboard-ops`. Calls made with a key from another project show up in that project instead.
 
-To connect Vercel, create a token scoped to the Tripboard project only, then store it. Vercel tokens can't be made read-only. The app only sends `GET` requests, but treat the token like any other secret.
+To connect Vercel, create a token at [vercel.com/account/settings/tokens](https://vercel.com/account/settings/tokens). Give it a name, scope it to the team that owns Tripboard, and set an expiry. Then store it:
 
 ```bash
-vercel tokens create "Tripboard admin dashboard" --project tripboard    # prints the token once
 vercel env add VERCEL_API_TOKEN production --sensitive --value "<token>"
 ```
 
+Vercel tokens can't be made read-only. The app only sends `GET` requests, but treat the token like any other secret. `vercel tokens create` doesn't work from a normal CLI login ("Cannot create tokens for this app"), so use the dashboard.
+
 You don't need to set the project and team IDs. Vercel sends every function an OIDC token (the `x-vercel-oidc-token` header), and the app reads `project_id` and `owner_id` from its claims. OIDC is on by default. If it's off, or you want a different project, set `VERCEL_PROJECT_ID` and `VERCEL_TEAM_ID` (`projectId` and `orgId` in `.vercel/project.json`). Locally, `vercel env pull .env.local` writes a `VERCEL_OIDC_TOKEN` the app reads the same way.
 
-Revoke the token with `vercel tokens list` and then `vercel tokens revoke <id>`.
+Revoke the token on the same dashboard page, or with `vercel tokens list` and then `vercel tokens revoke <id>`.
 
 Billing isn't on the page. Exact spend needs a [Cloud Billing export to BigQuery](https://cloud.google.com/billing/docs/how-to/export-data-bigquery) and Vercel's usage dashboard. A good follow-up is to add a billing card once the export exists.
 
@@ -225,7 +226,7 @@ Billing isn't on the page. Exact spend needs a [Cloud Billing export to BigQuery
 | --- | --- | --- |
 | `GCP_PROJECT_ID` | for history | The project that owns the uptime checks. |
 | `GCP_SERVICE_ACCOUNT_KEY` | for history | Service-account key JSON, raw or base64. Server-only, so never prefix it with `NEXT_PUBLIC_`. Needs `roles/monitoring.viewer` and nothing else. |
-| `VERCEL_API_TOKEN` | for deploys | Vercel token scoped to the project (`vercel tokens create … --project tripboard`). Server-only. |
+| `VERCEL_API_TOKEN` | for deploys | Team-scoped token from vercel.com/account/settings/tokens. Server-only. |
 | `VERCEL_PROJECT_ID`, `VERCEL_TEAM_ID` | no | Override the project and team read from the OIDC token. |
 
 Like the other secrets, blank values and the `[SENSITIVE]` placeholder that `vercel env pull` writes count as unset.
