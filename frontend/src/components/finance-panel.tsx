@@ -1,7 +1,7 @@
 "use client";
 
 import { ArrowRight, BedDouble, Check, Pencil, Plus, Trash2, Undo2, UserPlus, X } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
 import { JourneyIcon, journeyModeOf } from "@/components/flight-plan-dialog";
 import { addExpense, removeExpense, saveFinanceSettings, updateExpense } from "@/app/trips/actions";
 import { unwrap } from "@/lib/action-result";
@@ -15,12 +15,14 @@ function dayLabel(date: string) {
   return new Date(`${date}T00:00:00.000Z`).toLocaleDateString("en", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" });
 }
 
-export function FinancePanel({ dates, defaultPeople, finances, flights = [], hotels = [], onSaveState, persistable, tripId }: {
+export function FinancePanel({ dates, defaultPeople, finances, flights = [], hotels = [], onChange, onSaveState, persistable, tripId }: {
   dates: string[];
   defaultPeople: string[];
   finances?: TripFinances;
   flights?: Flight[];
   hotels?: HotelStay[];
+  /** Keeps the workspace's copy current so the tab survives switching away and the assistant can add to it. */
+  onChange?: (finances: TripFinances) => void;
   onSaveState: (state: SaveState) => void;
   persistable: boolean;
   tripId: string;
@@ -40,6 +42,11 @@ export function FinancePanel({ dates, defaultPeople, finances, flights = [], hot
   const payments = expenses.filter((expense) => expense.kind === "payment");
   const usedPeople = useMemo(() => new Set(expenses.flatMap((expense) => [expense.paidBy, ...expenseShares(expense).keys()])), [expenses]);
   const money = (cents: number) => formatMoney(cents, currency);
+  const reportFinances = useEffectEvent((next: TripFinances) => onChange?.(next));
+
+  useEffect(() => {
+    reportFinances({ currency, people, expenses });
+  }, [currency, expenses, people]);
 
   async function persist(work: () => Promise<unknown>, rollback: () => void) {
     if (!persistable) return;

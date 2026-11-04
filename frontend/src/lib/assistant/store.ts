@@ -63,7 +63,8 @@ export async function getSaveConversations(userId: string) {
       .from(assistantSettings)
       .where(eq(assistantSettings.userId, userId))
       .limit(1);
-    return row?.save ?? false;
+    // Saving is on until someone turns it off; only that choice is stored.
+    return row?.save ?? true;
   });
 }
 

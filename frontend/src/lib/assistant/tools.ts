@@ -1,5 +1,6 @@
 import { tool, type InferUITools, type UIDataTypes, type UIMessage } from "ai";
 import { z } from "zod";
+import { nearestHotel } from "@/lib/assistant/suggestions";
 import { searchPlaces } from "@/lib/place-search";
 import type { PlaceSearchResult, Trip } from "@/lib/types";
 
@@ -7,6 +8,8 @@ export type AssistantPick = PlaceSearchResult & {
   reason: string;
   plannedDate: string | null;
   alreadyInTrip: boolean;
+  /** How far it is from where they're sleeping, so cards and the model can talk about it. */
+  fromHotel?: { name: string; meters: number } | null;
 };
 
 /**
@@ -60,7 +63,7 @@ export function createAssistantTools(trip: Trip, known: Map<string, PlaceSearchR
       },
     }),
     suggest_places: tool({
-      description: "Show recommended places to the user as cards with an Add to trip button. Only use ids returned by search_places.",
+      description: "Show recommended places to the user as cards with an Add to trip button, and as lettered pins on their trip map. Only use ids returned by search_places.",
       inputSchema: z.object({
         picks: z.array(z.object({
           id: z.string().describe("A place id from search_places, e.g. p3"),
@@ -78,11 +81,13 @@ export function createAssistantTools(trip: Trip, known: Map<string, PlaceSearchR
             continue;
           }
           if (places.some((existing) => existing.fsqPlaceId === place.fsqPlaceId)) continue;
+          const plannedDate = pick.day && tripDates.has(pick.day) ? pick.day : null;
           places.push({
             ...place,
             reason: pick.reason,
-            plannedDate: pick.day && tripDates.has(pick.day) ? pick.day : null,
+            plannedDate,
             alreadyInTrip: tripPlaceIds.has(place.fsqPlaceId),
+            fromHotel: nearestHotel(place.coordinates, trip.hotels, plannedDate),
           });
         }
         return missing.length
@@ -90,8 +95,80 @@ export function createAssistantTools(trip: Trip, known: Map<string, PlaceSearchR
           : { places };
       },
     }),
+    propose_changes: tool({
+      description: "Draft edits to the trip from something the user pasted or asked for: places for the day plan, day notes, text for the shared agenda, and costs for Money. The user reviews the draft and taps Apply; nothing changes until then. Search each venue with search_places first and use its id.",
+      inputSchema: z.object({
+        summary: z.string().max(200).describe("One line describing the draft, e.g. \"Day 2 in Busan, the hotel links, and 3 costs\""),
+        places: z.array(z.object({
+          id: z.string().describe("A place id from search_places"),
+          day: z.string().optional().describe("Trip date YYYY-MM-DD to plan it on; omit to save it without a day"),
+          note: z.string().max(300).optional().describe("Short note from the pasted text, e.g. a time or booking detail"),
+        })).max(30).optional(),
+        dayNotes: z.array(z.object({
+          day: z.string().describe("Trip date YYYY-MM-DD"),
+          note: z.string().min(1).max(500),
+        })).max(30).optional(),
+        agenda: z.string().max(6000).optional().describe("Markdown to add to the end of the shared agenda: bookings, links, to-dos (- [ ] item), packing lists. Keep pasted links as they are."),
+        expenses: z.array(z.object({
+          title: z.string().min(1).max(80),
+          amount: z.number().positive().max(1_000_000).describe("Total in major units, e.g. 700 or 12.5"),
+          currency: z.string().regex(/^[A-Za-z]{3}$/).optional().describe("ISO code like CAD or KRW; omit to use the trip currency"),
+          paidBy: z.string().max(40).optional().describe("Who paid, if the text says"),
+          day: z.string().optional().describe("YYYY-MM-DD it was spent, if known"),
+        })).max(30).optional(),
+      }),
+      execute: async ({ summary, places = [], dayNotes = [], agenda = "", expenses = [] }) => {
+        const resolved: ProposedPlace[] = [];
+        const missing: string[] = [];
+        for (const pick of places) {
+          const place = known.get(pick.id);
+          if (!place) {
+            missing.push(pick.id);
+            continue;
+          }
+          const plannedDate = pick.day && tripDates.has(pick.day) ? pick.day : null;
+          if (resolved.some((existing) => existing.fsqPlaceId === place.fsqPlaceId && existing.plannedDate === plannedDate)) continue;
+          resolved.push({
+            ...place,
+            reason: "",
+            note: pick.note?.trim() ?? "",
+            plannedDate,
+            alreadyInTrip: trip.places.some((saved) => saved.fsqPlaceId === place.fsqPlaceId && (saved.plannedDate ?? null) === plannedDate),
+            fromHotel: nearestHotel(place.coordinates, trip.hotels, plannedDate),
+          });
+        }
+        const changes: ProposedChanges = {
+          summary,
+          places: resolved,
+          // Notes on days outside the trip have nowhere to show, so they're dropped.
+          dayNotes: dayNotes.filter((item) => tripDates.has(item.day)).map((item) => ({ day: item.day, note: item.note.trim() })),
+          agenda: agenda.trim(),
+          expenses: expenses.map((item) => ({
+            title: item.title.trim(),
+            amountCents: Math.round(item.amount * 100),
+            currency: item.currency ? item.currency.toUpperCase() : null,
+            paidBy: item.paidBy?.trim() || null,
+            day: item.day && /^\d{4}-\d{2}-\d{2}$/.test(item.day) ? item.day : null,
+          })),
+        };
+        if (missing.length) changes.note = `Unknown ids ${missing.join(", ")}: search first, then propose using the returned ids.`;
+        return changes;
+      },
+    }),
   };
 }
+
+export type ProposedPlace = AssistantPick & { note: string };
+export type ProposedDayNote = { day: string; note: string };
+export type ProposedExpense = { title: string; amountCents: number; currency: string | null; paidBy: string | null; day: string | null };
+export type ProposedChanges = {
+  summary: string;
+  places: ProposedPlace[];
+  dayNotes: ProposedDayNote[];
+  agenda: string;
+  expenses: ProposedExpense[];
+  note?: string;
+};
 
 export type AssistantTools = InferUITools<ReturnType<typeof createAssistantTools>>;
 

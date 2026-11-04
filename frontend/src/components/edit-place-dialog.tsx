@@ -2,7 +2,7 @@
 
 import { CalendarDays, ExternalLink, MapPin, X } from "lucide-react";
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { PLACE_CATEGORIES, categoryClass, type CityStop, type Place, type PlaceCategory } from "@/lib/types";
+import { PLACE_CATEGORIES, categoryClass, type Place, type PlaceCategory } from "@/lib/types";
 
 export type PlaceEditDraft = {
   name: string;
@@ -23,13 +23,11 @@ function formatSaveDay(iso: string) {
 }
 
 export function EditPlaceDialog({
-  cities,
   dates = [],
   onClose,
   onSave,
   place,
 }: {
-  cities: CityStop[];
   dates?: string[];
   onClose: () => void;
   onSave: (placeId: string, draft: PlaceEditDraft) => void;
@@ -38,7 +36,6 @@ export function EditPlaceDialog({
   const dialogRef = useRef<HTMLElement>(null);
   const [category, setCategory] = useState<PlaceCategory>(place.category);
   const [plannedDate, setPlannedDate] = useState(place.plannedDate ?? "");
-  const [cityId, setCityId] = useState(place.cityId ?? cities[0]?.id ?? "");
 
   useEffect(() => {
     dialogRef.current?.focus();
@@ -61,7 +58,6 @@ export function EditPlaceDialog({
       category,
       note: String(form.get("note") ?? "").trim(),
       sourceUrl: String(form.get("sourceUrl") ?? "").trim() || undefined,
-      cityId: cityId || null,
       plannedDate: plannedDate || null,
     });
     onClose();
@@ -100,24 +96,16 @@ export function EditPlaceDialog({
             </div>
           </div>
           <label className="field-label"><span>Note</span><textarea defaultValue={place.note} name="note" placeholder="What should everyone know before they go?" rows={4} maxLength={500} /></label>
-          <div className="edit-place-grid">
-            <label className="field-label">
-              <span>City</span>
-              <select value={cityId} onChange={(event) => setCityId(event.target.value)} aria-label={`City for ${place.name}`}>
-                {cities.map((city) => <option value={city.id} key={city.id}>{city.name}</option>)}
+          <label className="field-label">
+            <span>Plan day <small>Optional</small></span>
+            <div className="day-select-input">
+              <CalendarDays size={16} />
+              <select value={plannedDate} onChange={(event) => setPlannedDate(event.target.value)} aria-label={`Planned day for ${place.name}`}>
+                <option value="">Save without a day</option>
+                {dates.map((date) => <option value={date} key={date}>{formatSaveDay(date)}</option>)}
               </select>
-            </label>
-            <label className="field-label">
-              <span>Plan day <small>Optional</small></span>
-              <div className="day-select-input">
-                <CalendarDays size={16} />
-                <select value={plannedDate} onChange={(event) => setPlannedDate(event.target.value)} aria-label={`Planned day for ${place.name}`}>
-                  <option value="">Save without a day</option>
-                  {dates.map((date) => <option value={date} key={date}>{formatSaveDay(date)}</option>)}
-                </select>
-              </div>
-            </label>
-          </div>
+            </div>
+          </label>
           <label className="field-label"><span>Where you found it <small>Optional</small></span><div className="url-input"><ExternalLink size={16} /><input defaultValue={place.sourceUrl ?? ""} name="sourceUrl" placeholder="Instagram, TikTok, article..." type="url" /></div></label>
           <div className="flight-dialog-actions"><span /><button className="button button-ink" type="submit">Save changes</button></div>
         </form>

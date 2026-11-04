@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { Plus } from "lucide-react";
 import { AppHeader } from "@/components/app-header";
+import { SiteFooter } from "@/components/site-footer";
 import { TripCard } from "@/components/trip-card";
 import { getViewer } from "@/lib/auth";
 import { demoTrips } from "@/lib/demo-data";
@@ -98,6 +99,7 @@ export default async function TripsPage() {
           <p className="demo-note">Demo mode · Connect Neon and provider keys for live accounts, places, and maps.</p>
         ) : null}
       </section>
+      <SiteFooter />
     </main>
   );
 }

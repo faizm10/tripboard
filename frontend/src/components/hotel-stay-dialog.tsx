@@ -35,7 +35,8 @@ export function HotelStayDialog({ cities, dates, destination, flights, hotel, ho
     ?? cities.find((city) => city.startDate && city.endDate && city.startDate <= initialDate && city.endDate >= initialDate)
     ?? cities[0];
   const suggestRange = (city: CityStop | undefined) => suggestHotelRange({ city, dates, flights, hotels: hotels.filter((stay) => stay.id !== hotel?.id), startDate: initialDate });
-  const [cityId, setCityId] = useState(hotel?.cityId ?? initialCity?.id ?? "");
+  // Stops aren't picked in the UI any more; the matching stop only seeds the suggested days.
+  const cityId = hotel?.cityId ?? initialCity?.id ?? "";
   const [suggested] = useState(() => hotel ? null : suggestRange(initialCity));
   const [startDate, setStartDate] = useState(hotel?.startDate ?? suggested?.startDate ?? initialDate);
   const [endDate, setEndDate] = useState(hotel?.endDate ?? suggested?.endDate ?? initialDate);
@@ -67,14 +68,6 @@ export function HotelStayDialog({ cities, dates, destination, flights, hotel, ho
     if (!body.coordinates) { setError("That address could not be located. Try a fuller address."); return; }
     setCoordinates(body.coordinates);
     setError("");
-  }
-
-  function chooseCity(nextCityId: string) {
-    setCityId(nextCityId);
-    if (!datesAuto) return;
-    const range = suggestRange(cities.find((city) => city.id === nextCityId));
-    setStartDate(range.startDate);
-    setEndDate(range.endDate);
   }
 
   function chooseStart(date: string) {
@@ -115,7 +108,6 @@ export function HotelStayDialog({ cities, dates, destination, flights, hotel, ho
           <button className="button button-ghost hotel-locate" onClick={locateAddress} type="button">{coordinates ? "Address pinned" : "Pin this address"} <MapPin size={16} /></button>
         </> : <p className="selected-address"><MapPin size={15} /> {selected?.address}</p>}
         <div className="hotel-date-grid">
-          <label className="field-label"><span>City</span><select value={cityId} onChange={(event) => chooseCity(event.target.value)}>{cities.map((city) => <option key={city.id} value={city.id}>{city.name}</option>)}</select></label>
           <label className="field-label"><span>From</span><select value={startDate} onChange={(event) => chooseStart(event.target.value)}>{dates.map((date) => <option key={date} value={date}>{dayLabel(date)}</option>)}</select></label>
           <label className="field-label"><span>Through</span><select value={endDate} onChange={(event) => { setDatesAuto(false); setEndDate(event.target.value); }}>{dates.map((date) => <option key={date} value={date}>{dayLabel(date)}</option>)}</select></label>
         </div>

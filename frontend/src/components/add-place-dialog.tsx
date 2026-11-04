@@ -3,7 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, BedDouble, CalendarDays, Coffee, ExternalLink, Landmark, MapPin, Search, ShoppingBag, TramFront, Utensils, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { PLACE_CATEGORIES, categoryClass, type CityStop, type Place, type PlaceCategory, type PlaceSearchResult } from "@/lib/types";
+import { PLACE_CATEGORIES, categoryClass, type Place, type PlaceCategory, type PlaceSearchResult } from "@/lib/types";
 
 const categoryIcons = {
   Eat: Utensils,
@@ -17,14 +17,9 @@ const categoryIcons = {
 
 type AddPlaceDialogProps = {
   destination: string;
-  cities: CityStop[];
-  initialCityId?: string;
-  newCityId?: string | null;
   initialPlannedDate?: string | null;
   dates?: string[];
-  onAdd: (place: Place, cityId: string) => void;
-  onAddCity: () => void;
-  onCityChange?: () => void;
+  onAdd: (place: Place) => void;
   onClose: () => void;
 };
 
@@ -35,7 +30,7 @@ function formatSaveDay(iso: string) {
   return `${weekday} · ${calendarDate}`;
 }
 
-export function AddPlaceDialog({ cities, destination, initialCityId, initialPlannedDate, newCityId, dates = [], onAdd, onAddCity, onCityChange, onClose }: AddPlaceDialogProps) {
+export function AddPlaceDialog({ destination, initialPlannedDate, dates = [], onAdd, onClose }: AddPlaceDialogProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<PlaceSearchResult | null>(null);
@@ -43,9 +38,10 @@ export function AddPlaceDialog({ cities, destination, initialCityId, initialPlan
   const [plannedDate, setPlannedDate] = useState(initialPlannedDate && dates.includes(initialPlannedDate) ? initialPlannedDate : "");
   const [note, setNote] = useState("");
   const [sourceUrl, setSourceUrl] = useState("");
-  const [cityId, setCityId] = useState(initialCityId ?? cities[0]?.id ?? "");
-  const selectedCityId = newCityId ?? cityId;
-  const searchDestination = cities.find((city) => city.id === selectedCityId)?.name ?? destination;
+  // Places belong to the whole trip. "Near" only steers the search, so a
+  // multi-city trip can still find a spot in the next town over.
+  const [near, setNear] = useState(destination);
+  const searchDestination = near.trim() || destination;
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -81,7 +77,7 @@ export function AddPlaceDialog({ cities, destination, initialCityId, initialPlan
       plannedDate: plannedDate || null,
       daySortOrder: 0,
       addedBy: "FM",
-    }, selectedCityId);
+    });
     onClose();
   }
 
@@ -96,7 +92,8 @@ export function AddPlaceDialog({ cities, destination, initialCityId, initialPlan
           <>
             <h2 id="add-place-title">What&apos;s worth a stop?</h2>
             <div className="place-search-box"><Search size={20} /><input ref={inputRef} value={query} onChange={(event) => setQuery(event.target.value)} placeholder={`Search ${searchDestination}`} aria-label="Search places" /></div>
-            <p className="search-hint">Search a restaurant, shop, landmark, transit stop, or address. <button className="inline-action" onClick={onAddCity} type="button">Add a city</button></p>
+            <label className="search-near"><span>Near</span><input value={near} onChange={(event) => setNear(event.target.value)} placeholder={destination} aria-label="Search near" /></label>
+            <p className="search-hint">Search a restaurant, shop, landmark, transit stop, or address.</p>
             <div className="search-results" aria-live="polite">
               {search.isFetching && <p className="search-state">Looking around…</p>}
               {search.isError && <p className="form-error">{search.error.message}</p>}
@@ -136,10 +133,6 @@ export function AddPlaceDialog({ cities, destination, initialCityId, initialPlan
               </div>
             </div>
             <label className="field-label"><span>Your note</span><textarea value={note} onChange={(event) => setNote(event.target.value)} placeholder="Why did you save this? What should the group know?" rows={4} maxLength={500} /></label>
-            <label className="field-label">
-              <span>City</span>
-              <div className="place-city-select"><select value={selectedCityId} onChange={(event) => { setCityId(event.target.value); onCityChange?.(); }} aria-label="City for this place">{cities.map((city) => <option value={city.id} key={city.id}>{city.name}</option>)}</select><button onClick={onAddCity} type="button">Add city</button></div>
-            </label>
             <label className="field-label">
               <span>Plan day <small>(optional)</small></span>
               <div className="day-select-input">

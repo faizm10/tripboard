@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { AccountAssistant } from "@/components/account-assistant";
 import { AccountPanel } from "@/components/account-panel";
 import { AppHeader } from "@/components/app-header";
+import { SiteFooter } from "@/components/site-footer";
 import { getSaveConversations, getUsageSummary, listConversations } from "@/lib/assistant/store";
 import { getViewer } from "@/lib/auth";
 
@@ -29,6 +30,7 @@ export default async function AccountPage() {
         <AccountPanel demo={viewer.demo} email={email} image={viewer.image} name={name} />
         <AccountAssistant conversations={conversations} demo={viewer.demo} saving={saving} usage={usage} />
       </section>
+      <SiteFooter />
     </main>
   );
 }
