@@ -198,7 +198,7 @@ The Platform tab charts everything running Tripboard on one page. Each card work
 | Google API traffic | `serviceruntime.googleapis.com/api/request_count` and `request_latencies` for `tripboard-ops`, as 30 daily bars split into successes and 4xx/5xx errors, plus a table of requests, last-24h count, error rate and p95 latency per service | the GCP variables above |
 | Places quota today | `serviceruntime.googleapis.com/quota/rate/net_usage` against `quota/limit`, since midnight Pacific when Google resets daily quotas. A bar turns red at 80%. | the GCP variables above |
 | Uptime checks | the same data as `/status` | the GCP variables above |
-| Deployments | Vercel REST `/v6/deployments`, `/v9/projects/{id}` and `/v9/projects/{id}/domains`, as daily ready and failed bars, the last 12 deploys, the success rate and the median build time | `VERCEL_API_TOKEN`, `VERCEL_PROJECT_ID`, `VERCEL_TEAM_ID` |
+| Deployments | Vercel REST `/v6/deployments`, `/v9/projects/{id}` and `/v9/projects/{id}/domains`, as daily ready and failed bars, the last 12 deploys, the success rate and the median build time | `VERCEL_API_TOKEN` |
 | This server | Vercel's system env vars (`VERCEL_ENV`, `VERCEL_REGION`, `VERCEL_GIT_COMMIT_*`), plus the project's root directory, Node version and domains when the token is set | nothing |
 | Largest tables | `pg_database_size` and `pg_stat_user_tables` on Neon | `DATABASE_URL` |
 
@@ -206,17 +206,16 @@ Google and Vercel results are cached in memory for 60 seconds.
 
 The Google traffic only counts API keys that belong to `tripboard-ops`. Calls made with a key from another project show up in that project instead.
 
-To connect Vercel:
-
-1. Create a token at [vercel.com/account/settings/tokens](https://vercel.com/account/settings/tokens), scoped to the team that owns the project, with an expiry. Vercel tokens can't be made read-only. The app only sends `GET` requests, but treat the token like any other secret.
-2. Copy `projectId` and `orgId` from `.vercel/project.json`. `orgId` is the team ID.
-3. Add the values to Vercel (production only) and redeploy:
+To connect Vercel, create a token scoped to the Tripboard project only, then store it. Vercel tokens can't be made read-only. The app only sends `GET` requests, but treat the token like any other secret.
 
 ```bash
-vercel env add VERCEL_API_TOKEN production --sensitive
-vercel env add VERCEL_PROJECT_ID production
-vercel env add VERCEL_TEAM_ID production
+vercel tokens create "Tripboard admin dashboard" --project tripboard    # prints the token once
+vercel env add VERCEL_API_TOKEN production --sensitive --value "<token>"
 ```
+
+You don't need to set the project and team IDs. Vercel sends every function an OIDC token (the `x-vercel-oidc-token` header), and the app reads `project_id` and `owner_id` from its claims. OIDC is on by default. If it's off, or you want a different project, set `VERCEL_PROJECT_ID` and `VERCEL_TEAM_ID` (`projectId` and `orgId` in `.vercel/project.json`). Locally, `vercel env pull .env.local` writes a `VERCEL_OIDC_TOKEN` the app reads the same way.
+
+Revoke the token with `vercel tokens list` and then `vercel tokens revoke <id>`.
 
 Billing isn't on the page. Exact spend needs a [Cloud Billing export to BigQuery](https://cloud.google.com/billing/docs/how-to/export-data-bigquery) and Vercel's usage dashboard. A good follow-up is to add a billing card once the export exists.
 
@@ -226,8 +225,8 @@ Billing isn't on the page. Exact spend needs a [Cloud Billing export to BigQuery
 | --- | --- | --- |
 | `GCP_PROJECT_ID` | for history | The project that owns the uptime checks. |
 | `GCP_SERVICE_ACCOUNT_KEY` | for history | Service-account key JSON, raw or base64. Server-only, so never prefix it with `NEXT_PUBLIC_`. Needs `roles/monitoring.viewer` and nothing else. |
-| `VERCEL_API_TOKEN` | for deploys | Team-scoped Vercel token. Server-only. |
-| `VERCEL_PROJECT_ID`, `VERCEL_TEAM_ID` | for deploys | From `.vercel/project.json` (`projectId`, `orgId`). |
+| `VERCEL_API_TOKEN` | for deploys | Vercel token scoped to the project (`vercel tokens create … --project tripboard`). Server-only. |
+| `VERCEL_PROJECT_ID`, `VERCEL_TEAM_ID` | no | Override the project and team read from the OIDC token. |
 
 Like the other secrets, blank values and the `[SENSITIVE]` placeholder that `vercel env pull` writes count as unset.
 

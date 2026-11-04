@@ -1,8 +1,23 @@
 import { describe, expect, it } from "vitest";
-import { summarizeDeployments, toDeployment } from "@/lib/vercel-api";
+import { oidcProject, summarizeDeployments, toDeployment } from "@/lib/vercel-api";
 
 const now = new Date("2026-11-04T18:00:00.000Z");
 const at = (iso: string) => Date.parse(iso);
+
+describe("oidcProject", () => {
+  const jwt = (claims: object) => `e30.${Buffer.from(JSON.stringify(claims)).toString("base64url")}.sig`;
+
+  it("reads the project and team from the token's claims", () => {
+    expect(oidcProject(jwt({ project_id: "prj_1", owner_id: "team_1" }))).toEqual({ projectId: "prj_1", teamId: "team_1" });
+  });
+
+  it("returns null for missing, malformed, or project-less tokens", () => {
+    expect(oidcProject(undefined)).toBeNull();
+    expect(oidcProject("not-a-jwt")).toBeNull();
+    expect(oidcProject("a.%%%.c")).toBeNull();
+    expect(oidcProject(jwt({ owner_id: "team_1" }))).toBeNull();
+  });
+});
 
 describe("toDeployment", () => {
   it("reads git metadata, the target, and build time for ready builds only", () => {

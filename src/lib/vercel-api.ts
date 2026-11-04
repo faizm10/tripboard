@@ -1,10 +1,13 @@
+import { headers } from "next/headers";
 import { envValue } from "@/lib/env";
 
 /**
  * Reads Tripboard's own Vercel project for /admin/platform. Needs
- * VERCEL_API_TOKEN, VERCEL_PROJECT_ID and VERCEL_TEAM_ID (see
- * GCP_INTEGRATION.md → "Platform analytics"). Without them it returns null
- * and the page shows only what the running deployment knows about itself.
+ * VERCEL_API_TOKEN; the project and team come from VERCEL_PROJECT_ID and
+ * VERCEL_TEAM_ID when set, otherwise from the claims of the OIDC token Vercel
+ * hands every function (see GCP_INTEGRATION.md → "Platform analytics").
+ * Without a token it returns null and the page shows only what the running
+ * deployment knows about itself.
  */
 
 const API = "https://api.vercel.com";
@@ -60,11 +63,35 @@ export function runtimeDeployment() {
   };
 }
 
-export function vercelSettings() {
+/**
+ * The project and team this deployment belongs to, read from a Vercel OIDC
+ * token's `project_id` and `owner_id` claims. Only the payload is decoded:
+ * the IDs pick which project to query, and access still rests on the API token.
+ */
+export function oidcProject(token: string | null | undefined) {
+  const payload = token?.split(".")[1];
+  if (!payload) return null;
+  try {
+    const claims = JSON.parse(Buffer.from(payload, "base64url").toString("utf8")) as { project_id?: unknown; owner_id?: unknown };
+    if (typeof claims.project_id !== "string") return null;
+    return { projectId: claims.project_id, teamId: typeof claims.owner_id === "string" ? claims.owner_id : undefined };
+  } catch {
+    return null;
+  }
+}
+
+export async function vercelSettings() {
   const token = envValue("VERCEL_API_TOKEN");
-  const projectId = envValue("VERCEL_PROJECT_ID");
-  const teamId = envValue("VERCEL_TEAM_ID");
-  if (!token || !projectId) return null;
+  if (!token) return null;
+  let projectId = envValue("VERCEL_PROJECT_ID");
+  let teamId = envValue("VERCEL_TEAM_ID");
+  if (!projectId) {
+    // On Vercel the token arrives as a request header; `vercel env pull` puts one in .env.local for local dev.
+    const oidc = oidcProject((await headers()).get("x-vercel-oidc-token") ?? envValue("VERCEL_OIDC_TOKEN"));
+    projectId = oidc?.projectId;
+    teamId ??= oidc?.teamId;
+  }
+  if (!projectId) return null;
   return { token, projectId, teamId };
 }
 
@@ -130,7 +157,7 @@ export function summarizeDeployments(deployments: VercelDeployment[], days = DEP
   };
 }
 
-async function vercel<T>(path: string, settings: NonNullable<ReturnType<typeof vercelSettings>>, params: Record<string, string> = {}) {
+async function vercel<T>(path: string, settings: NonNullable<Awaited<ReturnType<typeof vercelSettings>>>, params: Record<string, string> = {}) {
   const query = new URLSearchParams({ ...params, ...(settings.teamId ? { teamId: settings.teamId } : {}) });
   const response = await fetch(`${API}${path}?${query}`, { headers: { Authorization: `Bearer ${settings.token}` }, cache: "no-store" });
   if (!response.ok) {
@@ -143,7 +170,7 @@ async function vercel<T>(path: string, settings: NonNullable<ReturnType<typeof v
 let cached: { at: number; report: VercelReport } | null = null;
 
 export async function getVercelReport(): Promise<VercelReport | null> {
-  const settings = vercelSettings();
+  const settings = await vercelSettings();
   if (!settings) return null;
   if (cached && Date.now() - cached.at < CACHE_MS) return cached.report;
   let report: VercelReport;

@@ -139,7 +139,7 @@ export function PlatformDashboard({ gcp, uptime, vercel, runtime, database }: {
 
       <article className="admin-card platform-wide">
         <div className="admin-card-heading"><div><p className="eyebrow">Vercel{vercelOk ? ` · ${vercelOk.project.name}` : ""}</p><h2>Deployments</h2></div></div>
-        {!vercel ? <Setup title="Not connected">Set VERCEL_API_TOKEN, VERCEL_PROJECT_ID and VERCEL_TEAM_ID. See GCP_INTEGRATION.md → Platform analytics.</Setup>
+        {!vercel ? <Setup title="Not connected">Set VERCEL_API_TOKEN. The project and team are read from Vercel&rsquo;s OIDC token. See GCP_INTEGRATION.md → Platform analytics.</Setup>
           : !vercel.ok ? <Setup title="Vercel API failed">{vercel.error}</Setup>
           : <>
             <DailyBars days={vercel.summary.daily.map((day) => ({ date: day.date, values: [day.ready, day.failed] }))} label={`Daily deployments over ${vercel.summary.daily.length} days`} series={["Ready", "Failed"]} />
