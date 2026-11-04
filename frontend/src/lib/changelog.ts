@@ -22,6 +22,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     version: "0.43.0",
     date: "2026-11-04",
     title: "A status page",
+    pr: 43,
     changes: [
       "See whether Tripboard and the services it uses are up at /status, linked from the footer.",
       "The status page shows 30 days of uptime, checked from several regions.",
