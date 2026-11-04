@@ -33,7 +33,7 @@ import Markdown from "react-markdown";
 import { loadConversation, loadTripConversations, removeConversation } from "@/lib/assistant/actions";
 import { shortModelName } from "@/lib/assistant/models";
 import type { ConversationSummary } from "@/lib/assistant/store";
-import { collectSuggestions, formatDistance, type MapSuggestion } from "@/lib/assistant/suggestions";
+import { collectSuggestions, hotelDistanceLabel, type MapSuggestion } from "@/lib/assistant/suggestions";
 import type { AssistantMessage, AssistantPick } from "@/lib/assistant/tools";
 import { categoryClass, isPersistedTripId, type PlaceCategory } from "@/lib/types";
 
@@ -593,7 +593,7 @@ function PickCard({
 }) {
   const Icon = categoryIcons[pick.category] ?? MapPin;
   const mapsUrl = `https://www.google.com/maps/search/?${new URLSearchParams({ api: "1", query: `${pick.name} ${pick.address}` })}`;
-  const fromHotel = pick.fromHotel ? `${formatDistance(pick.fromHotel.meters)} from ${pick.fromHotel.name}` : "";
+  const fromHotel = hotelDistanceLabel(pick.fromHotel);
   return (
     <li className={`assistant-pick${focused ? " focused" : ""}`}>
       <span className={`assistant-pick-icon ${categoryClass(pick.category)}`} aria-hidden="true">

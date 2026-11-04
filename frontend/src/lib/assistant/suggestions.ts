@@ -42,6 +42,14 @@ export function distanceMeters([lng1, lat1]: [number, number], [lng2, lat2]: [nu
   return 2 * 6_371_000 * Math.asin(Math.sqrt(a));
 }
 
+/** Beyond this the hotel is in another town, so the distance says nothing useful. */
+const MAX_HOTEL_DISTANCE = 30_000;
+
+export function hotelDistanceLabel(fromHotel?: { name: string; meters: number } | null, { short = false } = {}) {
+  if (!fromHotel || fromHotel.meters > MAX_HOTEL_DISTANCE) return "";
+  return `${formatDistance(fromHotel.meters)} from ${short ? "hotel" : fromHotel.name}`;
+}
+
 export function formatDistance(meters: number) {
   if (meters < 950) return `${Math.max(50, Math.round(meters / 50) * 50)} m`;
   return `${(meters / 1000).toFixed(meters < 9_500 ? 1 : 0)} km`;

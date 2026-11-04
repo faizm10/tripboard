@@ -132,5 +132,8 @@ describe("map suggestions", () => {
     expect(nearestHotel([129.05, 35.11], hotels, null)?.name).toBe("Busan Stay");
     expect(formatDistance(420)).toBe("400 m");
     expect(formatDistance(2400)).toBe("2.4 km");
+    const { hotelDistanceLabel } = await import("@/lib/assistant/suggestions");
+    expect(hotelDistanceLabel({ name: "Seoul Stay", meters: 1200 })).toBe("1.2 km from Seoul Stay");
+    expect(hotelDistanceLabel({ name: "Busan Stay", meters: 332_000 })).toBe("");
   });
 });

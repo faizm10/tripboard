@@ -1553,13 +1553,15 @@ input[type="date"]:invalid::-webkit-datetime-edit, input[type="time"]:invalid::-
 .mapbox-suggestion-pin { display: grid; width: 32px; height: 32px; padding: 0; place-items: center; border: 2px dashed var(--accent); border-radius: 50%; background: var(--paper-raised); box-shadow: 0 6px 16px -8px rgb(26 24 20 / .45); color: var(--accent); font-size: 12px; font-weight: 800; cursor: pointer; transition: transform 140ms ease, background 140ms ease, color 140ms ease; }
 .mapbox-suggestion-pin:hover, .mapbox-suggestion-pin:focus-visible { transform: scale(1.08); }
 .mapbox-suggestion-marker.focused .mapbox-suggestion-pin { border-style: solid; background: var(--accent); color: var(--paper-raised); transform: scale(1.14); }
-.suggestion-preview-card { display: grid; gap: 3px; }
-.suggestion-preview-card strong { font-size: 14px; font-weight: 650; letter-spacing: -.02em; line-height: 1.25; }
-.suggestion-preview-card small { color: var(--muted); font-size: 11px; }
-.suggestion-preview-card p { margin: 4px 0 0; color: var(--ink); font-size: 12px; line-height: 1.45; }
-.suggestion-preview-kicker { display: inline-flex; align-items: center; gap: 4px; color: var(--accent); font-size: 9px; font-weight: 750; letter-spacing: .06em; text-transform: uppercase; }
-.suggestion-preview-add { justify-self: start; min-height: 30px; margin-top: 8px; padding: 0 12px; border: 1px solid var(--accent); border-radius: var(--radius-round); background: var(--accent); color: var(--paper-raised); font-size: 12px; font-weight: 650; cursor: pointer; }
-.suggestion-preview-add:hover { background: var(--accent-strong); border-color: var(--accent-strong); }
+.map-preview-card.suggestion-preview-card { display: flex; width: min(260px, calc(100vw - 34px)); padding: 12px 14px 14px; flex-direction: column; align-items: flex-start; gap: 4px; }
+.suggestion-preview-card > * { display: block; margin: 0; }
+.suggestion-preview-card strong { font-size: 15px; font-weight: 650; letter-spacing: -.02em; line-height: 1.25; }
+.suggestion-preview-card small { color: var(--muted); font-size: 11.5px; line-height: 1.4; }
+.suggestion-preview-card p { padding-top: 4px; color: var(--ink); font-size: 12.5px; line-height: 1.45; }
+.suggestion-preview-card > .suggestion-preview-kicker { display: inline-flex; margin-bottom: 2px; padding: 3px 8px; align-items: center; gap: 4px; border-radius: var(--radius-round); background: var(--accent-soft); color: var(--accent); font-size: 9.5px; font-weight: 750; letter-spacing: .06em; text-transform: uppercase; }
+.suggestion-preview-card > .suggestion-preview-add { display: inline-flex; min-height: 32px; margin-top: 8px; padding: 0 14px; align-items: center; border: 1px solid var(--accent); border-radius: var(--radius-round); background: var(--accent); color: var(--paper-raised); font-size: 12px; font-weight: 650; cursor: pointer; }
+.suggestion-preview-card > .suggestion-preview-add:hover { border-color: var(--accent-strong); background: var(--accent-strong); }
+.suggestion-map-popup .mapboxgl-popup-tip { border-top-color: var(--paper-raised); border-bottom-color: var(--paper-raised); }
 .map-suggestion-chip { position: absolute; top: 16px; left: 50%; z-index: 14; display: inline-flex; min-height: 34px; padding: 0 6px 0 12px; align-items: center; gap: 7px; border: 1px solid var(--accent-line); border-radius: var(--radius-round); background: var(--accent-soft); box-shadow: var(--shadow-sm); color: var(--ink); font-size: 11px; font-weight: 650; white-space: nowrap; transform: translateX(-50%); }
 .map-suggestion-chip > svg { color: var(--accent); }
 .map-suggestion-chip button { display: grid; width: 24px; height: 24px; padding: 0; place-items: center; border: 0; border-radius: 50%; background: transparent; color: var(--muted); cursor: pointer; }
@@ -2447,13 +2449,15 @@ html {
 .assistant-panel { position: fixed; top: 68px; right: 0; bottom: 0; z-index: 150; display: flex; width: 400px; min-width: 0; flex-direction: column; overflow: hidden; border-left: 1px solid var(--line); background: var(--paper-raised); box-shadow: -24px 0 48px -36px rgb(26 24 20 / .35); transform: translateX(100%); visibility: hidden; transition: transform var(--dur-slow) var(--ease-out), visibility 0s linear var(--dur-slow); }
 .assistant-panel.open { transform: none; visibility: visible; transition: transform var(--dur-slow) var(--ease-out), visibility 0s; }
 .trip-workspace.assistant-open { margin-right: 400px; }
+/* With the assistant open the list keeps enough room; the map gives way first. */
+.trip-workspace.assistant-open { grid-template-columns: min(var(--map-split, 44%), 34%) minmax(0, 1fr); }
 
-.assistant-header { position: relative; display: flex; flex: none; align-items: center; gap: 10px; padding: 14px 12px 14px 18px; border-bottom: 1px solid var(--line-soft); }
+.assistant-header { position: relative; display: flex; box-sizing: border-box; height: 45px; flex: none; align-items: center; gap: 9px; padding: 0 8px 0 16px; border-bottom: 1px solid var(--line); }
 .assistant-grabber { display: none; }
-.assistant-mark { display: grid; width: 32px; height: 32px; flex: none; place-items: center; border-radius: 10px; background: var(--accent); color: var(--paper-raised); }
-.assistant-title { display: grid; min-width: 0; flex: 1; gap: 1px; }
-.assistant-title strong { font-size: 15px; font-weight: 650; letter-spacing: -.02em; }
-.assistant-title span { overflow: hidden; color: var(--muted); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.assistant-mark { display: grid; width: 26px; height: 26px; flex: none; place-items: center; border-radius: 8px; background: var(--accent); color: var(--paper-raised); }
+.assistant-title { display: flex; min-width: 0; flex: 1; align-items: baseline; gap: 8px; }
+.assistant-title strong { flex: none; font-size: 14px; font-weight: 650; letter-spacing: -.02em; }
+.assistant-title span { min-width: 0; overflow: hidden; color: var(--muted); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
 .assistant-icon-button { display: grid; width: 36px; height: 36px; flex: none; padding: 0; place-items: center; border: 0; border-radius: 9px; background: transparent; color: var(--muted); cursor: pointer; }
 .assistant-icon-button:hover { background: var(--surface); color: var(--ink); }
 
@@ -2894,3 +2898,8 @@ ul.itinerary-places { list-style: disc; }
   .day-hero { margin-top: 0; padding: 14px; }
   .day-hero-picker strong { font-size: 19px; }
 }
+
+.assistant-header .assistant-icon-button { width: 32px; height: 32px; }
+.workspace-mode button { white-space: nowrap; }
+.trip-workspace.assistant-open .workspace-mode button { padding: 0 8px; }
+@media (max-width: 1099px) { .assistant-header { height: auto; min-height: 56px; } }

@@ -2,7 +2,7 @@
 
 import { CalendarDays, LocateFixed, MapPin, Minus, Plus, Sparkles, X } from "lucide-react";
 import { useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
-import { formatDistance, type MapSuggestion } from "@/lib/assistant/suggestions";
+import { hotelDistanceLabel, type MapSuggestion } from "@/lib/assistant/suggestions";
 import type { CityLocation } from "@/lib/cities";
 import { formatWeekdayDate } from "@/lib/dates";
 import { nameNeedsAddressLookup } from "@/lib/google-maps";
@@ -152,7 +152,7 @@ function createHotelPreviewCard(hotel: HotelStay) {
 }
 
 function suggestionMeta(suggestion: MapSuggestion) {
-  return [suggestion.category, suggestion.neighborhood, suggestion.fromHotel ? `${formatDistance(suggestion.fromHotel.meters)} from hotel` : ""].filter(Boolean).join(" · ");
+  return [suggestion.category, suggestion.neighborhood, hotelDistanceLabel(suggestion.fromHotel, { short: true })].filter(Boolean).join(" · ");
 }
 
 function suggestionAddLabel(suggestion: MapSuggestion) {
@@ -164,7 +164,8 @@ function createSuggestionCard(suggestion: MapSuggestion, onAdd: () => void) {
   card.className = "map-preview-card suggestion-preview-card";
   const kicker = document.createElement("span");
   kicker.className = "suggestion-preview-kicker";
-  kicker.textContent = `AI pick ${suggestion.label}`;
+  kicker.innerHTML = '<svg aria-hidden="true" viewBox="0 0 24 24" width="11" height="11" fill="currentColor"><path d="M12 2l2.2 6.3L20.5 10l-6.3 2.2L12 18.5l-2.2-6.3L3.5 10l6.3-1.7z"/></svg>';
+  kicker.append(`AI pick ${suggestion.label}`);
   const title = document.createElement("strong");
   title.textContent = suggestion.name;
   const meta = document.createElement("small");
