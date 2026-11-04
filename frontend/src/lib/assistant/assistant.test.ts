@@ -137,3 +137,26 @@ describe("map suggestions", () => {
     expect(hotelDistanceLabel({ name: "Busan Stay", meters: 332_000 })).toBe("");
   });
 });
+
+describe("propose_changes", () => {
+  it("resolves searched places, drops off-trip days, and converts amounts to cents", async () => {
+    const trip = getTrip("nyc-weekender");
+    const known = new Map<string, PlaceSearchResult>();
+    const tools = createAssistantTools(trip, known);
+    await tools.search_places.execute!({ query: "pizza" }, execOptions);
+    const day = trip.startDate!;
+    const output = await tools.propose_changes.execute!({
+      summary: "Day one",
+      places: [{ id: "p1", day, note: "Lunch at 1pm" }, { id: "p99" }],
+      dayNotes: [{ day, note: "Early start" }, { day: "1999-01-01", note: "Not on the trip" }],
+      agenda: "  ## Hotels\n- [ ] Book  ",
+      expenses: [{ title: "Hotel", amount: 700.5, currency: "cad", paidBy: "Ana" }],
+    }, execOptions) as Exclude<Awaited<ReturnType<NonNullable<typeof tools.propose_changes.execute>>>, AsyncIterable<unknown>>;
+    expect(output.places).toHaveLength(1);
+    expect(output.places[0]).toMatchObject({ name: "Corner Bistro", plannedDate: day, note: "Lunch at 1pm" });
+    expect(output.dayNotes).toEqual([{ day, note: "Early start" }]);
+    expect(output.agenda).toBe("## Hotels\n- [ ] Book");
+    expect(output.expenses).toEqual([{ title: "Hotel", amountCents: 70050, currency: "CAD", paidBy: "Ana", day: null }]);
+    expect(output.note).toContain("p99");
+  });
+});

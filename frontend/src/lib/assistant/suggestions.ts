@@ -21,7 +21,8 @@ export function collectSuggestions(messages: AssistantMessage[]): MapSuggestion[
   for (const message of messages) {
     if (message.role !== "assistant") continue;
     for (const part of message.parts) {
-      if (part.type !== "tool-suggest_places" || part.state !== "output-available") continue;
+      // Drafted day-plan places show on the map too, so a pasted itinerary can be checked before applying.
+      if ((part.type !== "tool-suggest_places" && part.type !== "tool-propose_changes") || part.state !== "output-available") continue;
       for (const pick of part.output.places ?? []) {
         if (!pick?.fsqPlaceId || !Array.isArray(pick.coordinates)) continue;
         if (seen.has(pick.fsqPlaceId)) continue;

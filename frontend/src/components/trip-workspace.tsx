@@ -48,6 +48,7 @@ import {
   addDayNote as persistAddDayNote,
   addFlight as persistAddFlight,
   addHotelStay as persistAddHotelStay,
+  addExpense as persistAddExpense,
   addPlace as persistPlace,
   reorderDayPlaces as persistReorderDayPlaces,
   removeDayNote as persistRemoveDayNote,
@@ -59,11 +60,13 @@ import {
   updateHotelStay as persistUpdateHotelStay,
   updatePlace as persistUpdatePlace,
   updatePlaceDetails as persistUpdatePlaceDetails,
+  updateAgendaBrief as persistAgendaBrief,
 } from "@/app/trips/actions";
 import { unwrap } from "@/lib/action-result";
 import { AddPlaceDialog } from "@/components/add-place-dialog";
 import { AgendaPanel } from "@/components/agenda-panel";
-import { TripAssistant } from "@/components/trip-assistant";
+import { TripAssistant, type ApplyResult } from "@/components/trip-assistant";
+import { AGENDA_MAX_LENGTH } from "@/lib/agenda";
 import { TransitEditor, TransitRideCard, transitLegs, type TransitDraft } from "@/components/day-transit-planner";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { EditPlaceDialog, type PlaceEditDraft } from "@/components/edit-place-dialog";
@@ -79,9 +82,9 @@ import { TripLogisticsDialog, type TripDetails } from "@/components/trip-logisti
 import { TripMap } from "@/components/trip-map";
 import { buildAppleMapsUrl, buildGoogleMapsPlaceUrl, buildGoogleMapsUrl } from "@/lib/navigation";
 import type { MapSuggestion } from "@/lib/assistant/suggestions";
-import type { AssistantPick } from "@/lib/assistant/tools";
+import type { AssistantPick, ProposedChanges } from "@/lib/assistant/tools";
 import { resolvePersistedPlaceIds } from "@/lib/place-persistence";
-import { PLACE_CATEGORIES, categoryClass, isPersistedTripId, type CityStop, type DayNote, type Flight, type HotelStay, type JourneyMode, type Place, type PlaceCategory, type RouteStop, type TravelMode, type TransitPlan, type Trip, type TripViewer } from "@/lib/types";
+import { PLACE_CATEGORIES, categoryClass, isPersistedTripId, type CityStop, type DayNote, type Flight, type HotelStay, type JourneyMode, type Place, type PlaceCategory, type RouteStop, type TravelMode, type TransitPlan, type Trip, type TripExpense, type TripFinances, type TripViewer } from "@/lib/types";
 
 type RouteStats = { durationSeconds: number; distanceMeters: number };
 type MobileView = "list" | "map";
@@ -152,6 +155,12 @@ export function TripWorkspace({
   const [flights, setFlights] = useState(trip.flights);
   const [hotels, setHotels] = useState(trip.hotels);
   const [transitPlans, setTransitPlans] = useState(trip.transitPlans ?? []);
+  // Money and Agenda edit their own copies; these keep the latest so switching tabs
+  // doesn't lose edits, and the assistant can add to them. `panelVersion` remounts
+  // a panel after the assistant changes its data underneath it.
+  const [finances, setFinances] = useState<TripFinances | undefined>(trip.finances);
+  const [agendaBrief, setAgendaBrief] = useState(trip.agenda.brief);
+  const [panelVersion, setPanelVersion] = useState(0);
   const [details, setDetails] = useState<TripDetails>({
     title: trip.title,
     destination: trip.destination,
@@ -295,24 +304,28 @@ export function TripWorkspace({
     return () => window.removeEventListener("keydown", closeOnEscape);
   }, [navOpen]);
 
-  function addPlace(place: Place) {
+  function addPlace(place: Place, current: Place[] = places) {
     const cityId = null;
     const plannedDate = place.plannedDate ?? null;
-    const alreadyOnDay = places.some((item) => item.fsqPlaceId === place.fsqPlaceId && (item.plannedDate ?? null) === plannedDate);
+    const alreadyOnDay = current.some((item) => item.fsqPlaceId === place.fsqPlaceId && (item.plannedDate ?? null) === plannedDate);
     if (alreadyOnDay) {
       setSaveState("error");
       setSaveNotice(plannedDate ? "That place is already on this day." : "That place is already saved without a day.");
-      return;
+      return null;
     }
     const daySortOrder = plannedDate
-      ? places.filter((item) => item.plannedDate === plannedDate).length
+      ? current.filter((item) => item.plannedDate === plannedDate).length
       : 0;
     const next = { ...place, cityId, plannedDate, daySortOrder, addedBy: viewer?.name || place.addedBy, saved: true };
     setPlaces((current) => [...current, next]);
     setSelectedId(next.id);
     setFilter("All");
     setMobileView("list");
-    if (!persistable) return;
+    if (persistable) enqueuePlaceSave(next);
+    return next;
+  }
+
+  function enqueuePlaceSave(next: Place) {
     enqueuePersist(async () => {
       try {
         const saved = await unwrap(persistPlace({
@@ -354,6 +367,109 @@ export function TripWorkspace({
     addAssistantPick(suggestion);
     setFocusedSuggestionId(null);
     setMobileView("map");
+  }
+
+  /** Writes a draft the user reviewed in the assistant into the day plan, agenda and money. */
+  async function applyAssistantChanges(changes: ProposedChanges): Promise<ApplyResult> {
+    const failed: string[] = [];
+    let applied = 0;
+
+    let snapshot = places;
+    for (const pick of changes.places) {
+      const duplicate = snapshot.some((item) => item.fsqPlaceId === pick.fsqPlaceId && (item.plannedDate ?? null) === (pick.plannedDate ?? null));
+      if (duplicate) continue;
+      assistantAdds.current += 1;
+      const next = addPlace({
+        id: `local-assistant-${assistantAdds.current}`,
+        fsqPlaceId: pick.fsqPlaceId,
+        name: pick.name,
+        address: pick.address,
+        neighborhood: pick.neighborhood,
+        coordinates: pick.coordinates,
+        category: pick.category,
+        note: pick.note,
+        saved: true,
+        plannedDate: pick.plannedDate,
+        daySortOrder: 0,
+        addedBy: viewer?.name ?? "",
+      }, snapshot);
+      if (next) {
+        snapshot = [...snapshot, next];
+        applied += 1;
+      } else {
+        failed.push(pick.name);
+      }
+    }
+
+    const notesPerDay = new Map<string, number>();
+    for (const item of changes.dayNotes) {
+      const offset = notesPerDay.get(item.day) ?? 0;
+      addNote(item.day, item.note, offset);
+      notesPerDay.set(item.day, offset + 1);
+      applied += 1;
+    }
+
+    if (changes.agenda) {
+      const next = [agendaBrief.trimEnd(), changes.agenda].filter(Boolean).join("\n\n");
+      if (next.length > AGENDA_MAX_LENGTH) {
+        failed.push("agenda (it would be too long)");
+      } else {
+        try {
+          if (persistable) await unwrap(persistAgendaBrief({ tripId: trip.id, brief: next }));
+          setAgendaBrief(next);
+          applied += 1;
+        } catch {
+          failed.push("agenda");
+        }
+      }
+    }
+
+    if (changes.expenses.length) {
+      const tripCurrency = finances?.currency ?? "USD";
+      const people = finances?.people.length ? finances.people : moneyPeople;
+      const match = (name?: string | null) => name ? people.find((person) => person.toLowerCase() === name.toLowerCase()) ?? people.find((person) => person.toLowerCase().split(" ")[0] === name.toLowerCase().split(" ")[0]) : undefined;
+      const added: TripExpense[] = [];
+      for (const item of changes.expenses) {
+        const currency = item.currency && item.currency !== tripCurrency ? item.currency : null;
+        let rate = 1;
+        if (currency) {
+          const body = await fetch(`/api/fx?from=${currency}&to=${tripCurrency}`).then((response) => response.json() as Promise<{ rate?: number }>).catch(() => null);
+          if (!body?.rate) {
+            failed.push(`${item.title} (no ${currency} rate)`);
+            continue;
+          }
+          rate = body.rate;
+        }
+        const fields = {
+          title: item.title.slice(0, 80),
+          amountCents: item.amountCents,
+          paidBy: match(item.paidBy) ?? match(viewer?.name) ?? people[0],
+          split: { mode: "equal" as const, people },
+          spentOn: item.day,
+          kind: "expense" as const,
+          currency,
+          rate,
+        };
+        try {
+          const saved = persistable ? await unwrap(persistAddExpense({ tripId: trip.id, ...fields })) : { id: `local-expense-${crypto.randomUUID()}` };
+          added.push({ id: saved.id, ...fields });
+          applied += 1;
+        } catch {
+          failed.push(item.title);
+        }
+      }
+      if (added.length) {
+        setFinances((current) => ({
+          currency: tripCurrency,
+          people: current?.people.length ? current.people : people,
+          expenses: [...(current?.expenses ?? []), ...added],
+        }));
+      }
+    }
+
+    // Money and Agenda read their data on mount, so remount them with what was just added.
+    if (changes.agenda || changes.expenses.length) setPanelVersion((version) => version + 1);
+    return { applied, failed };
   }
 
   function addAssistantPick(pick: AssistantPick) {
@@ -487,7 +603,7 @@ export function TripWorkspace({
     });
   }
 
-  function addNote(plannedDate: string, note: string) {
+  function addNote(plannedDate: string, note: string, extraOffset = 0) {
     localNoteCounter.current += 1;
     const localId = `local-note-${localNoteCounter.current}`;
     const next: DayNote = {
@@ -495,7 +611,7 @@ export function TripWorkspace({
       cityId: null,
       plannedDate,
       note,
-      sortOrder: dayNotes.filter((item) => item.plannedDate === plannedDate).length,
+      sortOrder: dayNotes.filter((item) => item.plannedDate === plannedDate).length + extraOffset,
       addedBy: viewer?.name || "Traveller",
     };
     setDayNotes((current) => [...current, next]);
@@ -852,7 +968,9 @@ export function TripWorkspace({
             <FinancePanel
               dates={itineraryDates}
               defaultPeople={moneyPeople}
-              finances={trip.finances}
+              finances={finances}
+              key={`money-${panelVersion}`}
+              onChange={setFinances}
               flights={flights}
               hotels={hotels}
               onSaveState={setSaveState}
@@ -861,7 +979,9 @@ export function TripWorkspace({
             />
           ) : (
             <AgendaPanel
-              agenda={trip.agenda}
+              agenda={{ ...trip.agenda, brief: agendaBrief }}
+              key={`agenda-${panelVersion}`}
+              onChange={setAgendaBrief}
               flights={flights}
               hotels={hotels}
               onSaveState={setSaveState}
@@ -920,6 +1040,7 @@ export function TripWorkspace({
       <TripAssistant
         focusedSuggestionId={focusedSuggestionId}
         onAddPlace={addAssistantPick}
+        onApplyChanges={viewer ? applyAssistantChanges : undefined}
         onClose={closeAssistant}
         onShowOnMap={showSuggestionOnMap}
         onSuggestionsChange={updateSuggestions}

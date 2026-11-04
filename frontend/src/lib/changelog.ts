@@ -36,6 +36,8 @@ export const CHANGELOG: ChangelogEntry[] = [
       "AI pick popups on the map are laid out properly, and distances only show when the hotel is nearby.",
       "The assistant's header lines up with the trip bar, and the tabs no longer squash when it's open.",
       "Assistant chats are saved by default. Turn it off any time on your account page.",
+      "Paste an itinerary, booking emails or costs into the assistant and it drafts them into your day plan, day notes, agenda and Money. Tick what you want and tap Apply.",
+      "Money and Agenda edits no longer disappear when you switch tabs and come back.",
       "Version number in the footer and this changelog.",
     ],
   },

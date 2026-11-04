@@ -76,7 +76,8 @@ export async function POST(request: Request) {
     instructions: assistantInstructions(trip, new Date().toISOString().slice(0, 10)),
     messages: await convertToModelMessages(messages.slice(-MAX_HISTORY)),
     tools,
-    stopWhen: isStepCount(6),
+    // Pasted itineraries need a search per venue before the draft, so allow a few more steps.
+    stopWhen: isStepCount(10),
     // Free models sometimes stall mid-answer; fail inside the function limit with a clear message instead.
     timeout: { totalMs: 55_000, chunkMs: 30_000 },
     abortSignal: request.signal,

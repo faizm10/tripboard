@@ -8,6 +8,8 @@ import {
   BedDouble,
   CalendarDays,
   Check,
+  FileText,
+  Receipt,
   Coffee,
   ExternalLink,
   History,
@@ -34,7 +36,9 @@ import { loadConversation, loadTripConversations, removeConversation } from "@/l
 import { shortModelName } from "@/lib/assistant/models";
 import type { ConversationSummary } from "@/lib/assistant/store";
 import { collectSuggestions, hotelDistanceLabel, type MapSuggestion } from "@/lib/assistant/suggestions";
-import type { AssistantMessage, AssistantPick } from "@/lib/assistant/tools";
+import type { AssistantMessage, AssistantPick, ProposedChanges } from "@/lib/assistant/tools";
+
+export type ApplyResult = { applied: number; failed: string[] };
 import { categoryClass, isPersistedTripId, type PlaceCategory } from "@/lib/types";
 
 const categoryIcons = {
@@ -67,6 +71,8 @@ type Props = {
   onSuggestionsChange?: (suggestions: MapSuggestion[]) => void;
   onShowOnMap?: (suggestion: MapSuggestion) => void;
   focusedSuggestionId?: string | null;
+  /** Writes a reviewed draft into the trip. Absent when the viewer can't edit. */
+  onApplyChanges?: (changes: ProposedChanges) => Promise<ApplyResult>;
 };
 
 type Session = { id: string; messages: AssistantMessage[] };
@@ -356,6 +362,7 @@ function ChatSession({
   onSuggestionsChange,
   onShowOnMap,
   focusedSuggestionId,
+  onApplyChanges,
   session,
   saving,
   lastSaved,
@@ -433,7 +440,7 @@ function ChatSession({
   // Keep a visible "still working" row for the whole reply, not just before the first token.
   const working = busy && !textStreaming;
   const answered = last?.role === "assistant" && last.parts.some((part) =>
-    (part.type === "text" && part.text.trim()) || (part.type === "tool-suggest_places" && part.state === "output-available"));
+    (part.type === "text" && part.text.trim()) || ((part.type === "tool-suggest_places" || part.type === "tool-propose_changes") && part.state === "output-available"));
   const stalled = status === "ready" && last?.role === "assistant" && !answered;
   const model = [...messages].reverse().find((message) => message.metadata?.model)?.metadata?.model;
   const firstName = viewerName?.split(" ")[0];
@@ -445,7 +452,7 @@ function ChatSession({
           <div className="assistant-welcome">
             <span className="assistant-empty-mark"><Sparkles size={22} /></span>
             <h2>{firstName ? `Hi ${firstName}.` : "Hi there."} Where should we start?</h2>
-            <p>I can see everything on this board. Ask for ideas, gaps in your days, or places near where you&rsquo;re staying.</p>
+            <p>I can see everything on this board. Ask for ideas, or paste an itinerary, booking emails or costs and I&rsquo;ll draft them into your day plan, agenda and money for you to apply.</p>
             {lastSaved ? (
               <button className="assistant-resume" onClick={() => onOpenSaved(lastSaved.id)} type="button">
                 <History size={15} aria-hidden="true" />
@@ -485,6 +492,19 @@ function ChatSession({
                       if (part.state === "output-error") return <p className="assistant-step" key={key}><Search size={13} /><span>Search didn&rsquo;t work</span></p>;
                       return <p className="assistant-step working" key={key} title={label}><Search size={13} /><span>Searching {label}…</span></p>;
                     }
+                    case "tool-propose_changes":
+                      if (part.state !== "output-available") {
+                        return part.state === "output-error" ? null : <p className="assistant-step working" key={key}><SquarePen size={13} /><span>Drafting changes to your trip…</span></p>;
+                      }
+                      return (
+                        <ChangesCard
+                          changes={part.output}
+                          key={key}
+                          labels={labels}
+                          onApply={onApplyChanges}
+                          onShowOnMap={onShowOnMap}
+                        />
+                      );
                     case "tool-suggest_places":
                       if (part.state !== "output-available") {
                         return part.state === "output-error" ? null : <p className="assistant-step working" key={key}><Sparkles size={13} /><span>Picking the best spots…</span></p>;
@@ -558,7 +578,7 @@ function ChatSession({
                 send(input);
               }
             }}
-            placeholder={`Ask about ${trip.destination.split(",")[0] || "your trip"}…`}
+            placeholder={`Ask about ${trip.destination.split(",")[0] || "your trip"}, or paste an itinerary…`}
             rows={1}
             value={input}
           />
@@ -621,5 +641,166 @@ function PickCard({
         </div>
       </div>
     </li>
+  );
+}
+
+type ChangeKey = `place:${number}` | `note:${number}` | "agenda" | `expense:${number}`;
+
+function formatAmount(cents: number, currency: string | null) {
+  const amount = cents / 100;
+  if (!currency) return amount.toLocaleString("en", { maximumFractionDigits: 2 });
+  try {
+    return amount.toLocaleString("en", { style: "currency", currency, maximumFractionDigits: 2 });
+  } catch {
+    return `${amount} ${currency}`;
+  }
+}
+
+/** A drafted set of trip edits the user ticks through and applies in one go. */
+function ChangesCard({
+  changes,
+  labels,
+  onApply,
+  onShowOnMap,
+}: {
+  changes: ProposedChanges;
+  labels: Map<string, MapSuggestion>;
+  onApply?: (changes: ProposedChanges) => Promise<ApplyResult>;
+  onShowOnMap?: (suggestion: MapSuggestion) => void;
+}) {
+  const allKeys = useMemo<ChangeKey[]>(() => [
+    ...changes.places.map((place, index) => (place.alreadyInTrip ? null : `place:${index}` as const)).filter((key): key is `place:${number}` => key !== null),
+    ...changes.dayNotes.map((_, index) => `note:${index}` as const),
+    ...(changes.agenda ? ["agenda" as const] : []),
+    ...changes.expenses.map((_, index) => `expense:${index}` as const),
+  ], [changes]);
+  const [selected, setSelected] = useState<Set<ChangeKey>>(() => new Set(allKeys));
+  const [status, setStatus] = useState<{ state: "idle" | "applying" | "done" | "error"; message?: string }>({ state: "idle" });
+  const locked = status.state === "applying" || status.state === "done";
+  const count = selected.size;
+
+  function toggle(key: ChangeKey) {
+    if (locked) return;
+    setSelected((current) => {
+      const next = new Set(current);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
+
+  async function apply() {
+    if (!onApply || !count) return;
+    setStatus({ state: "applying" });
+    const picked: ProposedChanges = {
+      summary: changes.summary,
+      places: changes.places.filter((_, index) => selected.has(`place:${index}`)),
+      dayNotes: changes.dayNotes.filter((_, index) => selected.has(`note:${index}`)),
+      agenda: selected.has("agenda") ? changes.agenda : "",
+      expenses: changes.expenses.filter((_, index) => selected.has(`expense:${index}`)),
+    };
+    try {
+      const result = await onApply(picked);
+      setStatus(result.failed.length
+        ? { state: result.applied ? "done" : "error", message: `${result.failed.length} didn’t save: ${result.failed.join(", ")}` }
+        : { state: "done", message: `Applied ${result.applied} ${result.applied === 1 ? "change" : "changes"}` });
+    } catch (error) {
+      setStatus({ state: "error", message: error instanceof Error && error.message ? error.message : "Couldn’t apply these changes. Try again." });
+    }
+  }
+
+  const row = (key: ChangeKey, body: React.ReactNode, disabled = false) => (
+    <li className={`assistant-change${selected.has(key) ? " on" : ""}${disabled ? " disabled" : ""}`} key={key}>
+      <label>
+        <input checked={!disabled && selected.has(key)} disabled={disabled || locked} onChange={() => toggle(key)} type="checkbox" />
+        <span className="assistant-change-body">{body}</span>
+      </label>
+    </li>
+  );
+
+  return (
+    <section className="assistant-changes" aria-label="Proposed changes">
+      <header>
+        <span className="assistant-changes-mark" aria-hidden="true"><SquarePen size={14} /></span>
+        <div>
+          <strong>Draft changes</strong>
+          {changes.summary ? <small>{changes.summary}</small> : null}
+        </div>
+      </header>
+
+      {changes.places.length ? (
+        <div className="assistant-changes-group">
+          <h3><CalendarDays size={13} /> Day plan</h3>
+          <ul>
+            {changes.places.map((place, index) => {
+              const label = labels.get(place.fsqPlaceId);
+              return row(`place:${index}`, (
+                <>
+                  <span className="assistant-change-line">
+                    {label ? <b className="assistant-change-letter">{label.label}</b> : null}
+                    <strong>{place.name}</strong>
+                    <em>{place.plannedDate ? formatDay(place.plannedDate) : "No day yet"}</em>
+                  </span>
+                  {place.alreadyInTrip ? <small>Already on this day</small> : place.note ? <small>{place.note}</small> : <small>{[place.category, place.neighborhood].filter(Boolean).join(" · ")}</small>}
+                  {label && onShowOnMap ? <button className="assistant-change-map" onClick={(event) => { event.preventDefault(); onShowOnMap(label); }} type="button"><MapIcon size={12} /> Map</button> : null}
+                </>
+              ), place.alreadyInTrip);
+            })}
+          </ul>
+        </div>
+      ) : null}
+
+      {changes.dayNotes.length ? (
+        <div className="assistant-changes-group">
+          <h3><FileText size={13} /> Day notes</h3>
+          <ul>
+            {changes.dayNotes.map((item, index) => row(`note:${index}`, (
+              <><span className="assistant-change-line"><strong>{item.note}</strong><em>{formatDay(item.day)}</em></span></>
+            )))}
+          </ul>
+        </div>
+      ) : null}
+
+      {changes.agenda ? (
+        <div className="assistant-changes-group">
+          <h3><FileText size={13} /> Agenda</h3>
+          <ul>
+            {row("agenda", (
+              <>
+                <span className="assistant-change-line"><strong>Add to the shared agenda</strong></span>
+                <pre className="assistant-change-preview">{changes.agenda}</pre>
+              </>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
+      {changes.expenses.length ? (
+        <div className="assistant-changes-group">
+          <h3><Receipt size={13} /> Money</h3>
+          <ul>
+            {changes.expenses.map((item, index) => row(`expense:${index}`, (
+              <>
+                <span className="assistant-change-line"><strong>{item.title}</strong><em>{formatAmount(item.amountCents, item.currency)}</em></span>
+                <small>{[item.paidBy ? `Paid by ${item.paidBy}` : "Paid by you", item.day ? formatDay(item.day) : "", "split evenly"].filter(Boolean).join(" · ")}</small>
+              </>
+            )))}
+          </ul>
+        </div>
+      ) : null}
+
+      {changes.note && !allKeys.length ? <p className="assistant-changes-status error">The assistant couldn’t match those places. Ask it to try again.</p> : null}
+
+      <footer>
+        {status.message ? <p className={`assistant-changes-status${status.state === "error" ? " error" : ""}`} role="status">{status.state === "done" ? <Check size={13} /> : null}{status.message}</p> : null}
+        {status.state === "done" ? null : onApply ? (
+          <button className="assistant-add" disabled={!count || status.state === "applying"} onClick={() => void apply()} type="button">
+            {status.state === "applying" ? "Applying…" : `Apply ${count} ${count === 1 ? "change" : "changes"}`}
+          </button>
+        ) : (
+          <p className="assistant-changes-status">Only trip editors can apply changes.</p>
+        )}
+      </footer>
+    </section>
   );
 }

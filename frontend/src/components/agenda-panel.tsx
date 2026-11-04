@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, CheckSquare, Eye, FileText, Heading2, Link2, List, Pencil, Sparkles } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useEffectEvent, useRef, useState } from "react";
 import Markdown, { type Components } from "react-markdown";
 import remarkBreaks from "remark-breaks";
 import remarkGfm from "remark-gfm";
@@ -20,6 +20,7 @@ export function AgendaPanel({
   persistable,
   title,
   tripId,
+  onChange,
   onSaveState,
 }: {
   agenda: TripAgenda;
@@ -28,6 +29,7 @@ export function AgendaPanel({
   persistable: boolean;
   title: string;
   tripId: string;
+  onChange?: (brief: string) => void;
   onSaveState: (state: SaveState) => void;
 }) {
   const [document, setDocument] = useState(agenda.brief);
@@ -39,9 +41,15 @@ export function AgendaPanel({
   const progress = taskProgress(document);
   const words = wordCount(document);
 
+  const reportDocument = useEffectEvent((value: string) => onChange?.(value));
+
   useEffect(() => () => {
     if (saveTimer.current) clearTimeout(saveTimer.current);
   }, []);
+
+  useEffect(() => {
+    reportDocument(document);
+  }, [document]);
 
   useEffect(() => {
     if (mode !== "edit") return;
