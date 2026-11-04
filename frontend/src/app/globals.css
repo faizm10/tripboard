@@ -703,7 +703,8 @@ a { color: inherit; text-decoration: none; }
   justify-content: space-between;
   gap: 12px 28px;
 }
-.site-footer > div { display: flex; gap: 14px; align-items: baseline; }
+.site-footer > div { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: baseline; }
+.site-footer span { white-space: nowrap; }
 .site-footer strong { font-family: var(--font-sans), Arial, sans-serif; font-size: 16px; font-weight: 600; letter-spacing: -.02em; }
 .site-footer span { color: var(--muted); font-size: 13px; }
 .site-footer-github {
@@ -743,6 +744,55 @@ a { color: inherit; text-decoration: none; }
 @media (max-width: 640px) {
   .changelog-entry { grid-template-columns: 1fr; gap: 8px; }
   .changelog-entry-rail { display: flex; align-items: center; gap: 10px; }
+}
+
+/* Status page (/status) and the admin Status tab */
+.status-page { --status-up: #2f7a4b; --status-partial: #d49a2a; --status-down: #c2412d; --status-none: #dedede; }
+.admin-page { --status-up: #2f7a4b; --status-partial: #d49a2a; --status-down: #c2412d; --status-none: #d8e0d5; }
+.status-shell { width: min(100% - 32px, 880px); margin: 0 auto; padding: 32px 0 0; }
+.status-shell h1 { margin: 6px 0 26px; font-size: clamp(38px, 6vw, 64px); font-weight: 580; letter-spacing: -.045em; line-height: 1; }
+.status-board { display: grid; gap: 14px; }
+.status-banner { display: flex; gap: 14px; align-items: center; padding: 18px 20px; border: 1px solid var(--status-up); border-radius: var(--radius-lg); background: color-mix(in srgb, var(--status-up) 8%, white); }
+.status-banner.degraded { border-color: var(--status-partial); background: color-mix(in srgb, var(--status-partial) 10%, white); }
+.status-banner.down { border-color: var(--status-down); background: color-mix(in srgb, var(--status-down) 9%, white); }
+.status-banner strong { display: block; font-size: 18px; letter-spacing: -.02em; }
+.status-banner p { margin: 3px 0 0; color: var(--muted); font-size: 12px; }
+.status-dot { flex: none; width: 12px; height: 12px; border-radius: 50%; background: var(--status-up); box-shadow: 0 0 0 4px color-mix(in srgb, var(--status-up) 22%, transparent); }
+.status-banner.degraded .status-dot { background: var(--status-partial); box-shadow: 0 0 0 4px color-mix(in srgb, var(--status-partial) 24%, transparent); }
+.status-banner.down .status-dot { background: var(--status-down); box-shadow: 0 0 0 4px color-mix(in srgb, var(--status-down) 22%, transparent); }
+.status-card { padding: 20px; border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--paper-raised); }
+.admin-page .status-card, .admin-page .status-banner:not(.degraded):not(.down) { border-color: #cbd6c9; }
+.admin-page .status-card { background: #f9faf5; }
+.status-card h2 { margin: 4px 0 0; font-size: 20px; letter-spacing: -.03em; }
+.status-muted { margin: 10px 0 0; color: var(--muted); font-size: 13px; line-height: 1.55; }
+.status-muted code, .admin-heading code { font-size: 12px; }
+.status-checks, .status-uptime-list { margin: 14px 0 0; padding: 0; list-style: none; }
+.status-checks li { display: flex; justify-content: space-between; gap: 14px; align-items: center; padding: 12px 0; border-top: 1px solid var(--line-soft); }
+.status-checks li strong { font-size: 14px; }
+.status-checks li p { margin: 3px 0 0; color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
+.status-check-meta { display: flex; flex: none; gap: 10px; align-items: center; }
+.status-check-meta small { color: var(--quiet); font-size: 11px; }
+.status-pill { padding: 3px 9px; border-radius: var(--radius-round); background: color-mix(in srgb, var(--status-up) 14%, white); color: var(--status-up); font-size: 11px; font-weight: 700; white-space: nowrap; }
+.status-pill.degraded { background: color-mix(in srgb, var(--status-partial) 18%, white); color: #8a5d0c; }
+.status-pill.down { background: color-mix(in srgb, var(--status-down) 14%, white); color: var(--status-down); }
+.status-pill.not_configured { background: var(--surface); color: var(--muted); }
+.status-uptime { padding: 14px 0; border-top: 1px solid var(--line-soft); }
+.status-uptime-heading { display: flex; justify-content: space-between; gap: 10px; align-items: center; }
+.status-uptime-meta { margin: 4px 0 0; color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
+.status-days { display: flex; gap: 2px; height: 30px; margin-top: 12px; }
+.status-days span, .status-legend span { flex: 1; border-radius: 2px; background: var(--status-none); }
+.status-days .up, .status-legend .up { background: var(--status-up); }
+.status-days .partial, .status-legend .partial { background: var(--status-partial); }
+.status-days .down, .status-legend .down { background: var(--status-down); }
+.status-uptime-stats { display: flex; gap: 22px; margin: 10px 0 0; }
+.status-uptime-stats dt { color: var(--quiet); font-size: 11px; }
+.status-uptime-stats dd { margin: 2px 0 0; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; font-weight: 600; }
+.status-legend { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 8px 0 0; color: var(--quiet); font-size: 11px; }
+.status-legend span { flex: none; width: 10px; height: 10px; margin-left: 6px; }
+.status-legend span:first-child { margin-left: 0; }
+@media (max-width: 640px) {
+  .status-checks li { flex-wrap: wrap; gap: 6px 10px; }
+  .status-days { gap: 1px; }
 }
 
 /* Product shell and trip index */

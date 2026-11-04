@@ -22,6 +22,7 @@ Copy `.env.example` to `.env.local` to connect live services:
 - `GOOGLE_MAPS_API_KEY`: Google Places (New) and Geocoding for city search, place search, and photos. Server-only.
 - `FOURSQUARE_API_KEY`: Fallback place search if the Google key is missing.
 - `OPENROUTER_API_KEY`: the trip assistant sidebar ("Ask AI" on a trip). Server-only. Create a free key at [openrouter.ai/keys](https://openrouter.ai/keys).
+- `GCP_PROJECT_ID` and `GCP_SERVICE_ACCOUNT_KEY` (optional): read-only Google Cloud Monitoring access for the uptime history on `/status`. See [`GCP_INTEGRATION.md`](../GCP_INTEGRATION.md).
 - `OPENROUTER_MODELS` (optional): comma-separated OpenRouter model ids, tried in order. Defaults to free tool-calling models in `src/lib/assistant/models.ts`. When a free model is retired, swap it here without a code change. Pick models tagged with tool support at [openrouter.ai/models](https://openrouter.ai/models?supported_parameters=tools&max_price=0).
 
 Create the Google key in [Google Cloud Console](https://console.cloud.google.com/google/maps-apis). Enable **Places API (New)** and **Geocoding API**, restrict the key to those APIs, and paste it into `frontend/.env.local` as `GOOGLE_MAPS_API_KEY`. Do not prefix it with `NEXT_PUBLIC_`. Restart `npm run dev` after adding it.
@@ -39,6 +40,10 @@ GitHub Actions runs `npm run typecheck`, `npm run lint`, and `npm test` on every
 ## Administration
 
 `/admin` is a first-party operations dashboard for the email in `ADMIN_EMAIL`. It reads aggregated account, session, trip, place, and invitation data from Neon, and lets the administrator restrict or restore a user’s access with an audit trail. It does not include third-party tracking, trip notes, source URLs, or deletion controls.
+
+## Status and uptime
+
+`GET /api/health` reports on the app, Neon, the schema, Neon Auth, and which provider keys are set. It returns 503 only when the app, database, or sign-in is down, and `?scope=app` skips the outside calls. `/status` is the public view and `/admin/status` adds error details. Uptime history comes from Google Cloud Monitoring uptime checks that probe `/api/health`; setup is in [`GCP_INTEGRATION.md`](../GCP_INTEGRATION.md).
 
 ## Data boundaries
 

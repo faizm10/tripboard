@@ -19,6 +19,16 @@ export const REPO_URL = "https://github.com/faizm10/tripboard";
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "0.43.0",
+    date: "2026-11-04",
+    title: "A status page",
+    changes: [
+      "See whether Tripboard and the services it uses are up at /status, linked from the footer.",
+      "The status page shows 30 days of uptime, checked from several regions.",
+      "Admins get a Status tab with live checks, response times, and the reason when something is down.",
+    ],
+  },
+  {
     version: "0.42.0",
     date: "2026-11-03",
     title: "AI picks on the map, a resizable split, and a better Agenda",
