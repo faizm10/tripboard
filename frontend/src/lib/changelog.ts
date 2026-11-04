@@ -40,6 +40,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       "Money and Agenda edits no longer disappear when you switch tabs and come back.",
       "Day plan stops are simpler to read: a number, a small photo, the name, and one line with the category, area and opening hours.",
       "Category filter and day picker use proper menus instead of the browser's.",
+      "A day's notes show in its day card as soon as you open it, instead of hiding behind a toggle.",
       "Version number in the footer and this changelog.",
     ],
   },

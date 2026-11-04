@@ -1480,11 +1480,15 @@ function DayPlan({
           {currentDate ? (
             <>
               <DayWeather coordinates={dayHotel?.coordinates ?? dayPlaces[0]?.coordinates ?? null} date={currentDate} />
+              {notes.length ? (
+                <div className="day-hero-notes" aria-label="Notes for this day">
+                  {notes.map((note) => <DayNoteRow key={note.id} note={note} onRemove={onRemoveNote} onUpdate={onUpdateNote} />)}
+                </div>
+              ) : null}
               <div className="day-hero-actions">
-                <details className="day-notes-disclosure">
-                  <summary><FileText size={14} /> {notes.length ? `${notes.length} ${notes.length === 1 ? "note" : "notes"}` : "Add a note"}<ChevronDown size={14} /></summary>
+                <details className="day-notes-disclosure" key={currentDate}>
+                  <summary><Plus size={14} /> {notes.length ? "Add another note" : "Add a note"}</summary>
                   <div className="day-notes">
-                    {notes.map((note) => <DayNoteRow key={note.id} note={note} onRemove={onRemoveNote} onUpdate={onUpdateNote} />)}
                     <NoteComposer onAdd={(note) => onAddNote(currentDate, note)} />
                   </div>
                 </details>
