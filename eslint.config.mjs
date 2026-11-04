@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Output of `vercel build`, written next to the app now that it lives at the repo root.
+    ".vercel/**",
   ]),
 ]);
 
