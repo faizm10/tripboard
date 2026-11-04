@@ -31,6 +31,8 @@ export const CHANGELOG: ChangelogEntry[] = [
       "City stop tabs are gone. Every place belongs to the whole trip, and Add a place has a simple Near box instead.",
       "The Agenda has Read and Edit modes, checklists you can tick, headings, and pasted links that turn into tidy chips.",
       "Start an empty Agenda from your trip's flights and hotels in one tap.",
+      "The Day plan is calmer: one card holds the day, weather, notes, and Add to day, and the category pills become a small filter.",
+      "The trip summary above the board is only clickable on its text, not across the empty space.",
       "Version number in the footer and this changelog.",
     ],
   },

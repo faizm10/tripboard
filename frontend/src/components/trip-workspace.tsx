@@ -689,8 +689,8 @@ export function TripWorkspace({
           </DropdownMenu>
         </div>
         <div className="places-panel-logistics-row">
-          <button className="places-panel-logistics-where" onClick={() => setLogisticsOpen(true)} type="button">
-            {details.destination} · {details.dateLabel}
+          <button className="places-panel-logistics-where" onClick={() => setLogisticsOpen(true)} title="Edit trip details" type="button">
+            <span>{details.destination} · {details.dateLabel}</span><Pencil size={12} aria-hidden="true" />
           </button>
           {saveState !== "idle" ? (
             <span className={`save-status${saveState === "error" ? " error" : ""}`} aria-live="polite">
@@ -730,13 +730,24 @@ export function TripWorkspace({
               </div>
             </details>
             <div className="places-panel-find">
-              <div className="filter-scroll" aria-label="Filter places">
-                <button aria-pressed={filter === "All"} className={`filter-pill filter-all${filter === "All" ? " active" : ""}`} onClick={() => setFilter("All")} type="button">All</button>
-                {PLACE_CATEGORIES.map((item) => {
-                  const Icon = categoryIcons[item];
-                  return <button aria-pressed={filter === item} className={`filter-pill ${categoryClass(item)}${filter === item ? " active" : ""}`} onClick={() => setFilter(item)} key={item} type="button"><Icon size={13} /> {item}</button>;
-                })}
-              </div>
+              {workspaceMode === "saved" ? (
+                <div className="filter-scroll" aria-label="Filter places">
+                  <button aria-pressed={filter === "All"} className={`filter-pill filter-all${filter === "All" ? " active" : ""}`} onClick={() => setFilter("All")} type="button">All</button>
+                  {PLACE_CATEGORIES.map((item) => {
+                    const Icon = categoryIcons[item];
+                    return <button aria-pressed={filter === item} className={`filter-pill ${categoryClass(item)}${filter === item ? " active" : ""}`} onClick={() => setFilter(item)} key={item} type="button"><Icon size={13} /> {item}</button>;
+                  })}
+                </div>
+              ) : (
+                <label className="day-filter-select">
+                  <span className="sr-only">Place category</span>
+                  <SlidersHorizontal size={14} aria-hidden="true" />
+                  <select value={filter} onChange={(event) => setFilter(event.target.value as PlaceCategory | "All")}>
+                    <option value="All">All categories</option>
+                    {PLACE_CATEGORIES.map((item) => <option key={item}>{item}</option>)}
+                  </select>
+                </label>
+              )}
               <div className="place-find">
                 <Search size={14} aria-hidden="true" />
                 <input
@@ -755,7 +766,7 @@ export function TripWorkspace({
         </div>
 
         <div className="place-list">
-          {workspaceMode === "money" ? null : <JourneyBoard
+          {workspaceMode === "money" || workspaceMode === "day" ? null : <JourneyBoard
             flights={flights}
             onAdd={(mode) => setFlightEditor({ mode, flight: null })}
             onEdit={(flight) => setFlightEditor({ mode: journeyModeOf(flight), flight })}
@@ -1186,7 +1197,6 @@ function DayPlan({
   const categoryMatches = (category: PlaceCategory) => filter === "All" || category === filter;
   const visiblePlace = (place: Place) => categoryMatches(place.category) && placeMatchesQuery(place, query);
   const unplannedPlaces = places.filter((place) => !place.plannedDate && visiblePlace(place));
-  const plannedCount = places.filter((place) => place.plannedDate && visiblePlace(place)).length;
   const hasUnplannedPage = unplannedPlaces.length > 0;
   const totalPages = dates.length + (hasUnplannedPage ? 1 : 0);
   const pageIndex = activeDate ? Math.max(0, dates.indexOf(activeDate)) : hasUnplannedPage ? dates.length : 0;
@@ -1232,6 +1242,7 @@ function DayPlan({
         .filter((place) => place.plannedDate === currentDate && visiblePlace(place))
         .sort((left, right) => (left.daySortOrder ?? 0) - (right.daySortOrder ?? 0))
       : unplannedPlaces;
+  const stopCount = currentDate ? places.filter((place) => place.plannedDate === currentDate).length : 0;
   const canReorder = Boolean(!searching && currentDate && filter === "All" && dayPlaces.length > 1);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dropTargetId, setDropTargetId] = useState<string | null>(null);
@@ -1290,21 +1301,55 @@ function DayPlan({
 
   return (
     <div className="day-plan">
-      <div className="day-plan-intro">
-        <div>
-          <strong>{searching ? `${matchedPlaces.length} ${matchedPlaces.length === 1 ? "match" : "matches"}` : `${plannedCount} planned · ${dates.length} ${dates.length === 1 ? "day" : "days"}`}</strong>
-        </div>
-        {searching ? null : (
-          <div className="day-pagination" aria-label="Day pages">
-            <button aria-label="Previous day" onClick={() => movePage(-1)} disabled={clampedPageIndex === 0} type="button"><ChevronLeft size={17} /></button>
-            <select aria-label="Choose day" value={currentDate ?? ""} onChange={(event) => onFocusDate(event.target.value || null)}>
-              {dates.map((date, index) => <option key={date} value={date}>Day {index + 1} · {formatDayHeading(date).day.slice(0, 3)}, {formatDayHeading(date).date}</option>)}
-              {hasUnplannedPage ? <option value="">Saved for later</option> : null}
-            </select>
-            <button aria-label="Next day" onClick={() => movePage(1)} disabled={clampedPageIndex >= totalPages - 1} type="button"><ChevronRight size={17} /></button>
+      {searching ? (
+        <p className="day-search-count">{matchedPlaces.length} {matchedPlaces.length === 1 ? "match" : "matches"} across the trip</p>
+      ) : (
+        <header className="day-hero">
+          <div className="day-hero-top">
+            <div className="day-hero-title">
+              <span className="day-hero-kicker">
+                {currentDate ? `Day ${clampedPageIndex + 1} of ${dates.length}` : "Unscheduled"}
+                {currentDate && stopCount ? ` · ${stopCount} ${stopCount === 1 ? "stop" : "stops"}` : ""}
+              </span>
+              <label className="day-hero-picker">
+                <span className="sr-only">Choose day</span>
+                <strong aria-hidden="true">{label ? <>{label.day}, {label.date}</> : "Saved for later"}<ChevronDown size={16} /></strong>
+                <select value={currentDate ?? ""} onChange={(event) => onFocusDate(event.target.value || null)}>
+                  {dates.map((date, index) => <option key={date} value={date}>Day {index + 1} · {formatDayHeading(date).day.slice(0, 3)}, {formatDayHeading(date).date}</option>)}
+                  {hasUnplannedPage ? <option value="">Saved for later</option> : null}
+                </select>
+              </label>
+            </div>
+            <div className="day-hero-nav" aria-label="Day pages">
+              <button aria-label="Previous day" onClick={() => movePage(-1)} disabled={clampedPageIndex === 0} type="button"><ChevronLeft size={17} /></button>
+              <button aria-label="Next day" onClick={() => movePage(1)} disabled={clampedPageIndex >= totalPages - 1} type="button"><ChevronRight size={17} /></button>
+            </div>
           </div>
-        )}
-      </div>
+          {currentDate ? (
+            <>
+              <DayWeather coordinates={dayHotel?.coordinates ?? dayPlaces[0]?.coordinates ?? null} date={currentDate} />
+              <div className="day-hero-actions">
+                <details className="day-notes-disclosure">
+                  <summary><FileText size={14} /> {notes.length ? `${notes.length} ${notes.length === 1 ? "note" : "notes"}` : "Add a note"}<ChevronDown size={14} /></summary>
+                  <div className="day-notes">
+                    {notes.map((note) => <DayNoteRow key={note.id} note={note} onRemove={onRemoveNote} onUpdate={onUpdateNote} />)}
+                    <NoteComposer onAdd={(note) => onAddNote(currentDate, note)} />
+                  </div>
+                </details>
+                <DropdownMenu><DropdownMenuTrigger asChild><button className="day-add-button" type="button"><Plus size={14} /> Add to day</button></DropdownMenuTrigger>
+                  <DropdownMenuContent className="planner-menu" align="end">
+                    <DropdownMenuItem onSelect={() => dayHotel ? onEditHotel(dayHotel) : onAddHotel()}><BedDouble size={16} /> {dayHotel ? "Edit hotel stay" : "Add hotel stay"}</DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => onAddJourney("flight")}><Plane size={16} /> Add flight</DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => onAddJourney("train")}><TrainFront size={16} /> Add train</DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => onAddJourney("bus")}><Bus size={16} /> Add bus</DropdownMenuItem>
+                    <DropdownMenuItem onSelect={onImportBookings}><ClipboardPaste size={16} /> Import from email</DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </>
+          ) : null}
+        </header>
+      )}
       {searching ? (
         <section className="day-section">
           <header>
@@ -1346,26 +1391,6 @@ function DayPlan({
       ) : null}
       {!searching && currentDate && label ? (
         <section className={`day-section${activeDate === currentDate ? " active" : ""}`}>
-          <DayWeather coordinates={dayHotel?.coordinates ?? dayPlaces[0]?.coordinates ?? null} date={currentDate} />
-          <header className="day-section-bar">
-            <h2 className="sr-only">{label.day}, {label.date}</h2>
-            <details className="day-notes-disclosure">
-              <summary><FileText size={14} /> {notes.length ? `${notes.length} day ${notes.length === 1 ? "note" : "notes"}` : "Add a day note"}<ChevronDown size={14} /></summary>
-              <div className="day-notes">
-                {notes.map((note) => <DayNoteRow key={note.id} note={note} onRemove={onRemoveNote} onUpdate={onUpdateNote} />)}
-                <NoteComposer onAdd={(note) => onAddNote(currentDate, note)} />
-              </div>
-            </details>
-            <DropdownMenu><DropdownMenuTrigger asChild><button className="day-add-button" type="button"><Plus size={14} /> Add to day</button></DropdownMenuTrigger>
-              <DropdownMenuContent className="planner-menu" align="end">
-                <DropdownMenuItem onSelect={() => dayHotel ? onEditHotel(dayHotel) : onAddHotel()}><BedDouble size={16} /> {dayHotel ? "Edit hotel stay" : "Add hotel stay"}</DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => onAddJourney("flight")}><Plane size={16} /> Add flight</DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => onAddJourney("train")}><TrainFront size={16} /> Add train</DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => onAddJourney("bus")}><Bus size={16} /> Add bus</DropdownMenuItem>
-                <DropdownMenuItem onSelect={onImportBookings}><ClipboardPaste size={16} /> Import from email</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </header>
           <div className="day-place-list">
             {itineraryStops.map((stop, index) => {
               const place = dayPlaces.find((item) => item.id === stop.id);
@@ -1452,10 +1477,6 @@ function DayPlan({
       ) : null}
       {!searching && !currentDate && hasUnplannedPage ? (
         <section className="day-section unplanned-section">
-          <header>
-            <div><span>Unscheduled</span><h2>Saved for later</h2></div>
-            <button className={!activeDate ? "active" : ""} onClick={() => onFocusDate(null)} type="button">Map all days</button>
-          </header>
           <div className="day-place-list">
             {dayPlaces.map((place, placeIndex) => {
               const number = String(placeIndex + 1).padStart(2, "0");
