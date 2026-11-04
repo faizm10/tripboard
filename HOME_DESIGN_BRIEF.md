@@ -1,7 +1,7 @@
 # Tripboard — Home Screen Design Brief
 
 A self-contained context pack for redesigning the marketing home screen (`/`).
-Everything here is read off the actual source at `frontend/`, not from the older
+Everything here is read off the actual source in this repo, not from the older
 `PROJECT_OVERVIEW.md` (which is now stale on fonts and page structure).
 
 Live: https://usetripboard.vercel.app · Repo: `faizm10/tripboard`
@@ -36,7 +36,7 @@ exclamation-mark startup copy. Existing lines to match in tone:
 
 ## 2. What the home screen is *today*
 
-File: `frontend/src/app/page.tsx` (62 lines). It is deliberately minimal — a
+File: `src/app/page.tsx` (62 lines). It is deliberately minimal — a
 one-viewport hero, no scroll on desktop (`height: 100svh; overflow: hidden`).
 
 ```
@@ -107,7 +107,7 @@ collab → CTA) and was deliberately cut back to "a simple hero" (commit
 
 ## 3. Design system (the real tokens)
 
-All defined in `frontend/src/app/globals.css` (1832 lines, hand-written, plus
+All defined in `src/app/globals.css` (1832 lines, hand-written, plus
 Tailwind v4 and shadcn variables). **Light mode only** — `color-scheme: light`,
 there is no dark theme.
 

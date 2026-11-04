@@ -39,14 +39,14 @@ It is a PWA (installable, app shell cached offline), designed mobile-first with 
 | Tests | Vitest + Testing Library + jsdom |
 | Hosting | Vercel |
 
-The Next.js app lives in **`frontend/`**. The repo root holds only the README and `.vercel`.
+The Next.js app lives at the repo root.
 
 ---
 
 ## 3. Directory map
 
 ```
-frontend/
+tripboard/
 ├── drizzle/                     # 6 SQL migrations (0000–0005) + meta
 ├── drizzle.config.ts
 ├── public/
@@ -221,7 +221,7 @@ Tests exist for `cities`, `dates`, `google-maps`, `invitations`, `navigation`, `
 
 ## 12. Conventions and gotchas for anyone editing this
 
-- **Next.js 16 specifics**: middleware file is `src/proxy.ts` exporting `proxy`; `params` in pages/route handlers is a `Promise` and must be awaited; pages use `LayoutProps<"/">`-style generated types. `frontend/AGENTS.md` warns that this Next version differs from older training data — check `node_modules/next/dist/docs/` before assuming an API.
+- **Next.js 16 specifics**: middleware file is `src/proxy.ts` exporting `proxy`; `params` in pages/route handlers is a `Promise` and must be awaited; pages use `LayoutProps<"/">`-style generated types. `AGENTS.md` warns that this Next version differs from older training data — check `node_modules/next/dist/docs/` before assuming an API.
 - **All mutations go through `actions.ts`.** Don't add mutation API routes.
 - **Every input is Zod-parsed** in `src/lib/validators.ts`. Add the schema there, not inline.
 - **Defensive migration handling**: `actions.ts` and `trips.ts` catch "relation/column does not exist" errors for the day-planning and invite tables (`isPlanningSchemaMissing`, `isInviteSchemaMissing`) and either degrade gracefully or throw a friendly "needs the latest migration" message. This is why a lot of reads are wrapped in try/catch — it's intentional, not accidental.
