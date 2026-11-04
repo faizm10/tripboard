@@ -38,6 +38,8 @@ export const CHANGELOG: ChangelogEntry[] = [
       "Assistant chats are saved by default. Turn it off any time on your account page.",
       "Paste an itinerary, booking emails or costs into the assistant and it drafts them into your day plan, day notes, agenda and Money. Tick what you want and tap Apply.",
       "Money and Agenda edits no longer disappear when you switch tabs and come back.",
+      "Day plan stops are simpler to read: a number, a small photo, the name, and one line with the category, area and opening hours.",
+      "Category filter and day picker use proper menus instead of the browser's.",
       "Version number in the footer and this changelog.",
     ],
   },

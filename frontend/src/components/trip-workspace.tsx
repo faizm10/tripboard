@@ -1576,7 +1576,7 @@ function DayPlan({
                       selected={selectedId === place.id}
                     />
                   ) : (
-                    <button className="day-home-base" onClick={() => dayHotel && onEditHotel(dayHotel)} type="button"><span className="itinerary-rail"><span><BedDouble size={14} /></span></span><span><small>Stay</small><strong>{stop.name}</strong></span><Pencil size={14} /></button>
+                    <button className="day-stay" onClick={() => dayHotel && onEditHotel(dayHotel)} type="button"><span className="day-stop-number"><BedDouble size={13} /></span><span className="day-stay-copy"><small>Staying at</small><strong>{stop.name}</strong></span><Pencil size={14} aria-hidden="true" /></button>
                   )}
                   {direct && !editingHere ? (
                     <TransitRideCard plan={direct} removing={removingTransitId === direct.id} onEdit={() => setTransitDraft({ fromId: stop.id, toId: direct.to.id, plan: direct })} onRemove={() => void removeTransitRide(direct.id)} />
@@ -1703,10 +1703,12 @@ function DayPlaceRow({
   selected: boolean;
 }) {
   const cityName = place.cityId ? cities.find((city) => city.id === place.cityId)?.name : null;
+  const area = placeArea(place) || cityName;
+  const Icon = categoryIcons[place.category] ?? MapPin;
 
   return (
     <article
-      className={`day-place${selected ? " selected" : ""}${canReorder ? " reorderable" : ""}${dragging ? " dragging" : ""}${dropTarget ? " drop-target" : ""}`}
+      className={`day-stop${selected ? " selected" : ""}${canReorder ? " reorderable" : ""}${dragging ? " dragging" : ""}${dropTarget ? " drop-target" : ""}`}
       draggable={canReorder}
       id={`day-place-${place.id}`}
       onDragEnd={onDragEnd}
@@ -1720,40 +1722,36 @@ function DayPlaceRow({
       }}
       tabIndex={0}
       aria-label={`Show ${place.name} on the map`}
+      title={place.addedBy ? `Added by ${place.addedBy}` : undefined}
     >
-      <div className="itinerary-rail"><span>{number}</span><i /></div>
+      <span className="day-stop-number">{Number(number) || number}</span>
       <PlacePhoto fsqPlaceId={place.fsqPlaceId} name={place.name} label={place.category} />
-      <div className="saved-place-copy">
-        <p className="place-kicker">
-          <span className={`category-tag ${categoryClass(place.category)}`}>{place.category}</span>
-          {place.neighborhood || cityName ? <span className="place-hood">{place.neighborhood || cityName}</span> : null}
-        </p>
+      <div className="day-stop-copy">
         <h2>{place.name}</h2>
-        <small className="place-address">
-          {place.address}
-          <a
-            href={buildGoogleMapsPlaceUrl(place)}
-            aria-label={`Open ${place.name} in Google Maps`}
-            onClick={(event) => event.stopPropagation()}
-            rel="noreferrer"
-            target="_blank"
-          >
-            <MapPin size={13} />
-          </a>
-        </small>
-        {place.plannedDate && place.fsqPlaceId && place.category !== "Transit" ? <PlaceHours date={place.plannedDate} placeId={place.fsqPlaceId} /> : null}
-        {place.note ? <p className="place-note">{place.note}</p> : null}
-
-        <div className="place-actions">
-          <span className="contributor">Added by {place.addedBy}</span>
-          {place.sourceUrl ? <a href={place.sourceUrl} onClick={(event) => event.stopPropagation()} target="_blank" rel="noreferrer">Original source <ExternalLink size={13} /></a> : null}
-        </div>
+        <p className="day-stop-meta">
+          <span className={`day-stop-category ${categoryClass(place.category)}`}><Icon size={11} aria-hidden="true" />{place.category}</span>
+          {area ? <span>{area}</span> : null}
+          {place.plannedDate && place.fsqPlaceId && place.category !== "Transit" ? <PlaceHours date={place.plannedDate} placeId={place.fsqPlaceId} /> : null}
+          {place.sourceUrl ? <a href={place.sourceUrl} onClick={(event) => event.stopPropagation()} target="_blank" rel="noreferrer">Source <ExternalLink size={11} /></a> : null}
+        </p>
+        {place.note ? <p className="day-stop-note">{place.note}</p> : null}
       </div>
       <PlaceActions place={place} onEdit={onEdit} onToggleSaved={() => onToggleSaved(place.id)} onRemove={onRemove}
         onMoveUp={canReorder ? onMoveUp : undefined} onMoveDown={canReorder ? onMoveDown : undefined}
         first={number === "01"} last={!canMoveDown} />
     </article>
   );
+}
+
+/**
+ * A short "where" for a stop. Some providers put the street in the
+ * neighbourhood field, so fall back to the district from the address.
+ */
+function placeArea(place: Place) {
+  const parts = place.address.split(",").map((part) => part.trim()).filter(Boolean);
+  const hood = place.neighborhood.trim();
+  if (hood && !parts[0]?.toLowerCase().includes(hood.toLowerCase())) return hood;
+  return parts.length >= 3 ? parts[parts.length - 3] : hood;
 }
 
 function PlaceActions({ place, onEdit, onToggleSaved, onRemove, onMoveUp, onMoveDown, first, last }: {
