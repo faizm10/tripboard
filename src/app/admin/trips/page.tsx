@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { Search } from "lucide-react";
 import { AdminShell } from "@/components/admin-shell";
 import { getAdminViewer, listAdminTrips } from "@/lib/admin";
@@ -11,7 +11,7 @@ function date(value: Date) { return new Intl.DateTimeFormat("en", { month: "shor
 
 export default async function AdminTripsPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
   const admin = await getAdminViewer();
-  if (!admin) redirect("/trips");
+  if (!admin) notFound();
   const { q = "" } = await searchParams;
   const tripRows = await listAdminTrips(q);
   return <AdminShell active="trips" admin={admin}>

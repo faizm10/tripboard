@@ -58,7 +58,7 @@ function base64url(value: string | Buffer) {
 
 let token: { value: string; expiresAt: number } | null = null;
 
-async function accessToken(account: ServiceAccount) {
+export async function accessToken(account: ServiceAccount) {
   if (token && token.expiresAt > Date.now() + 60_000) return token.value;
   const now = Math.floor(Date.now() / 1000);
   const header = base64url(JSON.stringify({ alg: "RS256", typ: "JWT" }));
@@ -76,7 +76,7 @@ async function accessToken(account: ServiceAccount) {
   return token.value;
 }
 
-async function monitoring<T>(path: string, bearer: string, params?: URLSearchParams) {
+export async function monitoring<T>(path: string, bearer: string, params?: URLSearchParams) {
   const response = await fetch(`${API}/${path}${params ? `?${params}` : ""}`, { headers: { Authorization: `Bearer ${bearer}` }, cache: "no-store" });
   if (!response.ok) {
     const body = await response.json().catch(() => null) as { error?: { message?: string } } | null;
@@ -95,8 +95,8 @@ type ConfigResponse = {
     httpCheck?: { path?: string; useSsl?: boolean };
   }[];
 };
-type Point = { interval: { endTime: string }; value: { doubleValue?: number } };
-type SeriesResponse = { timeSeries?: { metric: { labels: Record<string, string> }; points?: Point[] }[] };
+export type Point = { interval: { endTime: string }; value: { doubleValue?: number; int64Value?: string } };
+export type SeriesResponse = { timeSeries?: { metric: { labels: Record<string, string> }; resource?: { labels: Record<string, string> }; points?: Point[] }[] };
 
 /** Fraction of passing probes per check, averaged across regions, one point per `alignSeconds`. */
 async function passFractions(projectId: string, bearer: string, start: Date, end: Date, alignSeconds: number) {

@@ -27,6 +27,8 @@ export const CHANGELOG: ChangelogEntry[] = [
       "See whether Tripboard and the services it uses are up at /status, linked from the footer.",
       "The status page shows 30 days of uptime, checked from several regions.",
       "Admins get a Status tab with live checks, response times, and the reason when something is down.",
+      "Admins get a Platform tab that charts Google API traffic, today's Places quota, uptime, Vercel deploys and database size in one place.",
+      "The admin area only opens for the administrator's verified account. Everyone else gets a page-not-found.",
     ],
   },
   {

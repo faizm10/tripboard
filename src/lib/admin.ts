@@ -35,10 +35,24 @@ function number(value: unknown) {
   return Number(value ?? 0);
 }
 
+/**
+ * The one administrator is the account whose email equals ADMIN_EMAIL. The
+ * check reads the user row rather than the cached session, and the email must
+ * be verified, so registering a password account under the admin's address
+ * (or editing a stale session) never grants access.
+ */
 export async function getAdminViewer(): Promise<AdminViewer | null> {
   const viewer = await getViewer();
-  if (!viewer || viewer.demo || viewer.restricted || !isAdminEmail(viewer.email)) return null;
-  return { id: viewer.id, email: viewer.email ?? "", name: viewer.name?.trim() || "Administrator" };
+  if (!viewer || viewer.demo || viewer.restricted) return null;
+  const db = getDatabase();
+  if (!db) return null;
+  const [account] = await db
+    .select({ email: neonAuthUsers.email, name: neonAuthUsers.name, emailVerified: neonAuthUsers.emailVerified, banned: neonAuthUsers.banned })
+    .from(neonAuthUsers)
+    .where(eq(neonAuthUsers.id, viewer.id))
+    .limit(1);
+  if (!account || account.banned || !account.emailVerified || !isAdminEmail(account.email)) return null;
+  return { id: viewer.id, email: account.email, name: account.name?.trim() || "Administrator" };
 }
 
 export async function requireAdmin() {
@@ -163,4 +177,24 @@ export async function listAdminTrips(query = "") {
     placeCount: sql<number>`(select count(*)::int from ${tripPlaces} where ${tripPlaces.tripId} = ${trips.id})`,
   }).from(trips).where(condition).orderBy(desc(trips.createdAt)).limit(100);
   return rows.map((row) => ({ ...row, memberCount: number(row.memberCount), placeCount: number(row.placeCount) })) satisfies AdminTrip[];
+}
+
+export type DatabaseStats = { sizeBytes: number; tables: { name: string; rows: number; sizeBytes: number }[] };
+
+/** Size of the Neon database and its largest app tables, for /admin/platform. */
+export async function getDatabaseStats(): Promise<DatabaseStats | null> {
+  await requireAdmin();
+  const db = getDatabase();
+  if (!db) return null;
+  const [size, tables] = await Promise.all([
+    db.execute<{ bytes: string }>(sql`select pg_database_size(current_database())::text as bytes`),
+    db.execute<{ name: string; rows: string; bytes: string }>(sql`
+      select relname as name, n_live_tup::text as rows, pg_total_relation_size(relid)::text as bytes
+      from pg_stat_user_tables where schemaname in ('public', 'neon_auth')
+      order by pg_total_relation_size(relid) desc limit 8`),
+  ]);
+  return {
+    sizeBytes: number(size.rows[0]?.bytes),
+    tables: tables.rows.map((row) => ({ name: row.name, rows: number(row.rows), sizeBytes: number(row.bytes) })),
+  };
 }

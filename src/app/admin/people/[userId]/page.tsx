@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { ArrowLeft, ShieldAlert, ShieldCheck } from "lucide-react";
 import { restoreUser, suspendUser } from "@/app/admin/actions";
 import { AdminShell } from "@/components/admin-shell";
@@ -13,7 +13,7 @@ function date(value: Date) { return new Intl.DateTimeFormat("en", { month: "shor
 
 export default async function AdminPersonPage({ params }: { params: Promise<{ userId: string }> }) {
   const admin = await getAdminViewer();
-  if (!admin) redirect("/trips");
+  if (!admin) notFound();
   const { userId } = await params;
   const result = await getAdminUser(userId);
   if (!result) notFound();

@@ -24,6 +24,7 @@ Fill in `.env.local` (or run `vercel env pull .env.local`) to connect live servi
 - `FOURSQUARE_API_KEY`: Fallback place search if the Google key is missing.
 - `OPENROUTER_API_KEY`: the trip assistant sidebar ("Ask AI" on a trip). Server-only. Create a free key at [openrouter.ai/keys](https://openrouter.ai/keys).
 - `GCP_PROJECT_ID` and `GCP_SERVICE_ACCOUNT_KEY` (optional): read-only Google Cloud Monitoring access for the uptime history on `/status`. See [`GCP_INTEGRATION.md`](GCP_INTEGRATION.md).
+- `VERCEL_API_TOKEN`, `VERCEL_PROJECT_ID`, `VERCEL_TEAM_ID` (optional): deployment history on `/admin/platform`. See [`GCP_INTEGRATION.md`](GCP_INTEGRATION.md#platform-analytics-adminplatform).
 - `OPENROUTER_MODELS` (optional): comma-separated OpenRouter model ids, tried in order. Defaults to free tool-calling models in `src/lib/assistant/models.ts`. When a free model is retired, swap it here without a code change. Pick models tagged with tool support at [openrouter.ai/models](https://openrouter.ai/models?supported_parameters=tools&max_price=0).
 
 Create the Google key in [Google Cloud Console](https://console.cloud.google.com/google/maps-apis). Enable **Places API (New)** and **Geocoding API**, restrict the key to those APIs, and paste it into `.env.local` as `GOOGLE_MAPS_API_KEY`. Do not prefix it with `NEXT_PUBLIC_`. Restart `npm run dev` after adding it.
@@ -40,7 +41,7 @@ GitHub Actions runs `npm run typecheck`, `npm run lint`, and `npm test` on every
 
 ## Administration
 
-`/admin` is a first-party operations dashboard for the email in `ADMIN_EMAIL`. It reads aggregated account, session, trip, place, and invitation data from Neon, and lets the administrator restrict or restore a user’s access with an audit trail. It does not include third-party tracking, trip notes, source URLs, or deletion controls.
+`/admin` is a first-party operations dashboard for the email in `ADMIN_EMAIL`. Only that account can open it, and only once its email is verified; everyone else gets a 404. The Platform tab charts Google API traffic, Places quota use, uptime, Vercel deployments and Neon table sizes. It reads aggregated account, session, trip, place, and invitation data from Neon, and lets the administrator restrict or restore a user’s access with an audit trail. It does not include third-party tracking, trip notes, source URLs, or deletion controls.
 
 ## Status and uptime
 

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { AdminDashboard } from "@/components/admin-dashboard";
 import { AdminShell } from "@/components/admin-shell";
 import { adminRange, getAdminDashboard, getAdminViewer } from "@/lib/admin";
@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminPage({ searchParams }: { searchParams: Promise<{ days?: string }> }) {
   const admin = await getAdminViewer();
-  if (!admin) redirect("/trips");
+  if (!admin) notFound();
   const { days: rawDays } = await searchParams;
   const [dashboard, schemaHealth] = await Promise.all([
     getAdminDashboard(adminRange(rawDays)),

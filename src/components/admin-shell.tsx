@@ -1,9 +1,9 @@
 import Link from "next/link";
-import { Activity, BarChart3, Compass, ShieldCheck, Users } from "lucide-react";
+import { Activity, BarChart3, Compass, Gauge, ShieldCheck, Users } from "lucide-react";
 import { AppHeader } from "@/components/app-header";
 import type { AdminViewer } from "@/lib/admin";
 
-export function AdminShell({ admin, active, children }: { admin: AdminViewer; active: "overview" | "people" | "trips" | "status"; children: React.ReactNode }) {
+export function AdminShell({ admin, active, children }: { admin: AdminViewer; active: "overview" | "people" | "trips" | "platform" | "status"; children: React.ReactNode }) {
   return (
     <main className="app-page admin-page">
       <AppHeader email={admin.email} name={admin.name} highlightNav={false} />
@@ -17,6 +17,7 @@ export function AdminShell({ admin, active, children }: { admin: AdminViewer; ac
             <Link className={active === "overview" ? "active" : undefined} href="/admin"><BarChart3 size={16} /> Overview</Link>
             <Link className={active === "people" ? "active" : undefined} href="/admin/people"><Users size={16} /> People</Link>
             <Link className={active === "trips" ? "active" : undefined} href="/admin/trips"><Compass size={16} /> Trips</Link>
+            <Link className={active === "platform" ? "active" : undefined} href="/admin/platform"><Gauge size={16} /> Platform</Link>
             <Link className={active === "status" ? "active" : undefined} href="/admin/status"><Activity size={16} /> Status</Link>
           </nav>
           <p className="admin-rail-note">Private operations view<br />for {admin.email}</p>
