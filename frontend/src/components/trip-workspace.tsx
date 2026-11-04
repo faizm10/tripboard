@@ -68,7 +68,7 @@ import { AgendaPanel } from "@/components/agenda-panel";
 import { TripAssistant, type ApplyResult } from "@/components/trip-assistant";
 import { AGENDA_MAX_LENGTH } from "@/lib/agenda";
 import { TransitEditor, TransitRideCard, transitLegs, type TransitDraft } from "@/components/day-transit-planner";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { EditPlaceDialog, type PlaceEditDraft } from "@/components/edit-place-dialog";
 import { DayWeather, PlaceHours } from "@/components/day-context";
 import { FlightPlanDialog, JourneyIcon, journeyModeOf, type FlightDraft } from "@/components/flight-plan-dialog";
@@ -855,14 +855,25 @@ export function TripWorkspace({
                   })}
                 </div>
               ) : (
-                <label className="day-filter-select">
-                  <span className="sr-only">Place category</span>
-                  <SlidersHorizontal size={14} aria-hidden="true" />
-                  <select value={filter} onChange={(event) => setFilter(event.target.value as PlaceCategory | "All")}>
-                    <option value="All">All categories</option>
-                    {PLACE_CATEGORIES.map((item) => <option key={item}>{item}</option>)}
-                  </select>
-                </label>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button aria-label={`Place category: ${filter === "All" ? "all categories" : filter}`} className={`day-filter-trigger${filter !== "All" ? " active" : ""}`} type="button">
+                      {filter === "All" ? <SlidersHorizontal size={14} aria-hidden="true" /> : (() => { const Icon = categoryIcons[filter]; return <Icon size={14} aria-hidden="true" />; })()}
+                      {filter === "All" ? "All categories" : filter}
+                      <ChevronDown size={14} aria-hidden="true" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="choice-menu">
+                    <DropdownMenuRadioGroup value={filter} onValueChange={(value) => setFilter(value as PlaceCategory | "All")}>
+                      <DropdownMenuRadioItem value="All"><SlidersHorizontal size={15} /> All categories</DropdownMenuRadioItem>
+                      <DropdownMenuSeparator />
+                      {PLACE_CATEGORIES.map((item) => {
+                        const Icon = categoryIcons[item];
+                        return <DropdownMenuRadioItem key={item} value={item}><span className={`choice-menu-swatch ${categoryClass(item)}`}><Icon size={13} /></span> {item}</DropdownMenuRadioItem>;
+                      })}
+                    </DropdownMenuRadioGroup>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               )}
               <div className="place-find">
                 <Search size={14} aria-hidden="true" />
@@ -1432,14 +1443,34 @@ function DayPlan({
                 {currentDate ? `Day ${clampedPageIndex + 1} of ${dates.length}` : "Unscheduled"}
                 {currentDate && stopCount ? ` · ${stopCount} ${stopCount === 1 ? "stop" : "stops"}` : ""}
               </span>
-              <label className="day-hero-picker">
-                <span className="sr-only">Choose day</span>
-                <strong aria-hidden="true">{label ? <>{label.day}, {label.date}</> : "Saved for later"}<ChevronDown size={16} /></strong>
-                <select value={currentDate ?? ""} onChange={(event) => onFocusDate(event.target.value || null)}>
-                  {dates.map((date, index) => <option key={date} value={date}>Day {index + 1} · {formatDayHeading(date).day.slice(0, 3)}, {formatDayHeading(date).date}</option>)}
-                  {hasUnplannedPage ? <option value="">Saved for later</option> : null}
-                </select>
-              </label>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button aria-label="Choose day" className="day-hero-picker" type="button">
+                    <strong>{label ? <>{label.day}, {label.date}</> : "Saved for later"}<ChevronDown size={16} aria-hidden="true" /></strong>
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="choice-menu day-choice-menu">
+                  <DropdownMenuRadioGroup value={currentDate ?? ""} onValueChange={(value) => onFocusDate(value || null)}>
+                    {dates.map((date, index) => {
+                      const heading = formatDayHeading(date);
+                      const stops = places.filter((place) => place.plannedDate === date).length;
+                      return (
+                        <DropdownMenuRadioItem key={date} value={date}>
+                          <span className="day-choice-index">{index + 1}</span>
+                          <span className="day-choice-label">{heading.day.slice(0, 3)}, {heading.date}</span>
+                          <span className="day-choice-count">{stops ? `${stops} ${stops === 1 ? "stop" : "stops"}` : "Free"}</span>
+                        </DropdownMenuRadioItem>
+                      );
+                    })}
+                    {hasUnplannedPage ? (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuRadioItem value=""><span className="day-choice-index"><Bookmark size={11} /></span><span className="day-choice-label">Saved for later</span></DropdownMenuRadioItem>
+                      </>
+                    ) : null}
+                  </DropdownMenuRadioGroup>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
             <div className="day-hero-nav" aria-label="Day pages">
               <button aria-label="Previous day" onClick={() => movePage(-1)} disabled={clampedPageIndex === 0} type="button"><ChevronLeft size={17} /></button>

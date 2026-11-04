@@ -2874,12 +2874,12 @@ ul.itinerary-places { list-style: disc; }
 .day-hero-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
 .day-hero-title { display: grid; min-width: 0; gap: 2px; }
 .day-hero-kicker { color: var(--accent); font-size: 10px; font-weight: 750; letter-spacing: .07em; text-transform: uppercase; }
-.day-hero-picker { position: relative; display: inline-flex; min-width: 0; cursor: pointer; }
+.day-hero-picker { display: inline-flex; min-width: 0; padding: 0; justify-self: start; border: 0; border-radius: var(--radius-sm); background: transparent; text-align: left; cursor: pointer; }
 .day-hero-picker strong { display: inline-flex; min-width: 0; align-items: center; gap: 6px; color: var(--ink); font-size: 22px; font-weight: 650; letter-spacing: -.03em; line-height: 1.2; }
-.day-hero-picker strong svg { flex: none; color: var(--quiet); transition: color var(--dur-fast) var(--ease-out); }
+.day-hero-picker strong svg { flex: none; color: var(--quiet); transition: color var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out); }
 .day-hero-picker:hover strong svg { color: var(--ink); }
-.day-hero-picker select { position: absolute; inset: 0; width: 100%; opacity: 0; cursor: pointer; }
-.day-hero-picker:focus-within strong { text-decoration: underline; text-decoration-color: var(--accent-line); text-underline-offset: 4px; }
+.day-hero-picker[data-state="open"] strong svg { color: var(--accent); transform: rotate(180deg); }
+.day-hero-picker:focus-visible { outline: 2px solid var(--accent-line); outline-offset: 3px; }
 .day-hero-nav { display: inline-flex; flex: none; gap: 4px; }
 .day-hero-nav button { display: grid; width: 34px; height: 34px; padding: 0; place-items: center; border: 1px solid var(--line); border-radius: 50%; background: var(--paper-raised); color: var(--ink); cursor: pointer; transition: border-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out); }
 .day-hero-nav button:hover:not(:disabled) { border-color: var(--accent-line); color: var(--accent); }
@@ -2892,8 +2892,23 @@ ul.itinerary-places { list-style: disc; }
 .day-hero .day-add-button { display: inline-flex; flex: none; min-height: 34px; padding: 0 12px; align-items: center; gap: 5px; border: 1px solid var(--accent); border-radius: var(--radius-round); background: var(--accent); color: var(--paper-raised); font-size: 12px; font-weight: 650; cursor: pointer; }
 .day-hero .day-add-button:hover { border-color: var(--accent-strong); background: var(--accent-strong); }
 .day-section { padding-top: 10px; }
-.places-panel-find .day-filter-select { display: inline-flex; height: 32px; min-height: 0; margin: 0; padding: 0 4px 0 10px; align-items: center; gap: 6px; border: 1px solid var(--line); border-radius: var(--radius-round); background: var(--paper-raised); color: var(--muted); }
-.places-panel-find .day-filter-select select { width: auto; height: 30px; min-height: 0; padding: 0 4px; border: 0; background: transparent; color: var(--ink); font-size: 12px; font-weight: 600; cursor: pointer; }
+.day-filter-trigger { display: inline-flex; height: 32px; padding: 0 10px; align-items: center; gap: 6px; border: 1px solid var(--line); border-radius: var(--radius-round); background: var(--paper-raised); color: var(--ink); font-size: 12px; font-weight: 600; white-space: nowrap; cursor: pointer; transition: border-color var(--dur-fast) var(--ease-out), background var(--dur-fast) var(--ease-out); }
+.day-filter-trigger > svg { color: var(--muted); }
+.day-filter-trigger > svg:last-child { color: var(--quiet); }
+.day-filter-trigger:hover, .day-filter-trigger[data-state="open"] { border-color: var(--accent-line); }
+.day-filter-trigger.active { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+.day-filter-trigger.active > svg { color: var(--accent); }
+.choice-menu { z-index: 100; width: auto; min-width: 200px; max-width: calc(100vw - 24px); padding: 5px; border-radius: var(--radius-md); background: var(--paper-raised); box-shadow: var(--shadow-card); }
+.choice-menu [role="menuitemradio"] { min-height: 36px; padding: 6px 32px 6px 9px; gap: 9px; border-radius: 8px; color: var(--ink); font-size: 13px; cursor: pointer; }
+.choice-menu [role="menuitemradio"][data-highlighted] { background: var(--surface); color: var(--ink); }
+.choice-menu [role="menuitemradio"][data-state="checked"] { color: var(--accent); font-weight: 650; }
+.choice-menu [role="menuitemradio"] [data-slot="dropdown-menu-radio-item-indicator"] svg { color: var(--accent); }
+.choice-menu-swatch { display: grid; width: 22px; height: 22px; flex: none; place-items: center; border-radius: 6px; }
+.day-choice-menu { min-width: 240px; max-height: min(360px, var(--radix-dropdown-menu-content-available-height)); }
+.day-choice-index { display: grid; min-width: 22px; height: 22px; flex: none; place-items: center; border-radius: var(--radius-round); background: var(--surface); color: var(--muted); font-size: 10.5px; font-weight: 700; }
+[data-state="checked"] > .day-choice-index { background: var(--accent); color: var(--paper-raised); }
+.day-choice-label { flex: 1; }
+.day-choice-count { color: var(--muted); font-size: 11.5px; font-weight: 500; }
 @media (max-width: 1099px) {
   .day-hero { margin-top: 0; padding: 14px; }
   .day-hero-picker strong { font-size: 19px; }
