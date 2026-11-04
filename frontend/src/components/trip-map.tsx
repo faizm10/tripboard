@@ -1,7 +1,8 @@
 "use client";
 
-import { CalendarDays, LocateFixed, MapPin, Minus, Plus } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { CalendarDays, LocateFixed, MapPin, Minus, Plus, Sparkles, X } from "lucide-react";
+import { useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
+import { formatDistance, type MapSuggestion } from "@/lib/assistant/suggestions";
 import type { CityLocation } from "@/lib/cities";
 import { formatWeekdayDate } from "@/lib/dates";
 import { nameNeedsAddressLookup } from "@/lib/google-maps";
@@ -20,7 +21,15 @@ type TripMapProps = {
   routeActive: boolean;
   mapToken?: string;
   onSelect: (id: string) => void;
+  /** Places the trip assistant suggested, pinned with letters until they're added or cleared. */
+  suggestions?: MapSuggestion[];
+  focusedSuggestionId?: string | null;
+  onFocusSuggestion?: (id: string | null) => void;
+  onAddSuggestion?: (suggestion: MapSuggestion) => void;
+  onClearSuggestions?: () => void;
 };
+
+const NO_SUGGESTIONS: MapSuggestion[] = [];
 
 async function lookupCityLocation(query: string, signal?: AbortSignal): Promise<CityLocation | null> {
   const response = await fetch(`/api/cities/geocode?q=${encodeURIComponent(query)}`, { signal });
@@ -142,6 +151,42 @@ function createHotelPreviewCard(hotel: HotelStay) {
   return card;
 }
 
+function suggestionMeta(suggestion: MapSuggestion) {
+  return [suggestion.category, suggestion.neighborhood, suggestion.fromHotel ? `${formatDistance(suggestion.fromHotel.meters)} from hotel` : ""].filter(Boolean).join(" · ");
+}
+
+function suggestionAddLabel(suggestion: MapSuggestion) {
+  return suggestion.plannedDate ? `Add to ${formatWeekdayDate(suggestion.plannedDate)}` : "Add to trip";
+}
+
+function createSuggestionCard(suggestion: MapSuggestion, onAdd: () => void) {
+  const card = document.createElement("div");
+  card.className = "map-preview-card suggestion-preview-card";
+  const kicker = document.createElement("span");
+  kicker.className = "suggestion-preview-kicker";
+  kicker.textContent = `AI pick ${suggestion.label}`;
+  const title = document.createElement("strong");
+  title.textContent = suggestion.name;
+  const meta = document.createElement("small");
+  meta.textContent = suggestionMeta(suggestion);
+  card.append(kicker, title, meta);
+  if (suggestion.reason) {
+    const reason = document.createElement("p");
+    reason.textContent = suggestion.reason;
+    card.append(reason);
+  }
+  const add = document.createElement("button");
+  add.type = "button";
+  add.className = "suggestion-preview-add";
+  add.textContent = `+ ${suggestionAddLabel(suggestion)}`;
+  add.addEventListener("click", (event) => {
+    event.stopPropagation();
+    onAdd();
+  });
+  card.append(add);
+  return card;
+}
+
 function MapPlacePreview({ place }: { place: Place }) {
   const [resolvedTitle, setResolvedTitle] = useState<{ address: string; name: string } | null>(null);
 
@@ -180,12 +225,31 @@ function MapHotelPreview({ hotel }: { hotel: HotelStay }) {
   return <span className="map-preview-card hotel-preview-card"><span className="map-preview-copy"><strong>{hotel.name}</strong><small>{hotel.address || "Home base"}</small></span></span>;
 }
 
-export function TripMap({ destination, hotels, places, routeCoordinates, selectedId, routeActive, mapToken, onSelect }: TripMapProps) {
+export function TripMap({
+  destination,
+  hotels,
+  places,
+  routeCoordinates,
+  selectedId,
+  routeActive,
+  mapToken,
+  onSelect,
+  suggestions = NO_SUGGESTIONS,
+  focusedSuggestionId = null,
+  onFocusSuggestion,
+  onAddSuggestion,
+  onClearSuggestions,
+}: TripMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<import("mapbox-gl").Map | null>(null);
   const mapboxRef = useRef<typeof import("mapbox-gl").default | null>(null);
   const markersRef = useRef<Map<string, import("mapbox-gl").Marker>>(new Map());
   const popupsRef = useRef<Map<string, import("mapbox-gl").Popup>>(new Map());
+  const suggestionMarkersRef = useRef<Map<string, { marker: import("mapbox-gl").Marker; popup: import("mapbox-gl").Popup; wrapper: HTMLElement }>>(new Map());
+  const fittedSuggestionsRef = useRef("");
+  const suggestionKey = suggestions.map((item) => item.fsqPlaceId).join("|");
+  const focusSuggestion = useEffectEvent((id: string | null) => onFocusSuggestion?.(id));
+  const addSuggestion = useEffectEvent((suggestion: MapSuggestion) => onAddSuggestion?.(suggestion));
   const shownDestinationRef = useRef("");
   const initialDestinationRef = useRef(destination);
   const [mapReady, setMapReady] = useState(false);
@@ -203,6 +267,7 @@ export function TripMap({ destination, hotels, places, routeCoordinates, selecte
     let active = true;
     const markerMap = markersRef.current;
     const popupMap = popupsRef.current;
+    const suggestionMap = suggestionMarkersRef.current;
     const openingDestination = initialDestinationRef.current;
 
     async function mountMap() {
@@ -237,6 +302,9 @@ export function TripMap({ destination, hotels, places, routeCoordinates, selecte
       popupMap.clear();
       markerMap.forEach((marker) => marker.remove());
       markerMap.clear();
+      suggestionMap.forEach(({ marker, popup }) => { popup.remove(); marker.remove(); });
+      suggestionMap.clear();
+      fittedSuggestionsRef.current = "";
       mapRef.current?.remove();
       mapRef.current = null;
       mapboxRef.current = null;
@@ -364,6 +432,90 @@ export function TripMap({ destination, hotels, places, routeCoordinates, selecte
 
   useEffect(() => {
     const map = mapRef.current;
+    const mapboxgl = mapboxRef.current;
+    if (!mapReady || !map || !mapboxgl) return;
+    const markers = suggestionMarkersRef.current;
+    markers.forEach(({ marker, popup }) => { popup.remove(); marker.remove(); });
+    markers.clear();
+    for (const suggestion of suggestions) {
+      const wrapper = document.createElement("div");
+      wrapper.className = "mapbox-marker-with-preview mapbox-suggestion-marker";
+      const element = document.createElement("button");
+      element.className = "mapbox-suggestion-pin";
+      element.type = "button";
+      element.ariaLabel = `AI suggestion ${suggestion.label}: ${suggestion.name}, ${suggestion.category}`;
+      element.textContent = suggestion.label;
+      wrapper.append(element);
+      const popup = new mapboxgl.Popup({ className: "place-map-popup suggestion-map-popup", closeButton: false, closeOnClick: false, focusAfterOpen: false, maxWidth: "270px", offset: 20 })
+        .setDOMContent(createSuggestionCard(suggestion, () => addSuggestion(suggestion)));
+      let closeTimer: number | null = null;
+      const keepOpen = () => { if (closeTimer) window.clearTimeout(closeTimer); closeTimer = null; };
+      const show = () => { keepOpen(); wrapper.classList.add("preview-open"); popup.setLngLat(suggestion.coordinates).addTo(map); };
+      const hide = () => {
+        keepOpen();
+        closeTimer = window.setTimeout(() => {
+          if (wrapper.classList.contains("focused")) return;
+          wrapper.classList.remove("preview-open");
+          popup.remove();
+        }, 160);
+      };
+      element.addEventListener("mouseenter", show);
+      element.addEventListener("focus", show);
+      element.addEventListener("mouseleave", hide);
+      element.addEventListener("blur", hide);
+      element.addEventListener("click", () => focusSuggestion(wrapper.classList.contains("focused") ? null : suggestion.fsqPlaceId));
+      // The popup element only exists once it opens; the same listener is never added twice.
+      popup.on("open", () => {
+        popup.getElement()?.addEventListener("mouseenter", keepOpen);
+        popup.getElement()?.addEventListener("mouseleave", hide);
+      });
+      const marker = new mapboxgl.Marker({ element: wrapper, anchor: "bottom" }).setLngLat(suggestion.coordinates).addTo(map);
+      markers.set(suggestion.fsqPlaceId, { marker, popup, wrapper });
+    }
+  }, [mapReady, suggestions]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!mapReady || !map) return;
+    for (const [id, { popup, wrapper, marker }] of suggestionMarkersRef.current) {
+      const focused = id === focusedSuggestionId;
+      wrapper.classList.toggle("focused", focused);
+      if (focused) {
+        wrapper.classList.add("preview-open");
+        popup.setLngLat(marker.getLngLat()).addTo(map);
+        map.flyTo({ center: marker.getLngLat(), zoom: Math.max(map.getZoom(), 14), essential: true, duration: 900 });
+      } else if (wrapper.classList.contains("preview-open") && !wrapper.matches(":hover")) {
+        wrapper.classList.remove("preview-open");
+        popup.remove();
+      }
+    }
+  }, [focusedSuggestionId, mapReady, suggestions]);
+
+  useEffect(() => {
+    // Bring a fresh batch of AI picks into view once, without fighting the user's panning afterwards.
+    const map = mapRef.current;
+    const container = containerRef.current;
+    if (!mapReady || !map || !container || !suggestionKey || focusedSuggestionId) return;
+    if (fittedSuggestionsRef.current === suggestionKey) return;
+    const previous = new Set(fittedSuggestionsRef.current.split("|"));
+    fittedSuggestionsRef.current = suggestionKey;
+    const fresh = suggestions.filter((item) => !previous.has(item.fsqPlaceId));
+    const focus = fresh.length ? fresh : suggestions;
+    if (focus.length === 1) {
+      map.flyTo({ center: focus[0].coordinates, zoom: Math.max(map.getZoom(), 14), essential: true, duration: 900 });
+      return;
+    }
+    const lngs = focus.map(({ coordinates: [lng] }) => lng);
+    const lats = focus.map(({ coordinates: [, lat] }) => lat);
+    map.fitBounds([[Math.min(...lngs), Math.min(...lats)], [Math.max(...lngs), Math.max(...lats)]], {
+      padding: { top: 80, right: 60, bottom: Math.min(140, container.clientHeight / 4), left: 60 },
+      maxZoom: 15,
+      duration: 900,
+    });
+  }, [focusedSuggestionId, mapReady, suggestionKey, suggestions]);
+
+  useEffect(() => {
+    const map = mapRef.current;
     if (!mapReady || !map) return;
     const source = map.getSource("trip-route") as import("mapbox-gl").GeoJSONSource | undefined;
     if (routeActive && routeData.geometry.coordinates.length >= 2) {
@@ -387,6 +539,7 @@ export function TripMap({ destination, hotels, places, routeCoordinates, selecte
       <div className="real-map-wrap">
         <div className="real-map" ref={containerRef} />
         {unplannedCount || transitCount ? <MapLegend transitCount={transitCount} unplannedCount={unplannedCount} /> : null}
+        <SuggestionChip count={suggestions.length} onClear={onClearSuggestions} />
         <div className="map-controls"><button type="button" onClick={() => zoom(1)} aria-label="Zoom in"><Plus size={17} /></button><button type="button" onClick={() => zoom(-1)} aria-label="Zoom out"><Minus size={17} /></button></div>
       </div>
     );
@@ -434,10 +587,54 @@ export function TripMap({ destination, hotels, places, routeCoordinates, selecte
           </div>
         );
       })}
+      {suggestions.map((suggestion, index) => (
+        <div
+          className={`workspace-pin workspace-suggestion-pin${focusedSuggestionId === suggestion.fsqPlaceId ? " selected" : ""}`}
+          key={`suggestion-${suggestion.fsqPlaceId}`}
+          style={suggestionPositions[index % suggestionPositions.length]}
+        >
+          <button
+            aria-label={`AI suggestion ${suggestion.label}: ${suggestion.name}`}
+            className="workspace-pin-button"
+            onClick={() => onFocusSuggestion?.(focusedSuggestionId === suggestion.fsqPlaceId ? null : suggestion.fsqPlaceId)}
+            type="button"
+          >
+            {suggestion.label}
+          </button>
+          <span className="map-preview-card suggestion-preview-card">
+            <span className="suggestion-preview-kicker">AI pick {suggestion.label}</span>
+            <strong>{suggestion.name}</strong>
+            <small>{suggestionMeta(suggestion)}</small>
+            {suggestion.reason ? <p>{suggestion.reason}</p> : null}
+            <button className="suggestion-preview-add" onClick={() => onAddSuggestion?.(suggestion)} type="button">+ {suggestionAddLabel(suggestion)}</button>
+          </span>
+        </div>
+      ))}
       {hotels.map((hotel, index) => <div className="workspace-pin workspace-hotel-pin" style={positions[(index + places.length + 2) % positions.length]} key={`hotel-${hotel.id}`}><button className="workspace-pin-button" aria-label={`Hotel: ${hotel.name}`} type="button">H</button><MapHotelPreview hotel={hotel} /></div>)}
       <div className="map-demo-label">Map preview · {destination || "Add a Mapbox key for live tiles"}</div>
       {unplannedCount || transitCount ? <MapLegend transitCount={transitCount} unplannedCount={unplannedCount} /> : null}
+      <SuggestionChip count={suggestions.length} onClear={onClearSuggestions} />
       <div className="map-controls"><button type="button" aria-label="Zoom in"><Plus size={17} /></button><button type="button" aria-label="Zoom out"><Minus size={17} /></button><button type="button" aria-label="Find me"><LocateFixed size={17} /></button></div>
+    </div>
+  );
+}
+
+const suggestionPositions = [
+  { left: "54%", top: "32%" },
+  { left: "30%", top: "44%" },
+  { left: "72%", top: "70%" },
+  { left: "48%", top: "78%" },
+  { left: "84%", top: "52%" },
+  { left: "20%", top: "30%" },
+];
+
+function SuggestionChip({ count, onClear }: { count: number; onClear?: () => void }) {
+  if (!count) return null;
+  return (
+    <div className="map-suggestion-chip" role="status">
+      <Sparkles size={13} aria-hidden="true" />
+      <span>{count} AI {count === 1 ? "pick" : "picks"} on the map</span>
+      {onClear ? <button aria-label="Clear AI picks from the map" onClick={onClear} title="Clear" type="button"><X size={13} /></button> : null}
     </div>
   );
 }

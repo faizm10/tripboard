@@ -108,3 +108,29 @@ describe("saved chat helpers", () => {
     expect(await store.getUsageSummary("user")).toMatchObject({ replies30d: 0, models: [] });
   });
 });
+
+describe("map suggestions", () => {
+  it("letters each suggested place once, in the order the chat suggested them", async () => {
+    const { collectSuggestions } = await import("@/lib/assistant/suggestions");
+    const pick = (fsqPlaceId: string) => ({ fsqPlaceId, name: fsqPlaceId, address: "", neighborhood: "", coordinates: [0, 0] as [number, number], category: "Eat" as const, reason: "", plannedDate: null, alreadyInTrip: false });
+    const reply = (places: ReturnType<typeof pick>[]) => ({
+      id: crypto.randomUUID(),
+      role: "assistant",
+      parts: [{ type: "tool-suggest_places", toolCallId: "c", state: "output-available", input: { picks: [] }, output: { places } }],
+    }) as unknown as AssistantMessage;
+    const suggestions = collectSuggestions([reply([pick("a"), pick("b")]), reply([pick("b"), pick("c")])]);
+    expect(suggestions.map((item) => [item.fsqPlaceId, item.label])).toEqual([["a", "A"], ["b", "B"], ["c", "C"]]);
+  });
+
+  it("measures picks from the hotel booked on their day", async () => {
+    const { nearestHotel, formatDistance } = await import("@/lib/assistant/suggestions");
+    const hotels = [
+      { id: "1", name: "Busan Stay", address: "", coordinates: [129.04, 35.11] as [number, number], startDate: "2027-05-02", endDate: "2027-05-05" },
+      { id: "2", name: "Seoul Stay", address: "", coordinates: [126.98, 37.56] as [number, number], startDate: "2027-05-06", endDate: "2027-05-12" },
+    ];
+    expect(nearestHotel([126.99, 37.56], hotels, "2027-05-07")?.name).toBe("Seoul Stay");
+    expect(nearestHotel([129.05, 35.11], hotels, null)?.name).toBe("Busan Stay");
+    expect(formatDistance(420)).toBe("400 m");
+    expect(formatDistance(2400)).toBe("2.4 km");
+  });
+});

@@ -1,5 +1,6 @@
 import { tool, type InferUITools, type UIDataTypes, type UIMessage } from "ai";
 import { z } from "zod";
+import { nearestHotel } from "@/lib/assistant/suggestions";
 import { searchPlaces } from "@/lib/place-search";
 import type { PlaceSearchResult, Trip } from "@/lib/types";
 
@@ -7,6 +8,8 @@ export type AssistantPick = PlaceSearchResult & {
   reason: string;
   plannedDate: string | null;
   alreadyInTrip: boolean;
+  /** How far it is from where they're sleeping, so cards and the model can talk about it. */
+  fromHotel?: { name: string; meters: number } | null;
 };
 
 /**
@@ -60,7 +63,7 @@ export function createAssistantTools(trip: Trip, known: Map<string, PlaceSearchR
       },
     }),
     suggest_places: tool({
-      description: "Show recommended places to the user as cards with an Add to trip button. Only use ids returned by search_places.",
+      description: "Show recommended places to the user as cards with an Add to trip button, and as lettered pins on their trip map. Only use ids returned by search_places.",
       inputSchema: z.object({
         picks: z.array(z.object({
           id: z.string().describe("A place id from search_places, e.g. p3"),
@@ -78,11 +81,13 @@ export function createAssistantTools(trip: Trip, known: Map<string, PlaceSearchR
             continue;
           }
           if (places.some((existing) => existing.fsqPlaceId === place.fsqPlaceId)) continue;
+          const plannedDate = pick.day && tripDates.has(pick.day) ? pick.day : null;
           places.push({
             ...place,
             reason: pick.reason,
-            plannedDate: pick.day && tripDates.has(pick.day) ? pick.day : null,
+            plannedDate,
             alreadyInTrip: tripPlaceIds.has(place.fsqPlaceId),
+            fromHotel: nearestHotel(place.coordinates, trip.hotels, plannedDate),
           });
         }
         return missing.length

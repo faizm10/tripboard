@@ -200,7 +200,7 @@ export const removeHotelStaySchema = z.object({ tripId: z.string().uuid(), hotel
 
 export const updateAgendaBriefSchema = z.object({
   tripId: z.string().uuid(),
-  brief: z.string().trim().max(5000),
+  brief: z.string().trim().max(20000),
 });
 
 export const saveAgendaDayNoteSchema = z.object({

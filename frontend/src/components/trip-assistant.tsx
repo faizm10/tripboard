@@ -12,6 +12,7 @@ import {
   ExternalLink,
   History,
   Landmark,
+  Map as MapIcon,
   MapPin,
   MessageSquare,
   Plus,
@@ -32,6 +33,7 @@ import Markdown from "react-markdown";
 import { loadConversation, loadTripConversations, removeConversation } from "@/lib/assistant/actions";
 import { shortModelName } from "@/lib/assistant/models";
 import type { ConversationSummary } from "@/lib/assistant/store";
+import { collectSuggestions, formatDistance, type MapSuggestion } from "@/lib/assistant/suggestions";
 import type { AssistantMessage, AssistantPick } from "@/lib/assistant/tools";
 import { categoryClass, isPersistedTripId, type PlaceCategory } from "@/lib/types";
 
@@ -61,6 +63,10 @@ type Props = {
   signedIn: boolean;
   savedPlaceIds: Set<string>;
   onAddPlace: (pick: AssistantPick) => void;
+  /** Reports every place this chat has suggested, so the trip map can pin them. */
+  onSuggestionsChange?: (suggestions: MapSuggestion[]) => void;
+  onShowOnMap?: (suggestion: MapSuggestion) => void;
+  focusedSuggestionId?: string | null;
 };
 
 type Session = { id: string; messages: AssistantMessage[] };
@@ -347,6 +353,9 @@ function ChatSession({
   viewerName,
   savedPlaceIds,
   onAddPlace,
+  onSuggestionsChange,
+  onShowOnMap,
+  focusedSuggestionId,
   session,
   saving,
   lastSaved,
@@ -371,6 +380,14 @@ function ChatSession({
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const settle = useEffectEvent((settled: AssistantMessage[]) => onSettled(settled));
   const busy = status === "submitted" || status === "streaming";
+  const suggestions = useMemo(() => collectSuggestions(messages), [messages]);
+  const suggestionKey = suggestions.map((item) => item.fsqPlaceId).join("|");
+  const labels = useMemo(() => new Map(suggestions.map((item) => [item.fsqPlaceId, item])), [suggestions]);
+  const reportSuggestions = useEffectEvent(() => onSuggestionsChange?.(suggestions));
+
+  useEffect(() => {
+    reportSuggestions();
+  }, [suggestionKey]);
 
   useEffect(() => {
     if (status === "ready" || status === "error") settle(messages);
@@ -476,8 +493,11 @@ function ChatSession({
                         <ul className="assistant-picks" key={key}>
                           {part.output.places.map((pick) => (
                             <PickCard
+                              focused={focusedSuggestionId === pick.fsqPlaceId}
                               key={pick.fsqPlaceId}
+                              label={labels.get(pick.fsqPlaceId)?.label}
                               onAdd={() => add(pick)}
+                              onShowOnMap={onShowOnMap && labels.has(pick.fsqPlaceId) ? () => onShowOnMap(labels.get(pick.fsqPlaceId)!) : undefined}
                               pick={pick}
                               state={added.has(pick.fsqPlaceId) ? "added" : savedPlaceIds.has(pick.fsqPlaceId) ? "saved" : "idle"}
                             />
@@ -556,12 +576,30 @@ function ChatSession({
   );
 }
 
-function PickCard({ pick, state, onAdd }: { pick: AssistantPick; state: "idle" | "added" | "saved"; onAdd: () => void }) {
+function PickCard({
+  pick,
+  label,
+  focused,
+  state,
+  onAdd,
+  onShowOnMap,
+}: {
+  pick: AssistantPick;
+  label?: string;
+  focused: boolean;
+  state: "idle" | "added" | "saved";
+  onAdd: () => void;
+  onShowOnMap?: () => void;
+}) {
   const Icon = categoryIcons[pick.category] ?? MapPin;
   const mapsUrl = `https://www.google.com/maps/search/?${new URLSearchParams({ api: "1", query: `${pick.name} ${pick.address}` })}`;
+  const fromHotel = pick.fromHotel ? `${formatDistance(pick.fromHotel.meters)} from ${pick.fromHotel.name}` : "";
   return (
-    <li className="assistant-pick">
-      <span className={`assistant-pick-icon ${categoryClass(pick.category)}`} aria-hidden="true"><Icon size={16} /></span>
+    <li className={`assistant-pick${focused ? " focused" : ""}`}>
+      <span className={`assistant-pick-icon ${categoryClass(pick.category)}`} aria-hidden="true">
+        <Icon size={16} />
+        {label ? <b className="assistant-pick-label">{label}</b> : null}
+      </span>
       <div className="assistant-pick-body">
         <div className="assistant-pick-head">
           <strong>{pick.name}</strong>
@@ -570,9 +608,11 @@ function PickCard({ pick, state, onAdd }: { pick: AssistantPick; state: "idle" |
         <span className="assistant-pick-meta">
           {[pick.category, pick.neighborhood].filter(Boolean).join(" · ")}
         </span>
+        {fromHotel ? <span className="assistant-pick-meta">{fromHotel}</span> : null}
         {pick.reason ? <p>{pick.reason}</p> : null}
         <div className="assistant-pick-actions">
           {pick.plannedDate ? <span className="assistant-pick-day"><CalendarDays size={12} /> {formatDay(pick.plannedDate)}</span> : null}
+          {onShowOnMap ? <button className="assistant-map-button" onClick={onShowOnMap} type="button"><MapIcon size={13} /> Map{label ? ` · ${label}` : ""}</button> : null}
           {state === "idle" ? (
             <button className="assistant-add" onClick={onAdd} type="button"><Plus size={14} /> {pick.plannedDate ? "Add to day" : "Add to trip"}</button>
           ) : (
