@@ -1,5 +1,5 @@
 {
-  "name": "frontend",
+  "name": "tripboard",
   "version": "0.43.0",
   "private": true,
   "scripts": {

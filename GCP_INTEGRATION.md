@@ -158,13 +158,12 @@ gcloud iam service-accounts keys create tripboard-status-key.json \
 Add both values to Vercel, then delete the local key file:
 
 ```bash
-cd frontend
 vercel env add GCP_PROJECT_ID production          # paste the project id
-base64 -i ../tripboard-status-key.json | tr -d '\n' | vercel env add GCP_SERVICE_ACCOUNT_KEY production --sensitive
-rm ../tripboard-status-key.json
+base64 -i tripboard-status-key.json | tr -d '\n' | vercel env add GCP_SERVICE_ACCOUNT_KEY production --sensitive
+rm tripboard-status-key.json
 ```
 
-`GCP_SERVICE_ACCOUNT_KEY` accepts the key file as raw JSON or base64. Base64 is safer because some env var editors mangle the newlines in the private key. Repeat for `preview` if you want previews to show history, and paste the values into `frontend/.env.local` to try it locally. Redeploy so the new variables take effect.
+`GCP_SERVICE_ACCOUNT_KEY` accepts the key file as raw JSON or base64. Base64 is safer because some env var editors mangle the newlines in the private key. Repeat for `preview` if you want previews to show history, and paste the values into `.env.local` to try it locally. Redeploy so the new variables take effect.
 
 > If your organization blocks key creation (`iam.disableServiceAccountKeyCreation`), see [Keyless auth](#later-keyless-auth-with-vercel-oidc) below.
 

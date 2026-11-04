@@ -72,7 +72,7 @@ async function schemaCheck(): Promise<HealthCheck> {
     if (!health) return { ...base, status: "not_configured", detail: "No database to compare against." };
     const missing = [...health.tables, ...health.columns];
     return missing.length
-      ? { ...base, status: "degraded", detail: `Missing: ${missing.join(", ")}. Run the newest SQL in frontend/drizzle/.` }
+      ? { ...base, status: "degraded", detail: `Missing: ${missing.join(", ")}. Run the newest SQL in drizzle/.` }
       : { ...base, status: "operational", detail: "Every table and column the code expects exists." };
   } catch (error) {
     return { ...base, status: "down", detail: message(error) };

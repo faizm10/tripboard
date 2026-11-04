@@ -22,7 +22,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
     {missing.length ? (
       <aside className="admin-schema-warning" role="alert">
         <strong>The database is behind the code.</strong>
-        <p>Saving will fail for features that use: {missing.join(", ")}. Run the newest SQL files in <code>frontend/drizzle/</code> on the production branch in Neon.</p>
+        <p>Saving will fail for features that use: {missing.join(", ")}. Run the newest SQL files in <code>drizzle/</code> on the production branch in Neon.</p>
       </aside>
     ) : null}
     <AdminDashboard dashboard={dashboard} />
