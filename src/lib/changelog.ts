@@ -22,6 +22,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     version: "0.46.0",
     date: "2026-11-05",
     title: "Transit and time zone quotas in admin",
+    pr: 48,
     changes: [
       "The admin Platform tab shows today’s Routes and Time Zone use next to Places, in one Daily quotas card.",
       "Any Google API without a daily cap is marked in red, so runaway spend is easy to spot.",
