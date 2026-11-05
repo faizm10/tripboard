@@ -17,16 +17,23 @@ const SERVICE_NAMES: Record<string, string> = {
   "monitoring.googleapis.com": "Cloud Monitoring",
 };
 
-const QUOTA_NAMES: Record<string, string> = {
-  AutocompletePlacesRequest: "Autocomplete",
-  SearchTextRequest: "Text search",
-  GetPlaceRequest: "Place details",
-  GetPhotoMediaRequest: "Photos",
-};
+/** Daily quotas worth watching: usage by quota metric, cap by limit name (they differ per API). */
+const DAILY_QUOTAS = [
+  { service: "places.googleapis.com", metric: "AutocompletePlacesRequest", limit: "AutocompletePlacesRequestPerDayPerProject", name: "Place autocomplete" },
+  { service: "places.googleapis.com", metric: "SearchTextRequest", limit: "SearchTextRequestPerDayPerProject", name: "Place text search" },
+  { service: "places.googleapis.com", metric: "GetPlaceRequest", limit: "GetPlaceRequestPerDayPerProject", name: "Place details" },
+  { service: "places.googleapis.com", metric: "GetPhotoMediaRequest", limit: "GetPhotoMediaRequestPerDayPerProject", name: "Place photos" },
+  { service: "routes.googleapis.com", metric: "compute_routes_requests", limit: "ComputeRoutesRequestsPerDay", name: "Transit routes" },
+  { service: "timezone-backend.googleapis.com", metric: "billable_default", limit: "BillableDefaultPerDayPerProject", name: "Time zones" },
+] as const;
+const QUOTA_SERVICES = [...new Set(DAILY_QUOTAS.map((quota) => quota.service))];
+/** Google reports "no cap" as int64 max. */
+const UNLIMITED = 1e15;
 
 export type TrafficDay = { date: string; ok: number; errors: number };
 export type ServiceTraffic = { service: string; name: string; requests: number; today: number; errors: number; errorRate: number | null; p95Ms: number | null };
-export type QuotaUse = { metric: string; name: string; used: number; limit: number | null };
+/** `limit` is null when Google reported nothing; `uncapped` means the daily cap is unlimited. */
+export type QuotaUse = { service: string; metric: string; name: string; used: number; limit: number | null; uncapped: boolean };
 
 export type GcpAnalytics =
   | { ok: true; projectId: string; daily: TrafficDay[]; services: ServiceTraffic[]; quotas: QuotaUse[]; quotaResetsAt: string; fetchedAt: string }
@@ -79,6 +86,31 @@ export function foldTraffic(body: SeriesResponse, days = TRAFFIC_DAYS, now = new
   return { daily, services };
 }
 
+/** Matches daily usage and caps to the quotas in DAILY_QUOTAS. */
+export function foldQuotas(usage: SeriesResponse, limits: SeriesResponse): QuotaUse[] {
+  const caps = new Map<string, number>();
+  for (const row of limits.timeSeries ?? []) {
+    if (row.points?.[0]) caps.set(`${row.resource?.labels.service}|${row.metric.labels.limit_name}`, pointValue(row.points[0]));
+  }
+  const used = new Map<string, number>();
+  for (const row of usage.timeSeries ?? []) {
+    // quota_metric looks like "places.googleapis.com/SearchTextRequest".
+    const key = `${row.resource?.labels.service}|${(row.metric.labels.quota_metric ?? "").split("/").pop()}`;
+    used.set(key, (used.get(key) ?? 0) + (row.points ?? []).reduce((sum, point) => sum + pointValue(point), 0));
+  }
+  return DAILY_QUOTAS.map(({ service, metric, limit, name }) => {
+    const cap = caps.get(`${service}|${limit}`);
+    return {
+      service,
+      metric,
+      name,
+      used: used.get(`${service}|${metric}`) ?? 0,
+      limit: cap === undefined || cap >= UNLIMITED ? null : cap,
+      uncapped: cap !== undefined && cap >= UNLIMITED,
+    };
+  });
+}
+
 let cached: { at: number; report: GcpAnalytics } | null = null;
 
 export async function getGcpAnalytics(): Promise<GcpAnalytics | null> {
@@ -103,29 +135,20 @@ export async function getGcpAnalytics(): Promise<GcpAnalytics | null> {
       return monitoring<SeriesResponse>(`projects/${projectId}/timeSeries`, bearer, params);
     };
     const quotaStart = pacificMidnight(end);
+    const quotaServices = `(${QUOTA_SERVICES.map((service) => `resource.label.service="${service}"`).join(" OR ")})`;
     const [traffic, latency, quotaUse, quotaLimits] = await Promise.all([
       series('metric.type="serviceruntime.googleapis.com/api/request_count" AND resource.type="consumed_api"',
         new Date(end.getTime() - TRAFFIC_DAYS * 86_400_000), 86_400, "ALIGN_SUM", "REDUCE_SUM", ["resource.label.service", "metric.label.response_code_class"]),
       series('metric.type="serviceruntime.googleapis.com/api/request_latencies" AND resource.type="consumed_api"',
         new Date(end.getTime() - 86_400_000), 86_400, "ALIGN_DELTA", "REDUCE_PERCENTILE_95", ["resource.label.service"]),
-      series('metric.type="serviceruntime.googleapis.com/quota/rate/net_usage" AND resource.type="consumer_quota" AND resource.label.service="places.googleapis.com"',
-        quotaStart, (end.getTime() - quotaStart.getTime()) / 1000, "ALIGN_SUM", "REDUCE_SUM", ["metric.label.quota_metric"]),
-      series('metric.type="serviceruntime.googleapis.com/quota/limit" AND resource.type="consumer_quota" AND resource.label.service="places.googleapis.com"',
-        new Date(end.getTime() - 86_400_000), 86_400, "ALIGN_NEXT_OLDER", "REDUCE_MIN", ["metric.label.limit_name"]),
+      series(`metric.type="serviceruntime.googleapis.com/quota/rate/net_usage" AND resource.type="consumer_quota" AND ${quotaServices}`,
+        quotaStart, (end.getTime() - quotaStart.getTime()) / 1000, "ALIGN_SUM", "REDUCE_SUM", ["resource.label.service", "metric.label.quota_metric"]),
+      series(`metric.type="serviceruntime.googleapis.com/quota/limit" AND resource.type="consumer_quota" AND ${quotaServices}`,
+        new Date(end.getTime() - 86_400_000), 86_400, "ALIGN_NEXT_OLDER", "REDUCE_MIN", ["resource.label.service", "metric.label.limit_name"]),
     ]);
 
     const { daily, services } = foldTraffic(traffic, TRAFFIC_DAYS, end);
     const p95 = new Map((latency.timeSeries ?? []).map((row) => [row.resource?.labels.service ?? "", row.points?.[0] ? pointValue(row.points[0]) * 1000 : null]));
-    const limits = new Map<string, number>();
-    for (const row of quotaLimits.timeSeries ?? []) {
-      // limit_name looks like "SearchTextRequestPerDayPerProject".
-      const match = /^(.+)PerDayPerProject$/.exec(row.metric.labels.limit_name ?? "");
-      if (match && row.points?.[0]) limits.set(match[1], pointValue(row.points[0]));
-    }
-    const used = new Map((quotaUse.timeSeries ?? []).map((row) => [
-      (row.metric.labels.quota_metric ?? "").split("/").pop() ?? "",
-      (row.points ?? []).reduce((sum, point) => sum + pointValue(point), 0),
-    ]));
 
     report = {
       ok: true,
@@ -142,7 +165,7 @@ export async function getGcpAnalytics(): Promise<GcpAnalytics | null> {
           p95Ms: p95.get(service) ?? null,
         }))
         .sort((a, b) => b.requests - a.requests),
-      quotas: Object.entries(QUOTA_NAMES).map(([metric, name]) => ({ metric, name, used: used.get(metric) ?? 0, limit: limits.get(metric) ?? null })),
+      quotas: foldQuotas(quotaUse, quotaLimits),
       quotaResetsAt: new Date(quotaStart.getTime() + 86_400_000).toISOString(),
       fetchedAt: end.toISOString(),
     };

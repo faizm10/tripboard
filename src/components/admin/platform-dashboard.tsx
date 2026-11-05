@@ -118,16 +118,16 @@ export function PlatformDashboard({ gcp, uptime, vercel, runtime, database }: {
       </article>
 
       <article className="admin-card">
-        <div className="admin-card-heading"><div><p className="eyebrow">Google Cloud</p><h2>Places quota today</h2></div></div>
+        <div className="admin-card-heading"><div><p className="eyebrow">Google Cloud</p><h2>Daily quotas today</h2></div></div>
         {googleOk ? <>
           <ul className="platform-quotas">{googleOk.quotas.map((quota) => {
             const share = quota.limit ? Math.min(1, quota.used / quota.limit) : 0;
-            return <li key={quota.metric}>
-              <div><strong>{quota.name}</strong><span>{number.format(quota.used)}{quota.limit ? ` of ${number.format(quota.limit)}` : ""}</span></div>
+            return <li key={`${quota.service}/${quota.metric}`}>
+              <div><strong>{quota.name}</strong><span className={quota.uncapped ? "platform-warn" : undefined}>{number.format(quota.used)}{quota.limit ? ` of ${number.format(quota.limit)}` : quota.uncapped ? " · no daily cap" : ""}</span></div>
               <div className="platform-meter" role="meter" aria-label={`${quota.name} quota`} aria-valuemin={0} aria-valuemax={quota.limit ?? 0} aria-valuenow={quota.used}><span className={share >= 0.8 ? "error" : "primary"} style={{ width: `${Math.max(share ? 2 : 0, share * 100)}%` }} /></div>
             </li>;
           })}</ul>
-          <p className="platform-footnote">Daily caps reset {new Date(googleOk.quotaResetsAt).toLocaleTimeString("en", { hour: "numeric", minute: "2-digit", timeZoneName: "short" })}. Turns red at 80%.</p>
+          <p className="platform-footnote">Daily caps reset {new Date(googleOk.quotaResetsAt).toLocaleTimeString("en", { hour: "numeric", minute: "2-digit", timeZoneName: "short" })}. Turns red at 80%.{googleOk.quotas.some((quota) => quota.uncapped) ? " Set a cap for anything marked “no daily cap” in APIs & Services → Quotas." : ""}</p>
         </> : <Setup title="Not connected">Quota use appears once Google Cloud is connected.</Setup>}
       </article>
 
