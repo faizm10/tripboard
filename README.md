@@ -23,8 +23,8 @@ Fill in `.env.local` (or run `vercel env pull .env.local`) to connect live servi
 - `GOOGLE_MAPS_API_KEY`: Google Places (New) and Geocoding for city search, place search, and photos. Server-only.
 - `FOURSQUARE_API_KEY`: Fallback place search if the Google key is missing.
 - `OPENROUTER_API_KEY`: the trip assistant sidebar ("Ask AI" on a trip). Server-only. Create a free key at [openrouter.ai/keys](https://openrouter.ai/keys).
-- `GCP_PROJECT_ID` and `GCP_SERVICE_ACCOUNT_KEY` (optional): read-only Google Cloud Monitoring access for the uptime history on `/status`. See [`GCP_INTEGRATION.md`](GCP_INTEGRATION.md).
-- `VERCEL_API_TOKEN` (optional): deployment history on `/admin/platform`. The project and team are read from Vercel's OIDC token, and `VERCEL_PROJECT_ID` and `VERCEL_TEAM_ID` override them. See [`GCP_INTEGRATION.md`](GCP_INTEGRATION.md#platform-analytics-adminplatform).
+- `GCP_PROJECT_ID` and `GCP_SERVICE_ACCOUNT_KEY` (optional): read-only Google Cloud Monitoring access for the uptime history on `/status`. See [`docs/gcp-integration.md`](docs/gcp-integration.md).
+- `VERCEL_API_TOKEN` (optional): deployment history on `/admin/platform`. The project and team are read from Vercel's OIDC token, and `VERCEL_PROJECT_ID` and `VERCEL_TEAM_ID` override them. See [`docs/gcp-integration.md`](docs/gcp-integration.md#platform-analytics-adminplatform).
 - `OPENROUTER_MODELS` (optional): comma-separated OpenRouter model ids, tried in order. Defaults to free tool-calling models in `src/lib/assistant/models.ts`. When a free model is retired, swap it here without a code change. Pick models tagged with tool support at [openrouter.ai/models](https://openrouter.ai/models?supported_parameters=tools&max_price=0).
 
 Create the Google key in [Google Cloud Console](https://console.cloud.google.com/google/maps-apis). Enable **Places API (New)** and **Geocoding API**, restrict the key to those APIs, and paste it into `.env.local` as `GOOGLE_MAPS_API_KEY`. Do not prefix it with `NEXT_PUBLIC_`. Restart `npm run dev` after adding it.
@@ -45,7 +45,7 @@ GitHub Actions runs `npm run typecheck`, `npm run lint`, and `npm test` on every
 
 ## Status and uptime
 
-`GET /api/health` reports on the app, Neon, the schema, Neon Auth, and which provider keys are set. It returns 503 only when the app, database, or sign-in is down, and `?scope=app` skips the outside calls. `/status` is the public view and `/admin/status` adds error details. Uptime history comes from Google Cloud Monitoring uptime checks that probe `/api/health`; setup is in [`GCP_INTEGRATION.md`](GCP_INTEGRATION.md).
+`GET /api/health` reports on the app, Neon, the schema, Neon Auth, and which provider keys are set. It returns 503 only when the app, database, or sign-in is down, and `?scope=app` skips the outside calls. `/status` is the public view and `/admin/status` adds error details. Uptime history comes from Google Cloud Monitoring uptime checks that probe `/api/health`; setup is in [`docs/gcp-integration.md`](docs/gcp-integration.md).
 
 ## Data boundaries
 

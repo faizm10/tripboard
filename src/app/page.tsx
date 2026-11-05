@@ -9,9 +9,9 @@ import {
   Wallet,
   type LucideIcon,
 } from "lucide-react";
-import { LandingMap } from "@/components/landing-map";
-import { SiteFooter } from "@/components/site-footer";
-import { SiteHeader } from "@/components/site-header";
+import { LandingMap } from "@/components/site/landing-map";
+import { SiteFooter } from "@/components/site/site-footer";
+import { SiteHeader } from "@/components/site/site-header";
 import { getViewer } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";

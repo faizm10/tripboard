@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, ShieldAlert, ShieldCheck } from "lucide-react";
 import { restoreUser, suspendUser } from "@/app/admin/actions";
-import { AdminShell } from "@/components/admin-shell";
+import { AdminShell } from "@/components/admin/admin-shell";
 import { getAdminUser, getAdminViewer } from "@/lib/admin";
 
 export const metadata: Metadata = { title: "Admin · Person" };

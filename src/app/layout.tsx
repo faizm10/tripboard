@@ -1,8 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Host_Grotesk } from "next/font/google";
-import { AppProviders } from "@/components/app-providers";
-import { OfflineBanner } from "@/components/offline-banner";
-import { PwaRegister } from "@/components/pwa-register";
+import { AppProviders } from "@/components/site/app-providers";
+import { OfflineBanner } from "@/components/site/offline-banner";
+import { PwaRegister } from "@/components/site/pwa-register";
 import "mapbox-gl/dist/mapbox-gl.css";
 import "./globals.css";
 

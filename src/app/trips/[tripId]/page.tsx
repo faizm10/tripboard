@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
-import { AppHeader } from "@/components/app-header";
-import { TripWorkspace } from "@/components/trip-workspace";
+import { AppHeader } from "@/components/site/app-header";
+import { TripWorkspace } from "@/components/trip/trip-workspace";
 import { getViewer } from "@/lib/auth";
 import { getTrip } from "@/lib/demo-data";
 import { getViewerTrip, toTripViewer } from "@/lib/trips";

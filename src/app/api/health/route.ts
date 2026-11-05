@@ -3,7 +3,7 @@ import { publicHealth, runHealthChecks } from "@/lib/health";
 export const dynamic = "force-dynamic";
 
 /**
- * Public health probe for uptime monitors (see GCP_INTEGRATION.md).
+ * Public health probe for uptime monitors (see docs/gcp-integration.md).
  * Answers 503 only when a critical service is down, so a degraded
  * dependency doesn't page anyone. `?scope=app` skips the database and
  * auth calls for cheap, frequent probes.

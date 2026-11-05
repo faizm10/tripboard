@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { AccountAssistant } from "@/components/account-assistant";
-import { AccountPanel } from "@/components/account-panel";
-import { AppHeader } from "@/components/app-header";
-import { SiteFooter } from "@/components/site-footer";
+import { AccountAssistant } from "@/components/account/account-assistant";
+import { AccountPanel } from "@/components/account/account-panel";
+import { AppHeader } from "@/components/site/app-header";
+import { SiteFooter } from "@/components/site/site-footer";
 import { getSaveConversations, getUsageSummary, listConversations } from "@/lib/assistant/store";
 import { getViewer } from "@/lib/auth";
 

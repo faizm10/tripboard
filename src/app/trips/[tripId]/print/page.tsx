@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, CalendarPlus } from "lucide-react";
-import { PrintButton } from "@/components/print-button";
+import { PrintButton } from "@/components/trip/print-button";
 import { formatMoney, personBalances, settleUp, totalSpent } from "@/lib/finances";
 import { buildItinerary } from "@/lib/itinerary";
 import { loadVisibleTrip } from "@/lib/trip-access";
