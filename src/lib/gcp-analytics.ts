@@ -12,6 +12,8 @@ const CACHE_MS = 60_000;
 const SERVICE_NAMES: Record<string, string> = {
   "places.googleapis.com": "Places (New)",
   "geocoding-backend.googleapis.com": "Geocoding",
+  "routes.googleapis.com": "Routes",
+  "timezone-backend.googleapis.com": "Time Zone",
   "monitoring.googleapis.com": "Cloud Monitoring",
 };
 

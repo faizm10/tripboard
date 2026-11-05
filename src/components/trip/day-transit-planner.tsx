@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { ExternalLink, MoreHorizontal, Pencil, Plus, TramFront, Trash2, X } from "lucide-react";
+import { ExternalLink, Footprints, MoreHorizontal, Pencil, Plus, Search, TramFront, Trash2, X } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { buildGoogleMapsLegUrl } from "@/lib/navigation";
+import type { TransitOption, TransitOptionsResult } from "@/lib/transit-routes";
 import type { RouteStop, TransitPlan } from "@/lib/types";
 
 export type TransitDraft = Omit<TransitPlan, "id"> & { id?: string };
@@ -27,6 +28,23 @@ export function transitLegs(stops: { id: string }[], plans: TransitPlan[]) {
       other: leaving.filter((plan) => plan.to.id !== next.id),
     };
   });
+}
+
+/** Google's localized "9:05 AM" or "21:05" as the editor's 24-hour "HH:MM". */
+export function toTimeInput(text?: string) {
+  const match = text?.trim().match(/^(\d{1,2}):(\d{2})\s*([AaPp])?\.?[Mm]?\.?$/);
+  if (!match) return "";
+  let hours = Number(match[1]);
+  const meridiem = match[3]?.toLowerCase();
+  if (meridiem === "p" && hours < 12) hours += 12;
+  if (meridiem === "a" && hours === 12) hours = 0;
+  return hours > 23 ? "" : `${String(hours).padStart(2, "0")}:${match[2]}`;
+}
+
+/** A short line for the ride note, e.g. "Line 2 → Shinkansen · 32 min". */
+export function transitOptionNote(option: TransitOption) {
+  const lines = option.steps.flatMap((step) => step.kind === "ride" ? [step.line] : []);
+  return `${lines.join(" → ")} · ${option.minutes} min`;
 }
 
 export function DayTransitPlanner({ date, stops, plans, onSave, onRemove }: {
@@ -113,6 +131,32 @@ export function TransitEditor({ date, plan, stops, initialFromId = "", initialTo
   const from = options.find((stop) => stop.id === fromId);
   const to = options.find((stop) => stop.id === toId);
   const valid = Boolean(from && to && from.id !== to.id);
+  const [lookup, setLookup] = useState<{ key: string; status: "loading" | "error" } | ({ key: string; status: "done" } & TransitOptionsResult) | null>(null);
+  const lookupKey = `${fromId}|${toId}|${departureTime}`;
+  const shownLookup = lookup?.key === lookupKey ? lookup : null;
+
+  async function findOptions() {
+    if (!from || !to || !valid) return;
+    const key = lookupKey;
+    setLookup({ key, status: "loading" });
+    try {
+      const response = await fetch("/api/routes/transit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ from: from.coordinates, to: to.coordinates, date, departureTime }),
+      });
+      if (!response.ok) throw new Error("Transit lookup failed");
+      setLookup({ key, status: "done", ...(await response.json() as TransitOptionsResult) });
+    } catch {
+      setLookup({ key, status: "error" });
+    }
+  }
+
+  function chooseOption(option: TransitOption) {
+    const leave = toTimeInput(option.departs);
+    if (leave && shownLookup?.status === "done" && shownLookup.timedForTrip) setDepartureTime(leave);
+    setNote(transitOptionNote(option));
+  }
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
@@ -135,8 +179,33 @@ export function TransitEditor({ date, plan, stops, initialFromId = "", initialTo
         <label>To<select aria-label="Transit to" value={toId} onChange={(event) => setToId(event.target.value)} required><option value="">Choose a destination</option>{options.filter((stop) => stop.id !== fromId).map((stop) => <option key={stop.id} value={stop.id}>{optionLabel(stop)}</option>)}</select></label>
         <label>Departure time (optional)<input aria-label="Transit departure time" type="time" value={departureTime} onChange={(event) => setDepartureTime(event.target.value)} /></label>
         <label>Note (optional)<input aria-label="Transit note" value={note} onChange={(event) => setNote(event.target.value)} maxLength={500} placeholder="e.g. After lunch, head to the next area" /></label>
-        <p className="transit-help">Compare routes in Google Maps, then save this ride here. Set {date}{departureTime ? ` at ${departureTime}` : " and your departure time"} in Google Maps for the right timetable.</p>
-        {valid && from && to ? <a className="transit-compare" href={buildGoogleMapsLegUrl(from, to, "transit")} target="_blank" rel="noreferrer">Compare transit in Google Maps <ExternalLink size={14} /></a> : null}
+        {valid && from && to ? (
+          <div className="transit-options">
+            <button className="button button-ghost" disabled={shownLookup?.status === "loading"} onClick={() => void findOptions()} type="button"><Search size={15} /> {shownLookup?.status === "loading" ? "Finding rides…" : "Find transit options"}</button>
+            {shownLookup?.status === "error" ? <p className="transit-help" role="status">Couldn’t load transit options. Compare them in Google Maps instead.</p> : null}
+            {shownLookup?.status === "done" && !shownLookup.options.length ? <p className="transit-help" role="status">No transit found between these stops.</p> : null}
+            {shownLookup?.status === "done" && shownLookup.options.length ? (
+              <>
+                <p className="transit-help">{shownLookup.timedForTrip ? `Timetable for ${date}${departureTime ? ` from ${departureTime}` : ""}.` : "Your trip is outside the published timetable, so these times are for today."}</p>
+                <ul className="transit-option-list" aria-label="Transit options">
+                  {shownLookup.options.map((option, index) => (
+                    <li key={index}>
+                      <button className="transit-option" onClick={() => chooseOption(option)} type="button" aria-label={`Use ${transitOptionNote(option)}`}>
+                        <span className="transit-option-head"><strong>{option.minutes} min</strong>{option.departs && option.arrives ? <span>{option.departs} → {option.arrives}</span> : null}<span>{option.transfers ? `${option.transfers} transfer${option.transfers > 1 ? "s" : ""}` : "Direct"}</span>{option.fare ? <span>{option.fare}</span> : null}</span>
+                        <span className="transit-option-steps">
+                          {option.steps.map((step, stepIndex) => step.kind === "walk"
+                            ? <span className="transit-step-walk" key={stepIndex}><Footprints size={12} aria-hidden="true" /> {step.minutes} min</span>
+                            : <span className="transit-step-line" key={stepIndex} style={step.color ? { background: step.color, color: step.textColor ?? "#fff" } : undefined} title={[step.vehicle, step.headsign && `towards ${step.headsign}`, step.from && `${step.from} → ${step.to}`].filter(Boolean).join(" · ")}>{step.line}</span>)}
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            ) : null}
+            <a className="transit-compare" href={buildGoogleMapsLegUrl(from, to, "transit")} target="_blank" rel="noreferrer">Compare transit in Google Maps <ExternalLink size={14} /></a>
+          </div>
+        ) : null}
         {error ? <p className="form-error" role="alert">{error}</p> : null}
         <button className="button button-ink" disabled={!valid || saving} type="submit">{saving ? "Saving…" : "Save transit plan"}</button>
       </fieldset>

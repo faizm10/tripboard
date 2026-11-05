@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { DayTransitPlanner, transitLegs } from "@/components/trip/day-transit-planner";
+import { DayTransitPlanner, toTimeInput, transitLegs } from "@/components/trip/day-transit-planner";
 import { saveTransitPlanSchema } from "@/lib/validators";
 import type { RouteStop, TransitPlan } from "@/lib/types";
 
@@ -13,7 +13,7 @@ const stops: RouteStop[] = [
 const date = "2026-10-10";
 const savedPlan: TransitPlan = { id: "ride-1", plannedDate: date, from: stops[0], to: stops[3], departureTime: "13:30", note: "After lunch" };
 const props = { date, stops, plans: [], onSave: vi.fn().mockResolvedValue(undefined), onRemove: vi.fn().mockResolvedValue(undefined) };
-afterEach(() => { cleanup(); vi.clearAllMocks(); });
+afterEach(() => { cleanup(); vi.clearAllMocks(); vi.unstubAllGlobals(); });
 
 function chooseRide() {
   fireEvent.click(screen.getByRole("button", { name: "Plan transit" }));
@@ -99,5 +99,40 @@ describe("optional transit planning", () => {
     expect(saveTransitPlanSchema.safeParse({ ...valid, to: valid.from }).success).toBe(false);
     expect(saveTransitPlanSchema.safeParse({ ...valid, departureTime: "25:00" }).success).toBe(false);
     expect(saveTransitPlanSchema.safeParse({ ...valid, to: { ...valid.to, coordinates: [181, 90] } }).success).toBe(false);
+  });
+
+  it("finds Google transit options on request and fills the ride from the one picked", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      timedForTrip: true,
+      options: [{ minutes: 32, departs: "1:35 PM", arrives: "2:07 PM", transfers: 1, steps: [{ kind: "walk", minutes: 4 }, { kind: "ride", line: "A", vehicle: "Subway", from: "14 St", to: "23 St" }, { kind: "ride", line: "L", vehicle: "Subway", from: "8 Av", to: "6 Av" }] }],
+    })));
+    vi.stubGlobal("fetch", fetchMock);
+    render(<DayTransitPlanner {...props} />);
+    chooseRide();
+    fireEvent.change(screen.getByLabelText("Transit departure time"), { target: { value: "13:30" } });
+    expect(fetchMock).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Find transit options" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Use A → L · 32 min" }));
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ from: stops[0].coordinates, to: stops[3].coordinates, date, departureTime: "13:30" });
+    expect((screen.getByLabelText("Transit departure time") as HTMLInputElement).value).toBe("13:35");
+    expect((screen.getByLabelText("Transit note") as HTMLInputElement).value).toBe("A → L · 32 min");
+  });
+
+  it("falls back to Google Maps when transit options fail to load", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("{}", { status: 502 })));
+    render(<DayTransitPlanner {...props} />);
+    chooseRide();
+    fireEvent.click(screen.getByRole("button", { name: "Find transit options" }));
+    expect(await screen.findByText(/Couldn’t load transit options/)).toBeTruthy();
+    expect(screen.getByRole("link", { name: /Compare transit/ })).toBeTruthy();
+  });
+
+  it("reads Google's 12- and 24-hour times into the time field", () => {
+    expect(toTimeInput("9:05 AM")).toBe("09:05");
+    expect(toTimeInput("10:07\u202fAM")).toBe("10:07");
+    expect(toTimeInput("12:10 AM")).toBe("00:10");
+    expect(toTimeInput("12:10 PM")).toBe("12:10");
+    expect(toTimeInput("21:05")).toBe("21:05");
+    expect(toTimeInput("soon")).toBe("");
   });
 });

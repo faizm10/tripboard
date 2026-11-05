@@ -3124,3 +3124,15 @@ ul.itinerary-places { list-style: disc; }
 .day-hero .day-notes-disclosure > summary:focus-visible { outline: 2px solid var(--accent-line); outline-offset: 2px; }
 .day-hero .day-notes-disclosure .day-notes { margin-top: 4px; padding: 0 0 4px; }
 @media (hover: none) { .day-hero-notes .day-note button { opacity: 1; } }
+
+/* Transit options from Google Routes, inside the ride editor */
+.transit-options { display: grid; gap: 8px; }
+.transit-options > .button { width: 100%; min-height: 44px; justify-content: center; gap: 6px; }
+.transit-option-list { display: grid; margin: 0; padding: 0; gap: 8px; list-style: none; }
+.transit-option { display: grid; width: 100%; padding: 10px 12px; gap: 8px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--paper-raised); color: var(--ink); text-align: left; cursor: pointer; }
+.transit-option:hover, .transit-option:focus-visible { border-color: var(--accent-line); background: var(--accent-soft); }
+.transit-option-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; color: var(--muted); font-size: 12px; }
+.transit-option-head strong { color: var(--ink); font-size: 14px; }
+.transit-option-steps { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.transit-step-line { padding: 2px 8px; border-radius: var(--radius-round); background: var(--accent-soft); color: var(--accent-strong); font-size: 12px; font-weight: 600; }
+.transit-step-walk { display: inline-flex; align-items: center; gap: 3px; color: var(--muted); font-size: 12px; }

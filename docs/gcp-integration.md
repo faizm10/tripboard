@@ -253,6 +253,45 @@ A long-lived key is the simplest setup, but GCP Workload Identity Federation let
 
 Vercel's guide: [Connect to Google Cloud Platform](https://vercel.com/docs/oidc/gcp).
 
+## Transit directions (Routes and Time Zone APIs)
+
+"Find transit options" in a day's ride editor calls `POST /api/routes/transit`, which asks the [Routes API](https://developers.google.com/maps/documentation/routes/transit-route) for up to three transit routes between two stops: lines, transfers, walks, times and fare when known. The [Time Zone API](https://developers.google.com/maps/documentation/timezone) turns the trip's local departure time into the UTC time Routes expects. Google only has timetables from 7 days ago to 100 days ahead, so trips outside that window get today's timetable and the editor says so. Results are fetched on click and never stored (`src/lib/transit-routes.ts`). Both use `GOOGLE_MAPS_API_KEY`, so the key needs both APIs:
+
+```bash
+PROJECT=tripboard-ops
+gcloud services enable routes.googleapis.com timezone-backend.googleapis.com --project "$PROJECT"
+
+# Allow them on each Tripboard key alongside Places and Geocoding.
+for KEY in $(gcloud services api-keys list --project "$PROJECT" --filter='displayName~Tripboard' --format='value(uid)'); do
+  gcloud services api-keys update "$KEY" --project "$PROJECT" \
+    --api-target=service=places.googleapis.com \
+    --api-target=service=geocoding-backend.googleapis.com \
+    --api-target=service=routes.googleapis.com \
+    --api-target=service=timezone-backend.googleapis.com
+done
+```
+
+Then set a daily request cap for each in **APIs & Services → Routes API (and Time Zone API) → Quotas**, the same way Places is capped. Without the key, or if a call fails, the editor falls back to the "Compare transit in Google Maps" link.
+
+## Billing budget
+
+A budget emails the billing admins as spend climbs. It doesn't stop spending; the daily API caps do that.
+
+```bash
+gcloud services enable billingbudgets.googleapis.com --project tripboard-ops
+gcloud billing budgets create \
+  --billing-account=01FDCD-FE36DB-E77339 \
+  --display-name="Tripboard monthly" \
+  --budget-amount=25CAD \
+  --filter-projects=projects/tripboard-ops \
+  --threshold-rule=percent=0.5 \
+  --threshold-rule=percent=0.9 \
+  --threshold-rule=percent=1.0 \
+  --threshold-rule=percent=1.0,basis=forecasted-spend
+```
+
+The last rule warns when the month is *forecast* to pass the budget, before it actually does. Change the amount with `gcloud billing budgets update <budget-id> --billing-account=… --budget-amount=…`.
+
 ## Other GCP pieces worth adding later
 
 - **Cloud Logging**: a Vercel log drain into Cloud Logging keeps logs longer than Vercel does and lets you build log-based alerts, such as one on `[tripboard]` warnings.

@@ -19,6 +19,17 @@ export const REPO_URL = "https://github.com/faizm10/tripboard";
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "0.45.0",
+    date: "2026-11-05",
+    title: "Transit options in the day planner",
+    pr: 47,
+    changes: [
+      "When you plan a ride between two stops, tap “Find transit options” to see up to three routes with lines, transfers, walking time and fare.",
+      "Times follow your trip day and departure time, so you see the timetable for when you’ll actually be there.",
+      "Pick a route to fill in the ride’s departure time and a short note like “A → L · 32 min”.",
+    ],
+  },
+  {
     version: "0.44.1",
     date: "2026-11-05",
     title: "Tidier setup notes",
