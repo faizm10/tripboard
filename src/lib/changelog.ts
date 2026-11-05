@@ -22,6 +22,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     version: "0.44.1",
     date: "2026-11-05",
     title: "Tidier setup notes",
+    pr: 46,
     changes: [
       "The uptime and deployment setup hints on the status and admin pages point to the new guide at docs/gcp-integration.md.",
     ],
