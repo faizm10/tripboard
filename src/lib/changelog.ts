@@ -22,6 +22,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     version: "0.44.0",
     date: "2026-11-04",
     title: "A simpler home page",
+    pr: 45,
     changes: [
       "The home page is shorter: one headline, the example board, and six things Tripboard does.",
       "The numbers on the home page come straight from this changelog, so they stay true.",
