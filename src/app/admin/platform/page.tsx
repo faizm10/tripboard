@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { AdminShell } from "@/components/admin-shell";
-import { PlatformDashboard } from "@/components/platform-dashboard";
+import { AdminShell } from "@/components/admin/admin-shell";
+import { PlatformDashboard } from "@/components/admin/platform-dashboard";
 import { getAdminViewer, getDatabaseStats } from "@/lib/admin";
 import { getGcpAnalytics } from "@/lib/gcp-analytics";
 import { getUptimeReport } from "@/lib/gcp-monitoring";

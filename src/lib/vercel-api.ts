@@ -5,7 +5,7 @@ import { envValue } from "@/lib/env";
  * Reads Tripboard's own Vercel project for /admin/platform. Needs
  * VERCEL_API_TOKEN; the project and team come from VERCEL_PROJECT_ID and
  * VERCEL_TEAM_ID when set, otherwise from the claims of the OIDC token Vercel
- * hands every function (see GCP_INTEGRATION.md → "Platform analytics").
+ * hands every function (see docs/gcp-integration.md → "Platform analytics").
  * Without a token it returns null and the page shows only what the running
  * deployment knows about itself.
  */

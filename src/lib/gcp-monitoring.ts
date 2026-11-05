@@ -4,7 +4,7 @@ import { envValue } from "@/lib/env";
 /**
  * Reads Google Cloud Monitoring uptime checks so /status and /admin/status can
  * show history from probes that run outside Vercel. Setup lives in
- * GCP_INTEGRATION.md at the repo root. Without GCP_PROJECT_ID and
+ * docs/gcp-integration.md. Without GCP_PROJECT_ID and
  * GCP_SERVICE_ACCOUNT_KEY everything here returns null and the pages fall
  * back to the live health checks alone.
  */

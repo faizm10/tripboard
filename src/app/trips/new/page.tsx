@@ -3,8 +3,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
-import { Logo } from "@/components/logo";
-import { NewTripForm } from "@/components/new-trip-form";
+import { Logo } from "@/components/site/logo";
+import { NewTripForm } from "@/components/trip/new-trip-form";
 import { getViewer } from "@/lib/auth";
 
 export const metadata: Metadata = { title: "New trip" };

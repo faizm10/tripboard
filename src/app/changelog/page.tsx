@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft, GitPullRequest } from "lucide-react";
-import { Logo } from "@/components/logo";
-import { SiteFooter } from "@/components/site-footer";
+import { Logo } from "@/components/site/logo";
+import { SiteFooter } from "@/components/site/site-footer";
 import { APP_VERSION, CHANGELOG, REPO_URL } from "@/lib/changelog";
 
 export const metadata: Metadata = { title: "Changelog", description: "What's new in Tripboard, version by version." };

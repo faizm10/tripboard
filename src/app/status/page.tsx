@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { Logo } from "@/components/logo";
-import { SiteFooter } from "@/components/site-footer";
-import { StatusBoard } from "@/components/status-board";
+import { Logo } from "@/components/site/logo";
+import { SiteFooter } from "@/components/site/site-footer";
+import { StatusBoard } from "@/components/admin/status-board";
 import { getUptimeReport } from "@/lib/gcp-monitoring";
 import { publicHealth, runHealthChecks } from "@/lib/health";
 

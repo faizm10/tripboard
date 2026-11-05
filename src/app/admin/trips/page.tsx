@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Search } from "lucide-react";
-import { AdminShell } from "@/components/admin-shell";
+import { AdminShell } from "@/components/admin/admin-shell";
 import { getAdminViewer, listAdminTrips } from "@/lib/admin";
 
 export const metadata: Metadata = { title: "Admin · Trips" };

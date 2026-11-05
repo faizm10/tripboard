@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { AdminDashboard } from "@/components/admin-dashboard";
-import { AdminShell } from "@/components/admin-shell";
+import { AdminDashboard } from "@/components/admin/admin-dashboard";
+import { AdminShell } from "@/components/admin/admin-shell";
 import { adminRange, getAdminDashboard, getAdminViewer } from "@/lib/admin";
 import { checkSchemaHealth } from "@/lib/db/schema-health";
 

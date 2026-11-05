@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Search, ShieldAlert } from "lucide-react";
-import { AdminShell } from "@/components/admin-shell";
+import { AdminShell } from "@/components/admin/admin-shell";
 import { getAdminViewer, listAdminUsers } from "@/lib/admin";
 
 export const metadata: Metadata = { title: "Admin · People" };

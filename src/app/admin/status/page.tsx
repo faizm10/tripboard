@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { AdminShell } from "@/components/admin-shell";
-import { StatusBoard } from "@/components/status-board";
+import { AdminShell } from "@/components/admin/admin-shell";
+import { StatusBoard } from "@/components/admin/status-board";
 import { getAdminViewer } from "@/lib/admin";
 import { getUptimeReport } from "@/lib/gcp-monitoring";
 import { runHealthChecks } from "@/lib/health";

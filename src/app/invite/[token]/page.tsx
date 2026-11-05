@@ -3,7 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ArrowRight, Ban, Clock, Mail, Users } from "lucide-react";
 import { acceptInvitationForm } from "@/app/trips/actions";
-import { Logo } from "@/components/logo";
+import { Logo } from "@/components/site/logo";
 import { getViewer } from "@/lib/auth";
 import { getInvitePreview } from "@/lib/invite-data";
 
