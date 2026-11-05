@@ -235,6 +235,15 @@ export const directionsSchema = z.object({
   mode: z.enum(["walking", "cycling", "driving"]),
 });
 
+const coordinateField = z.tuple([z.number().min(-180).max(180), z.number().min(-90).max(90)]);
+
+export const transitOptionsSchema = z.object({
+  from: coordinateField,
+  to: coordinateField,
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  departureTime: z.union([z.literal(""), z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/)]),
+});
+
 const tripIdField = { tripId: z.string().uuid() };
 export const inviteTokenSchema = z.string().trim().min(20).max(160);
 

@@ -20,14 +20,14 @@ Fill in `.env.local` (or run `vercel env pull .env.local`) to connect live servi
 - `NEON_AUTH_BASE_URL` and `NEON_AUTH_COOKIE_SECRET`: Neon Auth. Configure Google as the only social provider in the Neon console.
 - `ADMIN_EMAIL`: server-only email allowed to use the `/admin` control tower. Set it to the verified Tripboard administrator email.
 - `NEXT_PUBLIC_MAPBOX_TOKEN` and `MAPBOX_ACCESS_TOKEN`: Mapbox map rendering and Directions.
-- `GOOGLE_MAPS_API_KEY`: Google Places (New) and Geocoding for city search, place search, and photos. Server-only.
+- `GOOGLE_MAPS_API_KEY`: Google Places (New) and Geocoding for city search, place search, and photos, plus Routes and Time Zone for transit options in the day planner. Server-only.
 - `FOURSQUARE_API_KEY`: Fallback place search if the Google key is missing.
 - `OPENROUTER_API_KEY`: the trip assistant sidebar ("Ask AI" on a trip). Server-only. Create a free key at [openrouter.ai/keys](https://openrouter.ai/keys).
 - `GCP_PROJECT_ID` and `GCP_SERVICE_ACCOUNT_KEY` (optional): read-only Google Cloud Monitoring access for the uptime history on `/status`. See [`docs/gcp-integration.md`](docs/gcp-integration.md).
 - `VERCEL_API_TOKEN` (optional): deployment history on `/admin/platform`. The project and team are read from Vercel's OIDC token, and `VERCEL_PROJECT_ID` and `VERCEL_TEAM_ID` override them. See [`docs/gcp-integration.md`](docs/gcp-integration.md#platform-analytics-adminplatform).
 - `OPENROUTER_MODELS` (optional): comma-separated OpenRouter model ids, tried in order. Defaults to free tool-calling models in `src/lib/assistant/models.ts`. When a free model is retired, swap it here without a code change. Pick models tagged with tool support at [openrouter.ai/models](https://openrouter.ai/models?supported_parameters=tools&max_price=0).
 
-Create the Google key in [Google Cloud Console](https://console.cloud.google.com/google/maps-apis). Enable **Places API (New)** and **Geocoding API**, restrict the key to those APIs, and paste it into `.env.local` as `GOOGLE_MAPS_API_KEY`. Do not prefix it with `NEXT_PUBLIC_`. Restart `npm run dev` after adding it.
+Create the Google key in [Google Cloud Console](https://console.cloud.google.com/google/maps-apis). Enable **Places API (New)**, **Geocoding API**, **Routes API** and **Time Zone API**, restrict the key to those APIs, and paste it into `.env.local` as `GOOGLE_MAPS_API_KEY`. Do not prefix it with `NEXT_PUBLIC_`. Restart `npm run dev` after adding it.
 
 For a linked Vercel project, `vercel env pull .env.local` fills in the non-secret values. Vercel won't download secrets, so it writes `[SENSITIVE]` for them (including `DATABASE_URL` and `NEON_AUTH_COOKIE_SECRET`). Tripboard treats `[SENSITIVE]`, blank values, and a cookie secret shorter than 32 characters as "not set" and stays in demo mode, logging a warning that says which one. Paste real values from the Neon console to connect live data. Secrets stay server-only; the only browser-exposed value is the intentionally public `NEXT_PUBLIC_MAPBOX_TOKEN`. Drizzle loads `.env.local` for its CLI commands.
 
