@@ -13,9 +13,9 @@ export async function SiteHeader() {
     <header className="site-header">
       <Logo />
       <nav className="site-nav">
-        <a href="#how">How it works</a>
-        <a href="#together">Plan together</a>
-        <a href="#demo">Demo trip</a>
+        <Link href="/#features">Features</Link>
+        <Link href="/trips/nyc-weekender">Demo trip</Link>
+        <Link href="/changelog">Changelog</Link>
       </nav>
       <div className="site-actions">
         {signedIn ? (

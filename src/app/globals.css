@@ -2195,209 +2195,234 @@ html {
 }
 
 /* ----------------------------------------------------------------------------
-   Home — scrolling landing
-   The hero keeps its full screen; the page then scrolls through how it works,
-   the shared board and the demo trip. These rules are deliberately unlayered
-   and last in the file: `.landing-page-scroll` and `.landing-page` are both
-   single-class selectors, so source order is what lets the modifier win.
+   Home
+   One framed column between two hairline rails, hatched outside. Sections are
+   divided by full-width rules with a small cross where each rule meets a rail.
+   The only colour is the accent, plus a warm ribbon of it behind the hero and
+   the closing call to act.
 ---------------------------------------------------------------------------- */
-.landing-page-scroll { height: auto; min-height: 100svh; overflow: visible; }
-
-/*
- * Copy on the left, the board on the right — one column of reading, then the
- * product. `auto-fit` collapses the pair to a single column once each side
- * would fall under 520px, so no separate stacking breakpoint is needed. The
- * hero is content-sized: nothing gets squeezed to hold one screen.
- */
-.landing-page-scroll .hero-section {
-  display: grid;
-  min-height: 0;
-  padding: clamp(32px, 4vw, 64px) 0 clamp(48px, 6vw, 80px);
-  flex: 0 0 auto;
-  grid-template-columns: repeat(auto-fit, minmax(520px, 1fr));
-  gap: clamp(32px, 5vw, 64px);
-  align-items: center;
-}
-.landing-page-scroll .hero-copy {
-  display: flex;
-  max-width: none;
-  grid-template-columns: none;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0;
-}
-.landing-page-scroll .hero-copy h1 {
-  margin: 20px 0 0;
-  font-size: clamp(40px, 4.6vw, 68px);
-  text-wrap: balance;
-}
-.landing-page-scroll .hero-lede { margin-top: 20px; max-width: 36ch; }
-.landing-page-scroll .hero-actions { margin-top: 28px; flex-wrap: wrap; gap: 12px; }
-.landing-page-scroll .hero-note { margin-top: 22px; }
-.landing-page-scroll .hero-tray { min-height: 520px; flex: none; }
-.landing-page-scroll .hero-visual { height: 100%; }
-/* The board is half as wide here as it was full-bleed, so the list scales down. */
-.landing-page-scroll .board-list { padding: 20px 18px; }
-.landing-page-scroll .board-list-head { padding-bottom: 14px; }
-.landing-page-scroll .board-list-head h2 { font-size: clamp(22px, 1.7vw, 28px); }
-.landing-page-scroll .board-card { margin-inline: 0; padding-inline: 0; }
-
 .site-nav a { color: var(--muted); font-weight: 500; }
 
-.hero-badge {
-  display: inline-flex;
-  margin: 0;
-  align-items: center;
-  gap: 8px;
-  padding: 4px 8px;
-  border: 0;
-  border-radius: 4px;
-  background: var(--accent);
-  color: #ffffff;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: .08em;
-  text-transform: uppercase;
+.lp {
+  min-height: 100svh;
+  overflow-x: clip;
+  background:
+    repeating-linear-gradient(135deg, transparent 0 9px, var(--line-soft) 9px 10px),
+    var(--paper);
 }
-.hero-badge span { width: 6px; height: 6px; flex: none; border-radius: 1px; background: #ffffff; }
-.landing-page-scroll .hero-copy h1 em { font-style: normal; color: var(--accent); }
-
-/* Where the saves come from, stated once */
-.source-band { border-block: 1px solid var(--line); background: #fafafa; }
-.source-band-inner {
-  display: flex;
-  width: min(100% - 56px, 1440px);
+.lp-frame {
+  position: relative;
+  width: min(100% - 56px, 1200px);
   margin: 0 auto;
-  padding: 22px 0;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 12px clamp(20px, 5vw, 64px);
-  color: var(--muted);
-  font-size: 14px;
+  border-inline: 1px solid var(--line);
+  background: var(--paper);
 }
-.source-band-inner strong { color: var(--ink); font-weight: 600; }
-.source-band-inner ul {
-  display: flex;
-  margin: 0;
-  padding: 0;
-  flex-wrap: wrap;
-  gap: 12px clamp(20px, 5vw, 64px);
-  list-style: none;
+.lp-frame > :is(.lp-features, .lp-cta, .site-footer) {
+  position: relative;
+  border-top: 1px solid var(--line);
 }
+.lp-frame > :is(.lp-features, .lp-cta, .site-footer)::before,
+.lp-frame > :is(.lp-features, .lp-cta, .site-footer)::after {
+  content: "";
+  position: absolute;
+  z-index: 2;
+  top: -6px;
+  width: 11px;
+  height: 11px;
+  background:
+    linear-gradient(var(--quiet), var(--quiet)) center / 11px 1px no-repeat,
+    linear-gradient(var(--quiet), var(--quiet)) center / 1px 11px no-repeat;
+}
+.lp-frame > :is(.lp-features, .lp-cta, .site-footer)::before { left: -6px; }
+.lp-frame > :is(.lp-features, .lp-cta, .site-footer)::after { right: -6px; }
 
-.home-section { width: min(100% - 56px, 1440px); margin: 0 auto; padding: var(--section-y) 0; }
-.home-section-tinted {
-  width: 100%;
-  padding-inline: 28px;
-  border-block: 1px solid var(--line);
-  background: #fafafa;
+/* Two-tone headings: the claim in ink, the explanation in grey. */
+.lp h1 span { color: var(--accent); }
+.lp h2 span { color: var(--quiet); }
+
+.lp-hero {
+  position: relative;
+  display: flex;
+  padding: clamp(72px, 10vw, 136px) clamp(20px, 5vw, 64px) clamp(48px, 6vw, 72px);
+  flex-direction: column;
+  align-items: center;
+  overflow: hidden;
+  text-align: center;
+  isolation: isolate;
 }
-.home-section-head { max-width: 54ch; margin-bottom: clamp(36px, 4vw, 56px); }
-.home-section-head h2,
-.home-split-copy h2,
-.demo-head h2 {
-  margin: 12px 0 0;
-  font-size: clamp(30px, 3.4vw, 46px);
-  font-weight: 600;
-  letter-spacing: -.04em;
-  line-height: 1.05;
+.lp-hero h1 {
+  max-width: 16ch;
+  margin: 26px 0 0;
+  font-size: clamp(42px, 6.4vw, 88px);
+  font-weight: 580;
+  letter-spacing: -.045em;
+  line-height: 1.02;
   text-wrap: balance;
 }
-.home-section-head > p:not(.eyebrow) {
-  margin: 14px 0 0;
+.lp-kicker {
+  display: inline-flex;
+  margin: 0;
+  padding: 5px 14px 5px 5px;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-round);
+  background: rgb(255 255 255 / .8);
+  backdrop-filter: blur(8px);
   color: var(--muted);
-  font-size: 17px;
+  font-size: 13px;
+}
+.lp-kicker span {
+  padding: 3px 9px;
+  border-radius: var(--radius-round);
+  background: var(--accent-soft);
+  color: var(--accent-deep);
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+.lp-lede {
+  max-width: 46ch;
+  margin: 22px 0 0;
+  color: var(--muted);
+  font-size: clamp(17px, 1.4vw, 20px);
+  letter-spacing: -.015em;
   line-height: 1.5;
   text-wrap: pretty;
 }
+.lp-actions { display: flex; margin-top: 36px; flex-wrap: wrap; justify-content: center; gap: 12px; }
 
-/* Save → See → Plan, as three cards rather than three bands */
-.home-section .stage-list { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: clamp(16px, 2vw, 24px); }
-.home-section .stage {
-  padding: 24px;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 18px;
-  align-items: start;
-  align-content: start;
+/*
+ * The ribbon: two soft blooms of the accent, blurred, drifting slowly. It sits
+ * behind the copy and fades out before it reaches the headline's middle.
+ */
+.lp-ribbon {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  pointer-events: none;
+  mask-image: linear-gradient(to bottom, #000 0%, #000 45%, transparent 100%);
 }
-.home-section .stage-head { grid-auto-flow: column; align-items: center; justify-content: start; gap: 12px; }
-.home-section .stage-mark { height: 2.2rem; }
-.home-section .stage-name { font-size: 22px; }
-.home-section .stage-copy h3 { margin-bottom: 10px; font-size: 20px; }
-.home-section .stage-copy p { max-width: none; font-size: 14.5px; }
-.home-section .stage-visual { margin-top: auto; max-width: none; grid-column: auto; }
+.lp-ribbon::before,
+.lp-ribbon::after {
+  content: "";
+  position: absolute;
+  border-radius: 46% 54% 58% 42% / 52% 44% 56% 48%;
+  filter: blur(64px);
+  animation: lp-drift 18s ease-in-out infinite alternate;
+}
+.lp-ribbon::before {
+  top: -260px;
+  right: -200px;
+  width: 640px;
+  height: 520px;
+  background: conic-gradient(from 210deg, #ff6600, #ff3d6e, #ffb200, #ff8a3d, #ff6600);
+  opacity: .42;
+}
+.lp-ribbon::after {
+  top: -200px;
+  left: -260px;
+  width: 520px;
+  height: 420px;
+  background: conic-gradient(from 30deg, #ffd27a, #ff8a3d, #ffc2a6, #ffd27a);
+  opacity: .34;
+  animation-delay: -9s;
+}
+@keyframes lp-drift {
+  from { transform: translate3d(0, 0, 0) rotate(0deg); }
+  to { transform: translate3d(-40px, 30px, 0) rotate(14deg); }
+}
 
-.home-split {
-  display: grid;
-  width: min(100%, 1440px);
-  margin: 0 auto;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: clamp(32px, 5vw, 72px);
-  align-items: center;
+/* The product still, lifted off the page. */
+.lp-shot { padding: 0 clamp(16px, 3vw, 40px) clamp(48px, 6vw, 80px); }
+.lp-shot .board {
+  height: clamp(460px, 46vw, 600px);
+  background: var(--paper-raised);
+  box-shadow: 0 40px 80px -48px rgb(17 17 17 / .45), 0 0 0 6px rgb(17 17 17 / .025);
 }
-.home-split-copy { display: flex; flex-direction: column; align-items: flex-start; }
-.home-split-copy p:not(.eyebrow) {
-  max-width: 44ch;
-  margin: 14px 0 28px;
-  color: var(--muted);
-  font-size: 17px;
-  line-height: 1.55;
-  text-wrap: pretty;
-}
-.home-split .collab-preview { width: 100%; }
+.lp-shot .board-list { padding: 22px 20px; }
+.lp-shot .board-list-head h2 { font-size: clamp(22px, 1.8vw, 28px); }
 
-/* Demo trip */
-.demo-block { display: flex; flex-direction: column; gap: clamp(24px, 3vw, 36px); }
-.demo-head {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 20px;
-  align-items: flex-end;
-  justify-content: space-between;
+
+.lp-head { padding: clamp(64px, 8vw, 112px) clamp(20px, 5vw, 64px) clamp(36px, 4vw, 56px); }
+.lp-head h2, .lp-cta h2 {
+  max-width: 24ch;
+  margin: 14px 0 0;
+  font-size: clamp(30px, 3.6vw, 48px);
+  font-weight: 600;
+  letter-spacing: -.04em;
+  line-height: 1.06;
+  text-wrap: balance;
 }
-.demo-head > div { max-width: 46ch; }
-.demo-lede { margin: 14px 0 0; color: var(--muted); font-size: 17px; line-height: 1.55; text-wrap: pretty; }
-.demo-stops {
+.lp-grid {
   display: grid;
   margin: 0;
   padding: 0;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border-top: 1px solid var(--line);
   list-style: none;
 }
-.demo-stops li {
-  display: flex;
-  padding: 16px;
-  flex-direction: column;
-  gap: 8px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-md);
-  background: var(--paper-raised);
+.lp-grid li {
+  padding: clamp(24px, 3vw, 36px);
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  transition: background var(--dur-base) var(--ease-out);
 }
-.demo-stop-meta { display: flex; margin: 0; align-items: center; gap: 9px; }
-.demo-stop-meta span { color: var(--quiet); font-size: 12px; font-weight: 600; }
-.demo-stop-meta em { font-style: normal; }
-.demo-stops strong { font-size: 15px; letter-spacing: -.02em; }
-.demo-stops small { color: var(--quiet); font-size: 12px; }
-.demo-foot { margin: 0; color: var(--quiet); font-size: 13px; }
+.lp-grid li:nth-child(3n) { border-right: 0; }
+.lp-grid li:nth-last-child(-n + 3) { border-bottom: 0; }
+.lp-grid li:hover { background: #fcfbfa; }
+.lp-grid svg {
+  box-sizing: content-box;
+  padding: 9px;
+  border-radius: var(--radius-md);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.lp-grid h3 { margin: 22px 0 8px; font-size: 18px; font-weight: 600; letter-spacing: -.025em; }
+.lp-grid p { margin: 0; color: var(--muted); font-size: 15px; line-height: 1.55; text-wrap: pretty; }
+
+.lp-cta {
+  display: flex;
+  padding: clamp(80px, 10vw, 136px) clamp(20px, 5vw, 64px);
+  flex-direction: column;
+  align-items: center;
+  overflow: hidden;
+  text-align: center;
+  isolation: isolate;
+}
+.lp-cta h2 { margin-top: 0; font-size: clamp(32px, 4.4vw, 58px); }
+.lp-cta {
+  background: radial-gradient(ellipse 60% 55% at 50% 115%, rgb(255 102 0 / .22), rgb(255 61 110 / .1) 50%, transparent 78%);
+}
+
+.lp-frame > .site-footer { width: auto; padding: 22px clamp(20px, 3vw, 32px); }
+
+@media (max-width: 1000px) {
+  .lp-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .lp-grid li:nth-child(3n) { border-right: 1px solid var(--line); }
+  .lp-grid li:nth-child(2n) { border-right: 0; }
+  .lp-grid li:nth-last-child(-n + 3) { border-bottom: 1px solid var(--line); }
+  .lp-grid li:nth-last-child(-n + 2) { border-bottom: 0; }
+}
 
 @media (max-width: 700px) {
-  .landing-page-scroll .hero-section { padding: 8px 0 24px; gap: 20px; }
-  .landing-page-scroll .hero-copy h1 { margin-top: 16px; font-size: clamp(38px, 10vw, 52px); }
-  .landing-page-scroll .hero-lede { margin-top: 16px; font-size: 16px; }
-  .landing-page-scroll .hero-actions { margin-top: 20px; }
-  .landing-page-scroll .hero-note { margin-top: 16px; }
-  .landing-page-scroll .hero-tray { min-height: 0; }
-  /*
-   * The stack is column here, and `.hero-aside` aligns its children to the
-   * start — so the row has to be stretched explicitly for the full-width
-   * buttons to have anything to fill.
-   */
-  .landing-page-scroll .hero-actions { width: 100%; align-self: stretch; flex-wrap: nowrap; gap: 14px; }
-  .home-section { width: min(100% - 32px, 1440px); }
-  .home-section-tinted { width: 100%; padding-inline: 16px; }
-  .source-band-inner { width: min(100% - 32px, 1440px); }
-  .demo-head .button { width: 100%; }
+  .lp-frame { width: min(100% - 32px, 1200px); }
+  .lp-hero { padding-top: 56px; }
+  .lp-kicker { font-size: 12px; }
+  .lp-actions { width: 100%; flex-direction: column; }
+  .lp-actions .button { width: 100%; }
+  .lp-shot { padding: 0 12px 40px; }
+  .lp-shot .board { height: auto; }
+  .lp-grid { grid-template-columns: 1fr; }
+  .lp-grid li, .lp-grid li:nth-child(3n) { border-right: 0; }
+  .lp-grid li:nth-last-child(-n + 2) { border-bottom: 1px solid var(--line); }
+  .lp-grid li:last-child { border-bottom: 0; }
+  .lp-ribbon::before { right: -320px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-ribbon::before, .lp-ribbon::after { animation: none; }
 }
 
 /* The day reads as one journey; controls stay beside the thing they change. */

@@ -19,6 +19,17 @@ export const REPO_URL = "https://github.com/faizm10/tripboard";
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "0.44.0",
+    date: "2026-11-04",
+    title: "A simpler home page",
+    pr: 45,
+    changes: [
+      "The home page is shorter: one headline, the example board, and six things Tripboard does.",
+      "Open the demo trip right from the top of the home page.",
+      "The header links to Features, the demo trip and the changelog from every page.",
+    ],
+  },
+  {
     version: "0.43.0",
     date: "2026-11-04",
     title: "A status page",
