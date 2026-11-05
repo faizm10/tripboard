@@ -22,6 +22,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     version: "0.45.0",
     date: "2026-11-05",
     title: "Transit options in the day planner",
+    pr: 47,
     changes: [
       "When you plan a ride between two stops, tap “Find transit options” to see up to three routes with lines, transfers, walking time and fare.",
       "Times follow your trip day and departure time, so you see the timetable for when you’ll actually be there.",
