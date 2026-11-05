@@ -129,6 +129,7 @@ describe("optional transit planning", () => {
 
   it("reads Google's 12- and 24-hour times into the time field", () => {
     expect(toTimeInput("9:05 AM")).toBe("09:05");
+    expect(toTimeInput("10:07\u202fAM")).toBe("10:07");
     expect(toTimeInput("12:10 AM")).toBe("00:10");
     expect(toTimeInput("12:10 PM")).toBe("12:10");
     expect(toTimeInput("21:05")).toBe("21:05");
