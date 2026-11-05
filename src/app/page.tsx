@@ -13,7 +13,6 @@ import { LandingMap } from "@/components/landing-map";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { getViewer } from "@/lib/auth";
-import { APP_VERSION, CHANGELOG } from "@/lib/changelog";
 
 export const dynamic = "force-dynamic";
 
@@ -53,33 +52,17 @@ const features: { icon: LucideIcon; title: string; body: string }[] = [
   },
 ];
 
-function formatDay(date: string) {
-  return new Date(`${date}T12:00:00Z`).toLocaleDateString("en", {
-    month: "short",
-    day: "numeric",
-    timeZone: "UTC",
-  });
-}
-
 /**
- * Home. A centred hero over the product still, a strip of real numbers from
- * the changelog, six things the app does, and one last call to act. Server
+ * Home. A centred hero over the product still, six things the app does, and
+ * one last call to act. Server
  * component, no client JS, and it renders without a Mapbox token.
  */
 export default async function Home() {
   const viewer = await getViewer();
   const signedIn = Boolean(viewer && !viewer.demo);
-  const firstRelease = CHANGELOG[CHANGELOG.length - 1];
   const primary = signedIn
     ? { href: "/trips", label: "My trips" }
     : { href: "/sign-up", label: "Start a trip" };
-
-  const stats = [
-    { value: String(CHANGELOG.length), label: `releases since ${formatDay(firstRelease.date)}` },
-    { value: `v${APP_VERSION}`, label: `shipped ${formatDay(CHANGELOG[0].date)}` },
-    { value: "0", label: "apps to install. It runs in the browser" },
-    { value: "Open", label: "source on GitHub" },
-  ];
 
   return (
     <main className="lp">
@@ -111,15 +94,6 @@ export default async function Home() {
         <div className="lp-shot">
           <LandingMap />
         </div>
-
-        <ul className="lp-stats" aria-label="Tripboard in numbers">
-          {stats.map((stat) => (
-            <li key={stat.label}>
-              <strong>{stat.value}</strong>
-              <span>{stat.label}</span>
-            </li>
-          ))}
-        </ul>
 
         <section className="lp-features" id="features">
           <header className="lp-head">

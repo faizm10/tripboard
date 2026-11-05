@@ -25,7 +25,6 @@ export const CHANGELOG: ChangelogEntry[] = [
     pr: 45,
     changes: [
       "The home page is shorter: one headline, the example board, and six things Tripboard does.",
-      "The numbers on the home page come straight from this changelog, so they stay true.",
       "Open the demo trip right from the top of the home page.",
       "The header links to Features, the demo trip and the changelog from every page.",
     ],
