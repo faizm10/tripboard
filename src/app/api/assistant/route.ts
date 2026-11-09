@@ -14,6 +14,7 @@ import { assistantInstructions } from "@/lib/assistant/context";
 import { getApiKey } from "@/lib/assistant/api-keys";
 import { assistantModels } from "@/lib/assistant/models";
 import { ownKeyModel, portableHistory } from "@/lib/assistant/own-key-model";
+import { timeoutsAsErrors } from "@/lib/assistant/stream-timeouts";
 import { ASSISTANT_PROVIDERS, PROVIDER_INFO, resolveModel, type AssistantProvider, type OwnKeyProvider } from "@/lib/assistant/providers";
 import { getSaveConversations, recordUsage, saveConversation } from "@/lib/assistant/store";
 import { createAssistantTools, knownSearchResults, type AssistantMessage } from "@/lib/assistant/tools";
@@ -22,7 +23,7 @@ import { getTrip } from "@/lib/demo-data";
 import { getViewerTrip, toTripViewer } from "@/lib/trips";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
+export const maxDuration = 180;
 
 /** Older turns are dropped from the prompt so long chats stay inside free-model context and rate limits. */
 const MAX_HISTORY = 24;
@@ -63,8 +64,9 @@ function friendlyOwnKeyError(error: unknown, provider: OwnKeyProvider, modelId: 
     if (status === 402 || (status === 400 && /credit balance/i.test(error.message))) return `Your ${company} account is out of credit.`;
     if (status === 429) return `${company} is limiting your key. It may be out of credit, or you can wait a minute and try again.`;
     if (status === 404) return `Your ${company} key can't use ${modelId}. Check which models it has access to.`;
+    if (status === 500 || status === 503 || status === 529) return `${company} is overloaded right now. Try again in a minute, or switch to another model.`;
   }
-  if (isTimeout(error)) return `${name} took too long to answer. Try again, or ask something a little narrower.`;
+  if (isTimeout(error)) return `${name} took too long to answer. Try again, or switch to another model.`;
   return `${name} hit a snag. Try again in a moment.`;
 }
 
@@ -123,8 +125,9 @@ export async function POST(request: Request) {
     tools,
     // Pasted itineraries need a search per venue before the draft, so allow a few more steps.
     stopWhen: isStepCount(10),
-    // Free models sometimes stall mid-answer; fail inside the function limit with a clear message instead.
-    timeout: { totalMs: 55_000, chunkMs: 30_000 },
+    // Free models sometimes stall mid-answer, so they fail fast. Paid models can think for a while
+    // before their first word, so they get longer. Both stop inside the function limit.
+    timeout: provider === "free" ? { totalMs: 55_000, chunkMs: 30_000 } : { totalMs: 170_000, chunkMs: 90_000 },
     abortSignal: request.signal,
   });
 
@@ -163,6 +166,6 @@ export async function POST(request: Request) {
           console.error("[assistant] could not record the reply", error);
         }
       },
-    }),
+    }).pipeThrough(timeoutsAsErrors(friendlyError(new Error("timeout"), provider, modelId), () => request.signal.aborted)),
   });
 }

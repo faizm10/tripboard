@@ -1,7 +1,9 @@
-import type { ModelMessage } from "ai";
+import { streamText, toUIMessageStream, type ModelMessage, type UIMessageChunk } from "ai";
+import { MockLanguageModelV4 } from "ai/test";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { decryptApiKey, encryptApiKey } from "@/lib/assistant/key-crypto";
 import { isKeyAccepted, portableHistory } from "@/lib/assistant/own-key-model";
+import { timeoutsAsErrors } from "@/lib/assistant/stream-timeouts";
 import { choiceValue, parseChoice, PROVIDER_INFO, resolveModel } from "@/lib/assistant/providers";
 
 const secret = "a-test-secret-that-is-long-enough-for-this";
@@ -119,5 +121,55 @@ describe("model choice", () => {
 
   it("uses the default when a remembered model was retired", () => {
     expect(parseChoice("openai:gpt-retired", ["openai"])).toEqual({ provider: "openai", model: PROVIDER_INFO.openai.models[0].id });
+  });
+});
+
+describe("timeouts", () => {
+  async function collect(stream: ReadableStream<UIMessageChunk>) {
+    const chunks: UIMessageChunk[] = [];
+    const reader = stream.getReader();
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) return chunks;
+      chunks.push(value);
+    }
+  }
+
+  function stalledModel(firstChunks: "silent" | "started") {
+    return new MockLanguageModelV4({
+      doStream: async ({ abortSignal }) => ({
+        stream: new ReadableStream({
+          start(controller) {
+            if (firstChunks === "started") {
+              controller.enqueue({ type: "text-start", id: "1" });
+              controller.enqueue({ type: "text-delta", id: "1", delta: "Hello" });
+            }
+            abortSignal?.addEventListener("abort", () => controller.error(abortSignal.reason));
+          },
+        }),
+      }),
+    });
+  }
+
+  it.each([
+    ["never answers before the total limit", "silent", { totalMs: 20, chunkMs: 2_000 }],
+    ["stalls after it starts", "started", { totalMs: 2_000, chunkMs: 20 }],
+  ] as const)("shows an error when a model %s", async (_label, firstChunks, timeout) => {
+    const result = streamText({ model: stalledModel(firstChunks), prompt: "hi", timeout });
+    const chunks = await collect(toUIMessageStream({ stream: result.stream }).pipeThrough(timeoutsAsErrors<UIMessageChunk>("Too slow.", () => false)));
+    expect(chunks).toContainEqual({ type: "error", errorText: "Too slow." });
+    expect(chunks.some((chunk) => chunk.type === "abort")).toBe(false);
+  });
+
+  it("leaves a user pressing Stop as a quiet abort", async () => {
+    const source = new ReadableStream<UIMessageChunk>({
+      start(controller) {
+        controller.enqueue({ type: "abort", reason: "AbortError: This operation was aborted" });
+        controller.close();
+      },
+    });
+    expect(await collect(source.pipeThrough(timeoutsAsErrors<UIMessageChunk>("Too slow.", () => true)))).toEqual([
+      { type: "abort", reason: "AbortError: This operation was aborted" },
+    ]);
   });
 });
