@@ -2,6 +2,7 @@ import type { ModelMessage } from "ai";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { decryptApiKey, encryptApiKey } from "@/lib/assistant/key-crypto";
 import { isKeyAccepted, portableHistory } from "@/lib/assistant/own-key-model";
+import { choiceValue, parseChoice, PROVIDER_INFO, resolveModel } from "@/lib/assistant/providers";
 
 const secret = "a-test-secret-that-is-long-enough-for-this";
 
@@ -93,5 +94,30 @@ describe("portable history", () => {
   it("opens with a user turn after old messages are trimmed", () => {
     const history = portableHistory([...toolTurn, { role: "assistant", content: "ok" }, { role: "user", content: "next" }]);
     expect(history).toEqual([{ role: "user", content: "next" }]);
+  });
+});
+
+describe("model choice", () => {
+  it("only allows listed models, defaulting to the first", () => {
+    expect(resolveModel("openai", "gpt-6-luna")).toBe("gpt-6-luna");
+    expect(resolveModel("openai", "claude-opus-5-5")).toBe(PROVIDER_INFO.openai.models[0].id);
+    expect(resolveModel("google")).toBe(PROVIDER_INFO.google.models[0].id);
+  });
+
+  it("round trips a remembered choice", () => {
+    const choice = { provider: "anthropic" as const, model: "claude-opus-5-5" };
+    expect(parseChoice(choiceValue(choice), ["anthropic"])).toEqual(choice);
+    expect(choiceValue({ provider: "free" })).toBe("free");
+  });
+
+  it("falls back to the free models when the key is gone or unknown", () => {
+    expect(parseChoice("anthropic:claude-opus-5-5", ["openai"])).toEqual({ provider: "free" });
+    expect(parseChoice("anthropic:claude-opus-5-5", null)).toEqual({ provider: "free" });
+    expect(parseChoice("nonsense", ["openai"])).toEqual({ provider: "free" });
+    expect(parseChoice(null, ["openai"])).toEqual({ provider: "free" });
+  });
+
+  it("uses the default when a remembered model was retired", () => {
+    expect(parseChoice("openai:gpt-retired", ["openai"])).toEqual({ provider: "openai", model: PROVIDER_INFO.openai.models[0].id });
   });
 });

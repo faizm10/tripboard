@@ -2685,7 +2685,8 @@ html {
 
 .assistant-composer { flex: none; padding: 10px 14px calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line-soft); background: var(--paper-raised); }
 .assistant-provider { display: flex; align-items: center; gap: 8px; margin: 0 4px 8px; color: var(--muted); font-size: 12px; }
-.assistant-provider select { min-height: 30px; padding: 0 6px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--paper-raised); color: var(--ink); font-size: 13px; font-weight: 560; cursor: pointer; }
+.assistant-provider label, .assistant-provider a { flex: none; white-space: nowrap; }
+.assistant-provider select { min-width: 0; min-height: 30px; padding: 0 6px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--paper-raised); color: var(--ink); font-size: 13px; font-weight: 560; cursor: pointer; }
 .assistant-provider select:disabled { color: var(--quiet); cursor: default; }
 .assistant-provider a { color: var(--muted); text-decoration: underline; text-underline-offset: 2px; }
 .assistant-provider a:hover { color: var(--ink); }

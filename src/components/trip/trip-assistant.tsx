@@ -34,7 +34,7 @@ import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } fro
 import Markdown from "react-markdown";
 import { loadConnectedProviders, loadConversation, loadTripConversations, removeConversation } from "@/lib/assistant/actions";
 import { shortModelName } from "@/lib/assistant/models";
-import { ASSISTANT_PROVIDERS, PROVIDER_INFO, type AssistantProvider, type OwnKeyProvider } from "@/lib/assistant/providers";
+import { choiceValue, parseChoice, PROVIDER_INFO, type AssistantChoice, type OwnKeyProvider } from "@/lib/assistant/providers";
 import type { ConversationSummary } from "@/lib/assistant/store";
 import { collectSuggestions, hotelDistanceLabel, type MapSuggestion } from "@/lib/assistant/suggestions";
 import type { AssistantMessage, AssistantPick, ProposedChanges } from "@/lib/assistant/tools";
@@ -104,20 +104,19 @@ function writeStoredSession(tripId: string, session: Session) {
   }
 }
 
-const PROVIDER_STORAGE_KEY = "tripboard:assistant:provider";
+const CHOICE_STORAGE_KEY = "tripboard:assistant:provider";
 
-function readStoredProvider(): AssistantProvider {
+function readStoredChoice() {
   try {
-    const stored = window.localStorage.getItem(PROVIDER_STORAGE_KEY);
-    return ASSISTANT_PROVIDERS.find((provider) => provider === stored) ?? "free";
+    return window.localStorage.getItem(CHOICE_STORAGE_KEY);
   } catch {
-    return "free";
+    return null;
   }
 }
 
-function writeStoredProvider(provider: AssistantProvider) {
+function writeStoredChoice(value: string) {
   try {
-    window.localStorage.setItem(PROVIDER_STORAGE_KEY, provider);
+    window.localStorage.setItem(CHOICE_STORAGE_KEY, value);
   } catch {
     // Private windows can refuse storage; the choice still holds for this visit.
   }
@@ -217,9 +216,8 @@ function AssistantChat(props: Props) {
   );
   const [historyError, setHistoryError] = useState("");
   const [connected, setConnected] = useState<OwnKeyProvider[] | null>(null);
-  const [chosenProvider, setChosenProvider] = useState<AssistantProvider>(readStoredProvider);
-  // A remembered choice stops applying once its key is removed.
-  const provider = chosenProvider !== "free" && connected?.includes(chosenProvider) ? chosenProvider : "free";
+  const [storedChoice, setStoredChoice] = useState(readStoredChoice);
+  const choice = parseChoice(storedChoice, connected);
 
   // Reloaded on each open so a key added in another tab shows up.
   useEffect(() => {
@@ -233,9 +231,9 @@ function AssistantChat(props: Props) {
     };
   }, [open]);
 
-  function chooseProvider(next: AssistantProvider) {
-    setChosenProvider(next);
-    writeStoredProvider(next);
+  function changeChoice(value: string) {
+    setStoredChoice(value);
+    writeStoredChoice(value);
   }
 
   const refreshHistory = useCallback(async () => {
@@ -324,12 +322,12 @@ function AssistantChat(props: Props) {
           key={session.id}
           lastSaved={history?.saving ? history.conversations.find((item) => item.id !== session.id) : undefined}
           onOpenSaved={openSaved}
-          onProviderChange={chooseProvider}
+          onChoiceChange={changeChoice}
           onSettled={(messages) => {
             writeStoredSession(trip.id, { id: session.id, messages });
             if (history?.saving) void refreshHistory();
           }}
-          provider={provider}
+          choice={choice}
           saving={Boolean(history?.saving)}
           session={session}
         />
@@ -413,16 +411,16 @@ function ChatSession({
   onOpenSaved,
   onSettled,
   connected,
-  provider,
-  onProviderChange,
+  choice,
+  onChoiceChange,
 }: Props & {
   session: Session;
   saving: boolean;
   lastSaved?: ConversationSummary;
   onOpenSaved: (id: string) => void;
   connected: OwnKeyProvider[] | null;
-  provider: AssistantProvider;
-  onProviderChange: (provider: AssistantProvider) => void;
+  choice: AssistantChoice;
+  onChoiceChange: (value: string) => void;
   onSettled: (messages: AssistantMessage[]) => void;
 }) {
   const transport = useMemo(() => new DefaultChatTransport<AssistantMessage>({ api: "/api/assistant", body: { tripId: trip.id } }), [trip.id]);
@@ -469,14 +467,14 @@ function ChatSession({
     // A question that never got an answer (an error, or a stop) is replaced, not repeated.
     const last = messages.at(-1);
     if (last?.role === "user") setMessages(messages.slice(0, -1));
-    void sendMessage({ text: value }, { body: { provider } });
+    void sendMessage({ text: value }, { body: choice });
     setInput("");
     if (inputRef.current) inputRef.current.style.height = "";
   }
 
   function retry() {
     clearError();
-    void regenerate({ body: { provider } });
+    void regenerate({ body: choice });
   }
 
   function add(pick: AssistantPick) {
@@ -616,9 +614,15 @@ function ChatSession({
             {connected.length ? (
               <>
                 <label htmlFor="assistant-provider">Answer with</label>
-                <select disabled={busy} id="assistant-provider" onChange={(event) => onProviderChange(event.target.value as AssistantProvider)} value={provider}>
+                <select disabled={busy} id="assistant-provider" onChange={(event) => onChoiceChange(event.target.value)} value={choiceValue(choice)}>
                   <option value="free">Free models</option>
-                  {connected.map((item) => <option key={item} value={item}>{PROVIDER_INFO[item].name}</option>)}
+                  {connected.map((item) => (
+                    <optgroup key={item} label={PROVIDER_INFO[item].name}>
+                      {PROVIDER_INFO[item].models.map((model) => (
+                        <option key={model.id} value={choiceValue({ provider: item, model: model.id })}>{model.label}</option>
+                      ))}
+                    </optgroup>
+                  ))}
                 </select>
                 <Link href="/account#ai-keys">Manage keys</Link>
               </>

@@ -30,7 +30,7 @@ export function AccountAiKeys({ available, demo, keys }: { available: boolean; d
 }
 
 function KeyRow({ provider, initialHint }: { provider: OwnKeyProvider; initialHint: string | null }) {
-  const { name, company, model, keysUrl, placeholder } = PROVIDER_INFO[provider];
+  const { name, company, models, keysUrl, placeholder } = PROVIDER_INFO[provider];
   const [hint, setHint] = useState(initialHint);
   const [editing, setEditing] = useState(false);
   const [confirmingRemove, setConfirmingRemove] = useState(false);
@@ -78,7 +78,7 @@ function KeyRow({ provider, initialHint }: { provider: OwnKeyProvider; initialHi
       <div className="account-key-head">
         <div>
           <strong>{name}</strong>
-          <p>{hint ? `Connected, key ending in ${hint}` : `Uses ${model}. `}{hint ? null : <a href={keysUrl} rel="noreferrer" target="_blank">Get a key from {company}</a>}</p>
+          <p>{hint ? `Connected, key ending in ${hint}` : `Models: ${models.map((model) => model.label).join(", ")}. `}{hint ? null : <a href={keysUrl} rel="noreferrer" target="_blank">Get a key from {company}</a>}</p>
         </div>
         {hint ? (
           confirmingRemove ? (

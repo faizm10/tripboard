@@ -2,10 +2,9 @@ import { createAnthropic } from "@ai-sdk/anthropic";
 import { createGoogle } from "@ai-sdk/google";
 import { createOpenAI } from "@ai-sdk/openai";
 import type { ModelMessage } from "ai";
-import { PROVIDER_INFO, type OwnKeyProvider } from "@/lib/assistant/providers";
+import type { OwnKeyProvider } from "@/lib/assistant/providers";
 
-export function ownKeyModel(provider: OwnKeyProvider, apiKey: string) {
-  const modelId = PROVIDER_INFO[provider].model;
+export function ownKeyModel(provider: OwnKeyProvider, apiKey: string, modelId: string) {
   switch (provider) {
     case "openai":
       return createOpenAI({ apiKey }).chat(modelId);

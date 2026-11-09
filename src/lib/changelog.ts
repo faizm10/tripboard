@@ -25,7 +25,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     pr: 49,
     changes: [
       "Add your own OpenAI, Anthropic or Google API key on your account page. Keys are checked, encrypted, and never shown again.",
-      "Switch between the free models, ChatGPT, Claude and Gemini right from the trip assistant, even halfway through a chat.",
+      "Switch between the free models and each provider’s models right from the trip assistant, even halfway through a chat.",
       "Replies from your own key are billed to that provider, and you can remove a key at any time.",
     ],
   },

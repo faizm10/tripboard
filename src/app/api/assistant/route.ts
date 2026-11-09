@@ -14,7 +14,7 @@ import { assistantInstructions } from "@/lib/assistant/context";
 import { getApiKey } from "@/lib/assistant/api-keys";
 import { assistantModels } from "@/lib/assistant/models";
 import { ownKeyModel, portableHistory } from "@/lib/assistant/own-key-model";
-import { ASSISTANT_PROVIDERS, PROVIDER_INFO, type AssistantProvider, type OwnKeyProvider } from "@/lib/assistant/providers";
+import { ASSISTANT_PROVIDERS, PROVIDER_INFO, resolveModel, type AssistantProvider, type OwnKeyProvider } from "@/lib/assistant/providers";
 import { getSaveConversations, recordUsage, saveConversation } from "@/lib/assistant/store";
 import { createAssistantTools, knownSearchResults, type AssistantMessage } from "@/lib/assistant/tools";
 import { getViewer } from "@/lib/auth";
@@ -31,6 +31,7 @@ const requestSchema = z.object({
   id: z.string().min(1).max(64).optional(),
   tripId: z.string().min(1).max(64),
   provider: z.enum(ASSISTANT_PROVIDERS).default("free"),
+  model: z.string().max(80).optional(),
   messages: z.array(z.unknown()).min(1).max(200),
 });
 
@@ -54,25 +55,25 @@ function friendlyFreeError(error: unknown) {
   return "The assistant hit a snag. Try again in a moment.";
 }
 
-function friendlyOwnKeyError(error: unknown, provider: OwnKeyProvider) {
-  const { name, company, model } = PROVIDER_INFO[provider];
+function friendlyOwnKeyError(error: unknown, provider: OwnKeyProvider, modelId: string) {
+  const { name, company } = PROVIDER_INFO[provider];
   if (APICallError.isInstance(error)) {
     const status = error.statusCode;
     if (status === 401 || status === 403 || (status === 400 && /api.?key/i.test(error.message))) return `${company} rejected your ${name} key. Check it on your account page.`;
     if (status === 402 || (status === 400 && /credit balance/i.test(error.message))) return `Your ${company} account is out of credit.`;
     if (status === 429) return `${company} is limiting your key. It may be out of credit, or you can wait a minute and try again.`;
-    if (status === 404) return `Your ${company} key can't use ${model}. Check which models it has access to.`;
+    if (status === 404) return `Your ${company} key can't use ${modelId}. Check which models it has access to.`;
   }
   if (isTimeout(error)) return `${name} took too long to answer. Try again, or ask something a little narrower.`;
   return `${name} hit a snag. Try again in a moment.`;
 }
 
-function friendlyError(error: unknown, provider: AssistantProvider) {
+function friendlyError(error: unknown, provider: AssistantProvider, modelId: string) {
   const cause = underlyingError(error);
-  return provider === "free" ? friendlyFreeError(cause) : friendlyOwnKeyError(cause, provider);
+  return provider === "free" ? friendlyFreeError(cause) : friendlyOwnKeyError(cause, provider, modelId);
 }
 
-async function chooseModel(provider: AssistantProvider, userId: string) {
+async function chooseModel(provider: AssistantProvider, modelId: string, userId: string) {
   if (provider === "free") {
     const apiKey = process.env.OPENROUTER_API_KEY;
     if (!apiKey) return { error: "The trip assistant isn't set up yet. Add OPENROUTER_API_KEY.", status: 503 };
@@ -83,7 +84,7 @@ async function chooseModel(provider: AssistantProvider, userId: string) {
   }
   const apiKey = await getApiKey(userId, provider);
   if (!apiKey) return { error: `Add your ${PROVIDER_INFO[provider].name} key on your account page, or switch to the free models.`, status: 400 };
-  return { languageModel: ownKeyModel(provider, apiKey) };
+  return { languageModel: ownKeyModel(provider, apiKey, modelId) };
 }
 
 export async function POST(request: Request) {
@@ -109,7 +110,8 @@ export async function POST(request: Request) {
 
   // Demo sessions have no account to hold a key, so they stay on the free models.
   const provider: AssistantProvider = viewer.demo ? "free" : parsed.data.provider;
-  const model = await chooseModel(provider, viewer.id);
+  const modelId = provider === "free" ? "" : resolveModel(provider, parsed.data.model);
+  const model = await chooseModel(provider, modelId, viewer.id);
   if ("error" in model) return Response.json({ error: model.error }, { status: model.status });
 
   const tools = createAssistantTools(trip, knownSearchResults(messages));
@@ -147,7 +149,7 @@ export async function POST(request: Request) {
         // Provider responses can echo part of a user's key, so own-key failures log the status only.
         const cause = underlyingError(error);
         console.error("[assistant]", provider === "free" ? error : `${provider} request failed: ${APICallError.isInstance(cause) ? cause.statusCode : "no status"}`);
-        return friendlyError(error, provider);
+        return friendlyError(error, provider, modelId);
       },
       onEnd: async ({ messages: updated, isAborted }) => {
         if (viewer.demo) return;
