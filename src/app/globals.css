@@ -2762,6 +2762,8 @@ html {
 .account-key-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
 .account-key-head strong { font-size: 15px; font-weight: 620; }
 .account-key-head p { margin: 4px 0 0; color: var(--muted); font-size: 13px; line-height: 1.5; }
+.account-key-link { display: inline-flex; align-items: center; gap: 5px; margin-top: 8px; color: var(--accent); font-size: 13px; font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
+.account-key-link:hover { color: var(--accent-strong); }
 .account-key-actions { display: inline-flex; flex: none; align-items: center; gap: 2px; }
 .account-key-form { display: flex; gap: 8px; margin-top: 12px; }
 .account-key-form input { min-width: 0; flex: 1; }

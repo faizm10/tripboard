@@ -1,6 +1,6 @@
 "use client";
 
-import { KeyRound } from "lucide-react";
+import { ExternalLink, KeyRound } from "lucide-react";
 import { useState, useTransition } from "react";
 import { removeAssistantApiKey, saveAssistantApiKey } from "@/lib/assistant/actions";
 import type { SavedApiKey } from "@/lib/assistant/api-keys";
@@ -78,7 +78,8 @@ function KeyRow({ provider, initialHint }: { provider: OwnKeyProvider; initialHi
       <div className="account-key-head">
         <div>
           <strong>{name}</strong>
-          <p>{hint ? `Connected, key ending in ${hint}` : `Models: ${models.map((model) => model.label).join(", ")}. `}{hint ? null : <a href={keysUrl} rel="noreferrer" target="_blank">Get a key from {company}</a>}</p>
+          <p>{hint ? `Connected, key ending in ${hint}` : `Models: ${models.map((model) => model.label).join(", ")}`}</p>
+          {showForm ? <a className="account-key-link" href={keysUrl} rel="noreferrer" target="_blank">Get your {company} API key <ExternalLink aria-hidden="true" size={13} /></a> : null}
         </div>
         {hint ? (
           confirmingRemove ? (
