@@ -2,6 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { deleteApiKey, listApiKeys, saveApiKey, type SavedApiKey } from "@/lib/assistant/api-keys";
+import { isKeyAccepted } from "@/lib/assistant/own-key-model";
+import { OWN_KEY_PROVIDERS, PROVIDER_INFO, type OwnKeyProvider } from "@/lib/assistant/providers";
 import { getViewer } from "@/lib/auth";
 import {
   deleteAllConversations,
@@ -15,6 +18,10 @@ import {
 import type { AssistantMessage } from "@/lib/assistant/tools";
 
 const idSchema = z.string().min(1).max(64);
+const providerSchema = z.enum(OWN_KEY_PROVIDERS);
+const apiKeySchema = z.string().trim().min(20).max(512).regex(/^[\x21-\x7e]+$/);
+
+export type SaveApiKeyResult = { ok: true; key: SavedApiKey } | { ok: false; error: string };
 
 /** Saved chats need a real account; demo mode has nowhere to keep them. */
 async function requireAccount() {
@@ -63,4 +70,41 @@ export async function updateSaveConversations(save: unknown) {
   await setSaveConversations(viewer.id, parsed.data);
   revalidatePath("/account");
   return { saving: parsed.data };
+}
+
+/** Which own-key providers the chat can offer. Null means this viewer can't connect any. */
+export async function loadConnectedProviders(): Promise<OwnKeyProvider[] | null> {
+  const viewer = await requireAccount();
+  if (!viewer) return null;
+  const keys = await listApiKeys(viewer.id);
+  return keys.map((key) => key.provider);
+}
+
+export async function saveAssistantApiKey(provider: unknown, apiKey: unknown): Promise<SaveApiKeyResult> {
+  const viewer = await requireAccount();
+  if (!viewer) return { ok: false, error: "Sign in to save an API key." };
+  const parsedProvider = providerSchema.safeParse(provider);
+  if (!parsedProvider.success) return { ok: false, error: "That provider isn't supported." };
+  const parsedKey = apiKeySchema.safeParse(apiKey);
+  if (!parsedKey.success) return { ok: false, error: "That doesn't look like an API key. Paste the whole key." };
+
+  if (!(await isKeyAccepted(parsedProvider.data, parsedKey.data))) {
+    return { ok: false, error: `${PROVIDER_INFO[parsedProvider.data].company} didn't accept that key. Check it and try again.` };
+  }
+  try {
+    const key = await saveApiKey(viewer.id, parsedProvider.data, parsedKey.data);
+    revalidatePath("/account");
+    return { ok: true, key };
+  } catch {
+    // Deliberately not logged: a database error can quote the values it was given.
+    return { ok: false, error: "That key didn't save. Try again." };
+  }
+}
+
+export async function removeAssistantApiKey(provider: unknown) {
+  const viewer = await requireAccount();
+  const parsed = providerSchema.safeParse(provider);
+  if (!viewer || !parsed.success) throw new Error("Sign in to change assistant settings.");
+  await deleteApiKey(viewer.id, parsed.data);
+  revalidatePath("/account");
 }

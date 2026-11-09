@@ -4,13 +4,17 @@ import {
   convertToModelMessages,
   createUIMessageStreamResponse,
   isStepCount,
+  RetryError,
   safeValidateUIMessages,
   streamText,
   toUIMessageStream,
 } from "ai";
 import { z } from "zod";
 import { assistantInstructions } from "@/lib/assistant/context";
+import { getApiKey } from "@/lib/assistant/api-keys";
 import { assistantModels } from "@/lib/assistant/models";
+import { ownKeyModel, portableHistory } from "@/lib/assistant/own-key-model";
+import { ASSISTANT_PROVIDERS, PROVIDER_INFO, type AssistantProvider, type OwnKeyProvider } from "@/lib/assistant/providers";
 import { getSaveConversations, recordUsage, saveConversation } from "@/lib/assistant/store";
 import { createAssistantTools, knownSearchResults, type AssistantMessage } from "@/lib/assistant/tools";
 import { getViewer } from "@/lib/auth";
@@ -26,29 +30,66 @@ const MAX_HISTORY = 24;
 const requestSchema = z.object({
   id: z.string().min(1).max(64).optional(),
   tripId: z.string().min(1).max(64),
+  provider: z.enum(ASSISTANT_PROVIDERS).default("free"),
   messages: z.array(z.unknown()).min(1).max(200),
 });
 
-function friendlyError(error: unknown) {
+/** Retried calls that keep failing arrive wrapped; the last attempt holds the real status. */
+function underlyingError(error: unknown) {
+  return RetryError.isInstance(error) ? error.lastError : error;
+}
+
+function isTimeout(error: unknown) {
+  return error instanceof Error && /timeout|timed out|aborted/i.test(`${error.name} ${error.message}`);
+}
+
+function friendlyFreeError(error: unknown) {
   if (APICallError.isInstance(error)) {
     if (error.statusCode === 429) return "The free AI models are busy right now. Give it a minute and try again.";
     if (error.statusCode === 401 || error.statusCode === 403) return "The assistant's OpenRouter key was rejected. Check OPENROUTER_API_KEY.";
     if (error.statusCode === 404) return "None of the configured AI models are available any more. Update OPENROUTER_MODELS.";
     if (error.statusCode === 402) return "The OpenRouter account is out of free credits for today.";
   }
-  if (error instanceof Error && /timeout|timed out|aborted/i.test(`${error.name} ${error.message}`)) {
-    return "The free model took too long to answer. Try again, or ask something a little narrower.";
-  }
+  if (isTimeout(error)) return "The free model took too long to answer. Try again, or ask something a little narrower.";
   return "The assistant hit a snag. Try again in a moment.";
+}
+
+function friendlyOwnKeyError(error: unknown, provider: OwnKeyProvider) {
+  const { name, company, model } = PROVIDER_INFO[provider];
+  if (APICallError.isInstance(error)) {
+    const status = error.statusCode;
+    if (status === 401 || status === 403 || (status === 400 && /api.?key/i.test(error.message))) return `${company} rejected your ${name} key. Check it on your account page.`;
+    if (status === 402 || (status === 400 && /credit balance/i.test(error.message))) return `Your ${company} account is out of credit.`;
+    if (status === 429) return `${company} is limiting your key. It may be out of credit, or you can wait a minute and try again.`;
+    if (status === 404) return `Your ${company} key can't use ${model}. Check which models it has access to.`;
+  }
+  if (isTimeout(error)) return `${name} took too long to answer. Try again, or ask something a little narrower.`;
+  return `${name} hit a snag. Try again in a moment.`;
+}
+
+function friendlyError(error: unknown, provider: AssistantProvider) {
+  const cause = underlyingError(error);
+  return provider === "free" ? friendlyFreeError(cause) : friendlyOwnKeyError(cause, provider);
+}
+
+async function chooseModel(provider: AssistantProvider, userId: string) {
+  if (provider === "free") {
+    const apiKey = process.env.OPENROUTER_API_KEY;
+    if (!apiKey) return { error: "The trip assistant isn't set up yet. Add OPENROUTER_API_KEY.", status: 503 };
+    const models = assistantModels();
+    const openrouter = createOpenRouter({ apiKey, appName: "Tripboard", appUrl: "https://usetripboard.vercel.app" });
+    // OpenRouter walks `models` in order when one is rate limited or retired.
+    return { languageModel: openrouter.chat(models[0], { models }) };
+  }
+  const apiKey = await getApiKey(userId, provider);
+  if (!apiKey) return { error: `Add your ${PROVIDER_INFO[provider].name} key on your account page, or switch to the free models.`, status: 400 };
+  return { languageModel: ownKeyModel(provider, apiKey) };
 }
 
 export async function POST(request: Request) {
   const viewer = await getViewer();
   if (!viewer) return Response.json({ error: "Sign in to use the trip assistant." }, { status: 401 });
   if (viewer.restricted) return Response.json({ error: "Your account has been restricted." }, { status: 403 });
-
-  const apiKey = process.env.OPENROUTER_API_KEY;
-  if (!apiKey) return Response.json({ error: "The trip assistant isn't set up yet. Add OPENROUTER_API_KEY." }, { status: 503 });
 
   const parsed = requestSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return Response.json({ error: "That request didn't look right." }, { status: 400 });
@@ -66,15 +107,17 @@ export async function POST(request: Request) {
   if (!validated.success) return Response.json({ error: "That conversation couldn't be read. Start a new chat." }, { status: 400 });
   const messages = validated.data;
 
+  // Demo sessions have no account to hold a key, so they stay on the free models.
+  const provider: AssistantProvider = viewer.demo ? "free" : parsed.data.provider;
+  const model = await chooseModel(provider, viewer.id);
+  if ("error" in model) return Response.json({ error: model.error }, { status: model.status });
+
   const tools = createAssistantTools(trip, knownSearchResults(messages));
-  const models = assistantModels();
-  const openrouter = createOpenRouter({ apiKey, appName: "Tripboard", appUrl: "https://usetripboard.vercel.app" });
 
   const result = streamText({
-    // OpenRouter walks `models` in order when one is rate limited or retired.
-    model: openrouter.chat(models[0], { models }),
+    model: model.languageModel,
     instructions: assistantInstructions(trip, new Date().toISOString().slice(0, 10)),
-    messages: await convertToModelMessages(messages.slice(-MAX_HISTORY)),
+    messages: portableHistory(await convertToModelMessages(messages.slice(-MAX_HISTORY), { ignoreIncompleteToolCalls: true })),
     tools,
     // Pasted itineraries need a search per venue before the draft, so allow a few more steps.
     stopWhen: isStepCount(10),
@@ -101,8 +144,10 @@ export async function POST(request: Request) {
         return undefined;
       },
       onError: (error) => {
-        console.error("[assistant]", error);
-        return friendlyError(error);
+        // Provider responses can echo part of a user's key, so own-key failures log the status only.
+        const cause = underlyingError(error);
+        console.error("[assistant]", provider === "free" ? error : `${provider} request failed: ${APICallError.isInstance(cause) ? cause.statusCode : "no status"}`);
+        return friendlyError(error, provider);
       },
       onEnd: async ({ messages: updated, isAborted }) => {
         if (viewer.demo) return;

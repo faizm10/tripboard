@@ -99,7 +99,7 @@ export function AccountAssistant({
       <p className="account-stat-note">
         {usage.lastUsedAt ? `Last used ${formatDate(usage.lastUsedAt)}.` : "You haven't asked the assistant anything yet."}
         {usage.models.length ? ` Mostly answered by ${usage.models.map((item) => shortModelName(item.model)).slice(0, 2).join(" and ")}.` : ""}
-        {" "}It runs on free models, so there&rsquo;s nothing to pay. We only count replies and tokens, never what you wrote.
+        {" "}The free models cost nothing, and replies from your own key bill to that provider. We only count replies and tokens, never what you wrote.
       </p>
 
       <div className="account-setting">

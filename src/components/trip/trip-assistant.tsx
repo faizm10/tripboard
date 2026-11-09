@@ -32,8 +32,9 @@ import {
 import Link from "next/link";
 import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
 import Markdown from "react-markdown";
-import { loadConversation, loadTripConversations, removeConversation } from "@/lib/assistant/actions";
+import { loadConnectedProviders, loadConversation, loadTripConversations, removeConversation } from "@/lib/assistant/actions";
 import { shortModelName } from "@/lib/assistant/models";
+import { ASSISTANT_PROVIDERS, PROVIDER_INFO, type AssistantProvider, type OwnKeyProvider } from "@/lib/assistant/providers";
 import type { ConversationSummary } from "@/lib/assistant/store";
 import { collectSuggestions, hotelDistanceLabel, type MapSuggestion } from "@/lib/assistant/suggestions";
 import type { AssistantMessage, AssistantPick, ProposedChanges } from "@/lib/assistant/tools";
@@ -100,6 +101,25 @@ function writeStoredSession(tripId: string, session: Session) {
     window.sessionStorage.setItem(storageKey(tripId), JSON.stringify({ id: session.id, messages: session.messages.slice(-40) }));
   } catch {
     // Private windows can refuse storage; the chat still works for this visit.
+  }
+}
+
+const PROVIDER_STORAGE_KEY = "tripboard:assistant:provider";
+
+function readStoredProvider(): AssistantProvider {
+  try {
+    const stored = window.localStorage.getItem(PROVIDER_STORAGE_KEY);
+    return ASSISTANT_PROVIDERS.find((provider) => provider === stored) ?? "free";
+  } catch {
+    return "free";
+  }
+}
+
+function writeStoredProvider(provider: AssistantProvider) {
+  try {
+    window.localStorage.setItem(PROVIDER_STORAGE_KEY, provider);
+  } catch {
+    // Private windows can refuse storage; the choice still holds for this visit.
   }
 }
 
@@ -196,6 +216,27 @@ function AssistantChat(props: Props) {
     () => (canSave ? null : { saving: false, conversations: [] }),
   );
   const [historyError, setHistoryError] = useState("");
+  const [connected, setConnected] = useState<OwnKeyProvider[] | null>(null);
+  const [chosenProvider, setChosenProvider] = useState<AssistantProvider>(readStoredProvider);
+  // A remembered choice stops applying once its key is removed.
+  const provider = chosenProvider !== "free" && connected?.includes(chosenProvider) ? chosenProvider : "free";
+
+  // Reloaded on each open so a key added in another tab shows up.
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    loadConnectedProviders()
+      .then((providers) => !cancelled && setConnected(providers))
+      .catch(() => !cancelled && setConnected(null));
+    return () => {
+      cancelled = true;
+    };
+  }, [open]);
+
+  function chooseProvider(next: AssistantProvider) {
+    setChosenProvider(next);
+    writeStoredProvider(next);
+  }
 
   const refreshHistory = useCallback(async () => {
     if (!canSave) return;
@@ -279,13 +320,16 @@ function AssistantChat(props: Props) {
       ) : (
         <ChatSession
           {...props}
+          connected={connected}
           key={session.id}
           lastSaved={history?.saving ? history.conversations.find((item) => item.id !== session.id) : undefined}
           onOpenSaved={openSaved}
+          onProviderChange={chooseProvider}
           onSettled={(messages) => {
             writeStoredSession(trip.id, { id: session.id, messages });
             if (history?.saving) void refreshHistory();
           }}
+          provider={provider}
           saving={Boolean(history?.saving)}
           session={session}
         />
@@ -368,11 +412,17 @@ function ChatSession({
   lastSaved,
   onOpenSaved,
   onSettled,
+  connected,
+  provider,
+  onProviderChange,
 }: Props & {
   session: Session;
   saving: boolean;
   lastSaved?: ConversationSummary;
   onOpenSaved: (id: string) => void;
+  connected: OwnKeyProvider[] | null;
+  provider: AssistantProvider;
+  onProviderChange: (provider: AssistantProvider) => void;
   onSettled: (messages: AssistantMessage[]) => void;
 }) {
   const transport = useMemo(() => new DefaultChatTransport<AssistantMessage>({ api: "/api/assistant", body: { tripId: trip.id } }), [trip.id]);
@@ -419,14 +469,14 @@ function ChatSession({
     // A question that never got an answer (an error, or a stop) is replaced, not repeated.
     const last = messages.at(-1);
     if (last?.role === "user") setMessages(messages.slice(0, -1));
-    void sendMessage({ text: value });
+    void sendMessage({ text: value }, { body: { provider } });
     setInput("");
     if (inputRef.current) inputRef.current.style.height = "";
   }
 
   function retry() {
     clearError();
-    void regenerate();
+    void regenerate({ body: { provider } });
   }
 
   function add(pick: AssistantPick) {
@@ -542,7 +592,7 @@ function ChatSession({
         )}
         {stalled && !error ? (
           <div className="assistant-notice" role="status">
-            <p>The free model stopped before it finished answering.</p>
+            <p>The model stopped before it finished answering.</p>
             <button className="button button-small" onClick={retry} type="button"><RotateCcw size={14} /> Try again</button>
           </div>
         ) : null}
@@ -561,6 +611,22 @@ function ChatSession({
           send(input);
         }}
       >
+        {connected ? (
+          <div className="assistant-provider">
+            {connected.length ? (
+              <>
+                <label htmlFor="assistant-provider">Answer with</label>
+                <select disabled={busy} id="assistant-provider" onChange={(event) => onProviderChange(event.target.value as AssistantProvider)} value={provider}>
+                  <option value="free">Free models</option>
+                  {connected.map((item) => <option key={item} value={item}>{PROVIDER_INFO[item].name}</option>)}
+                </select>
+                <Link href="/account#ai-keys">Manage keys</Link>
+              </>
+            ) : (
+              <Link href="/account#ai-keys">Use your own ChatGPT, Claude or Gemini key</Link>
+            )}
+          </div>
+        ) : null}
         <div className="assistant-input">
           <label className="sr-only" htmlFor="assistant-input">Message the trip assistant</label>
           <textarea

@@ -134,6 +134,13 @@
       "when": 1793315833739,
       "tag": "0018_trip_activity",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1794252631021,
+      "tag": "0019_assistant_api_keys",
+      "breakpoints": true
     }
   ]
 }
