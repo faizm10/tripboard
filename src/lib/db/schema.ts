@@ -8,6 +8,7 @@ import {
   jsonb,
   pgEnum,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   unique,
@@ -302,6 +303,20 @@ export const assistantSettings = pgTable("assistant_settings", {
   saveConversations: boolean("save_conversations").notNull().default(false),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+/** Each person's own AI provider keys, encrypted with AI_KEYS_SECRET. `key_hint` is the last four characters. */
+export const assistantApiKeys = pgTable(
+  "assistant_api_keys",
+  {
+    userId: text("user_id").notNull(),
+    provider: text("provider").notNull(),
+    encryptedKey: text("encrypted_key").notNull(),
+    keyHint: text("key_hint").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [primaryKey({ columns: [table.userId, table.provider] })],
+);
 
 /** Saved assistant chats, only written while the user has saving turned on. */
 export const assistantConversations = pgTable(

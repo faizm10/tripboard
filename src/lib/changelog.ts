@@ -19,6 +19,17 @@ export const REPO_URL = "https://github.com/faizm10/tripboard";
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "0.47.0",
+    date: "2026-11-09",
+    title: "Use your own ChatGPT, Claude or Gemini key",
+    pr: 49,
+    changes: [
+      "Add your own OpenAI, Anthropic or Google API key on your account page. Keys are checked, encrypted, and never shown again.",
+      "Switch between the free models and each provider’s models right from the trip assistant, even halfway through a chat.",
+      "Replies from your own key are billed to that provider, and you can remove a key at any time.",
+    ],
+  },
+  {
     version: "0.46.0",
     date: "2026-11-05",
     title: "Transit and time zone quotas in admin",

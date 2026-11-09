@@ -34,7 +34,7 @@ function isAssistantSchemaMissing(error: unknown) {
   return /assistant_(settings|conversations|usage)|relation .* does not exist/i.test(message);
 }
 
-async function tolerant<T>(fallback: T, run: () => Promise<T>): Promise<T> {
+export async function tolerant<T>(fallback: T, run: () => Promise<T>): Promise<T> {
   try {
     return await run();
   } catch (error) {

@@ -1,0 +1,175 @@
+import { streamText, toUIMessageStream, type ModelMessage, type UIMessageChunk } from "ai";
+import { MockLanguageModelV4 } from "ai/test";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { decryptApiKey, encryptApiKey } from "@/lib/assistant/key-crypto";
+import { isKeyAccepted, portableHistory } from "@/lib/assistant/own-key-model";
+import { timeoutsAsErrors } from "@/lib/assistant/stream-timeouts";
+import { choiceValue, parseChoice, PROVIDER_INFO, resolveModel } from "@/lib/assistant/providers";
+
+const secret = "a-test-secret-that-is-long-enough-for-this";
+
+describe("API key encryption", () => {
+  it("round trips and never stores the key in the clear", () => {
+    const stored = encryptApiKey("sk-my-real-key", "user-1:openai", secret);
+    expect(stored).not.toContain("sk-my-real-key");
+    expect(decryptApiKey(stored, "user-1:openai", secret)).toBe("sk-my-real-key");
+  });
+
+  it("uses a fresh nonce each time", () => {
+    expect(encryptApiKey("same", "ctx", secret)).not.toBe(encryptApiKey("same", "ctx", secret));
+  });
+
+  it("refuses a value moved to another user or provider", () => {
+    const stored = encryptApiKey("sk-my-real-key", "user-1:openai", secret);
+    expect(() => decryptApiKey(stored, "user-2:openai", secret)).toThrow();
+    expect(() => decryptApiKey(stored, "user-1:google", secret)).toThrow();
+  });
+
+  it("refuses a tampered value or the wrong secret", () => {
+    const stored = encryptApiKey("sk-my-real-key", "ctx", secret);
+    const parts = stored.split(".");
+    parts[3] = Buffer.from("tampered").toString("base64url");
+    expect(() => decryptApiKey(parts.join("."), "ctx", secret)).toThrow();
+    expect(() => decryptApiKey(stored, "ctx", "another-secret-of-a-reasonable-length")).toThrow();
+    expect(() => decryptApiKey("not-a-stored-key", "ctx", secret)).toThrow();
+  });
+});
+
+describe("key check", () => {
+  afterEach(() => vi.unstubAllGlobals());
+  const respondWith = (status: number) => vi.stubGlobal("fetch", vi.fn(async () => new Response("{}", { status })));
+
+  it("rejects a key the provider says is invalid", async () => {
+    respondWith(401);
+    expect(await isKeyAccepted("openai", "k")).toBe(false);
+    respondWith(400);
+    expect(await isKeyAccepted("google", "k")).toBe(false);
+  });
+
+  it("accepts good keys, restricted keys and provider outages", async () => {
+    respondWith(200);
+    expect(await isKeyAccepted("anthropic", "k")).toBe(true);
+    respondWith(403);
+    expect(await isKeyAccepted("openai", "k")).toBe(true);
+    respondWith(503);
+    expect(await isKeyAccepted("anthropic", "k")).toBe(true);
+    vi.stubGlobal("fetch", vi.fn(async () => { throw new Error("network down"); }));
+    expect(await isKeyAccepted("google", "k")).toBe(true);
+  });
+
+  it("sends the key in a header, never the URL", async () => {
+    const fetchMock = vi.fn<(url: string, init: RequestInit) => Promise<Response>>(async () => new Response("{}"));
+    vi.stubGlobal("fetch", fetchMock);
+    await isKeyAccepted("google", "secret-key");
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).not.toContain("secret-key");
+    expect(init.headers).toEqual({ "x-goog-api-key": "secret-key" });
+  });
+});
+
+describe("portable history", () => {
+  const longId = "chatcmpl-tool:0123456789abcdef0123456789abcdef";
+  const toolTurn: ModelMessage[] = [
+    { role: "assistant", content: [{ type: "tool-call", toolCallId: longId, toolName: "search_places", input: {} }] },
+    { role: "tool", content: [{ type: "tool-result", toolCallId: longId, toolName: "search_places", output: { type: "json", value: {} } }] },
+  ];
+
+  it("rewrites tool call ids consistently, in a form every provider accepts", () => {
+    const [call, result] = portableHistory([{ role: "user", content: "hi" }, ...toolTurn]).slice(1);
+    const callId = (call.content[0] as { toolCallId: string }).toolCallId;
+    expect(callId).toMatch(/^[a-zA-Z0-9_-]{1,40}$/);
+    expect((result.content[0] as { toolCallId: string }).toolCallId).toBe(callId);
+  });
+
+  it("drops another provider's reasoning and any turn left empty", () => {
+    const history = portableHistory([
+      { role: "user", content: "hi" },
+      { role: "assistant", content: [{ type: "reasoning", text: "hmm" }, { type: "text", text: "Hello" }] },
+      { role: "assistant", content: [{ type: "reasoning", text: "hmm" }, { type: "text", text: "  " }] },
+    ]);
+    expect(history).toEqual([
+      { role: "user", content: "hi" },
+      { role: "assistant", content: [{ type: "text", text: "Hello" }] },
+    ]);
+  });
+
+  it("opens with a user turn after old messages are trimmed", () => {
+    const history = portableHistory([...toolTurn, { role: "assistant", content: "ok" }, { role: "user", content: "next" }]);
+    expect(history).toEqual([{ role: "user", content: "next" }]);
+  });
+});
+
+describe("model choice", () => {
+  it("only allows listed models, defaulting to the first", () => {
+    expect(resolveModel("openai", "gpt-6-luna")).toBe("gpt-6-luna");
+    expect(resolveModel("openai", "claude-opus-5-5")).toBe(PROVIDER_INFO.openai.models[0].id);
+    expect(resolveModel("google")).toBe(PROVIDER_INFO.google.models[0].id);
+  });
+
+  it("round trips a remembered choice", () => {
+    const choice = { provider: "anthropic" as const, model: "claude-opus-5-5" };
+    expect(parseChoice(choiceValue(choice), ["anthropic"])).toEqual(choice);
+    expect(choiceValue({ provider: "free" })).toBe("free");
+  });
+
+  it("falls back to the free models when the key is gone or unknown", () => {
+    expect(parseChoice("anthropic:claude-opus-5-5", ["openai"])).toEqual({ provider: "free" });
+    expect(parseChoice("anthropic:claude-opus-5-5", null)).toEqual({ provider: "free" });
+    expect(parseChoice("nonsense", ["openai"])).toEqual({ provider: "free" });
+    expect(parseChoice(null, ["openai"])).toEqual({ provider: "free" });
+  });
+
+  it("uses the default when a remembered model was retired", () => {
+    expect(parseChoice("openai:gpt-retired", ["openai"])).toEqual({ provider: "openai", model: PROVIDER_INFO.openai.models[0].id });
+  });
+});
+
+describe("timeouts", () => {
+  async function collect(stream: ReadableStream<UIMessageChunk>) {
+    const chunks: UIMessageChunk[] = [];
+    const reader = stream.getReader();
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) return chunks;
+      chunks.push(value);
+    }
+  }
+
+  function stalledModel(firstChunks: "silent" | "started") {
+    return new MockLanguageModelV4({
+      doStream: async ({ abortSignal }) => ({
+        stream: new ReadableStream({
+          start(controller) {
+            if (firstChunks === "started") {
+              controller.enqueue({ type: "text-start", id: "1" });
+              controller.enqueue({ type: "text-delta", id: "1", delta: "Hello" });
+            }
+            abortSignal?.addEventListener("abort", () => controller.error(abortSignal.reason));
+          },
+        }),
+      }),
+    });
+  }
+
+  it.each([
+    ["never answers before the total limit", "silent", { totalMs: 20, chunkMs: 2_000 }],
+    ["stalls after it starts", "started", { totalMs: 2_000, chunkMs: 20 }],
+  ] as const)("shows an error when a model %s", async (_label, firstChunks, timeout) => {
+    const result = streamText({ model: stalledModel(firstChunks), prompt: "hi", timeout });
+    const chunks = await collect(toUIMessageStream({ stream: result.stream }).pipeThrough(timeoutsAsErrors<UIMessageChunk>("Too slow.", () => false)));
+    expect(chunks).toContainEqual({ type: "error", errorText: "Too slow." });
+    expect(chunks.some((chunk) => chunk.type === "abort")).toBe(false);
+  });
+
+  it("leaves a user pressing Stop as a quiet abort", async () => {
+    const source = new ReadableStream<UIMessageChunk>({
+      start(controller) {
+        controller.enqueue({ type: "abort", reason: "AbortError: This operation was aborted" });
+        controller.close();
+      },
+    });
+    expect(await collect(source.pipeThrough(timeoutsAsErrors<UIMessageChunk>("Too slow.", () => true)))).toEqual([
+      { type: "abort", reason: "AbortError: This operation was aborted" },
+    ]);
+  });
+});

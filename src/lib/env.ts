@@ -26,6 +26,12 @@ export function databaseUrl() {
   return url;
 }
 
+/** Encrypts the API keys people save for the assistant. Under 32 characters counts as unset. */
+export function aiKeysSecret() {
+  const secret = envValue("AI_KEYS_SECRET");
+  return secret && secret.length >= 32 ? secret : undefined;
+}
+
 /** Neon Auth needs a base URL and a cookie secret of at least 32 characters. */
 export function neonAuthSettings() {
   const baseUrl = envValue("NEON_AUTH_BASE_URL");
