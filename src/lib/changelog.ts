@@ -19,6 +19,16 @@ export const REPO_URL = "https://github.com/faizm10/tripboard";
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "0.50.0",
+    date: "2026-11-12",
+    title: "Visitor analytics on the admin Platform tab",
+    pr: 52,
+    changes: [
+      "Tripboard now counts page views with Vercel Web Analytics, which uses no cookies and doesn't identify anyone. The privacy page says so.",
+      "Admins get a \u201cWho\u2019s visiting\u201d card on the Platform tab: 30 days of page views and visitors, plus top pages, referrers, countries and devices.",
+    ],
+  },
+  {
     version: "0.49.0",
     date: "2026-11-12",
     title: "Privacy policy and terms",

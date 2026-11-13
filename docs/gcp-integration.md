@@ -199,6 +199,7 @@ The Platform tab charts everything running Tripboard on one page. Each card work
 | Places quota today | `serviceruntime.googleapis.com/quota/rate/net_usage` against `quota/limit`, since midnight Pacific when Google resets daily quotas. A bar turns red at 80%. | the GCP variables above |
 | Uptime checks | the same data as `/status` | the GCP variables above |
 | Deployments | Vercel REST `/v6/deployments`, `/v9/projects/{id}` and `/v9/projects/{id}/domains`, as daily ready and failed bars, the last 12 deploys, the success rate and the median build time | `VERCEL_API_TOKEN` |
+| Who's visiting | Vercel Web Analytics through the Observability metrics API (`POST /metrics/v1`, what `vercel metrics vercel.analytics.page_view.count` runs): 30 days of production page views and unique visitors, plus top pages, referrers, countries and devices. Views come from the `<Analytics />` script in the root layout. | `VERCEL_API_TOKEN` with access to Observability, and Web Analytics enabled for the project |
 | This server | Vercel's system env vars (`VERCEL_ENV`, `VERCEL_REGION`, `VERCEL_GIT_COMMIT_*`), plus the project's root directory, Node version and domains when the token is set | nothing |
 | Largest tables | `pg_database_size` and `pg_stat_user_tables` on Neon | `DATABASE_URL` |
 
@@ -212,7 +213,9 @@ To connect Vercel, create a token at [vercel.com/account/settings/tokens](https:
 vercel env add VERCEL_API_TOKEN production --sensitive --value "<token>"
 ```
 
-Vercel tokens can't be made read-only. The app only sends `GET` requests, but treat the token like any other secret. `vercel tokens create` doesn't work from a normal CLI login ("Cannot create tokens for this app"), so use the dashboard.
+Vercel tokens can't be made read-only. The app only reads: `GET` requests, plus `POST /metrics/v1`, which runs a query and changes nothing. Treat the token like any other secret anyway.
+
+If "Who's visiting" says the token can't read Observability data, the token was refused by `/metrics/v1` even though the deploy cards work. Create a new token scoped to the team that owns Tripboard and replace `VERCEL_API_TOKEN` (in `.env.local` too). To confirm the data exists, run `vercel metrics vercel.analytics.page_view.count --since 7d` from a linked checkout. `vercel tokens create` doesn't work from a normal CLI login ("Cannot create tokens for this app"), so use the dashboard.
 
 You don't need to set the project and team IDs. Vercel sends every function an OIDC token (the `x-vercel-oidc-token` header), and the app reads `project_id` and `owner_id` from its claims. OIDC is on by default. If it's off, or you want a different project, set `VERCEL_PROJECT_ID` and `VERCEL_TEAM_ID` (`projectId` and `orgId` in `.vercel/project.json`). Locally, `vercel env pull .env.local` writes a `VERCEL_OIDC_TOKEN` the app reads the same way.
 

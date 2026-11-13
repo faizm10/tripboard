@@ -157,9 +157,17 @@ export function summarizeDeployments(deployments: VercelDeployment[], days = DEP
   };
 }
 
-async function vercel<T>(path: string, settings: NonNullable<Awaited<ReturnType<typeof vercelSettings>>>, params: Record<string, string> = {}) {
+export type VercelSettings = NonNullable<Awaited<ReturnType<typeof vercelSettings>>>;
+
+/** GETs a Vercel API path, or POSTs `body` as JSON when one is given. */
+export async function vercel<T>(path: string, settings: VercelSettings, params: Record<string, string> = {}, body?: unknown) {
   const query = new URLSearchParams({ ...params, ...(settings.teamId ? { teamId: settings.teamId } : {}) });
-  const response = await fetch(`${API}${path}?${query}`, { headers: { Authorization: `Bearer ${settings.token}` }, cache: "no-store" });
+  const response = await fetch(`${API}${path}?${query}`, {
+    method: body === undefined ? "GET" : "POST",
+    headers: { Authorization: `Bearer ${settings.token}`, ...(body === undefined ? {} : { "Content-Type": "application/json" }) },
+    body: body === undefined ? undefined : JSON.stringify(body),
+    cache: "no-store",
+  });
   if (!response.ok) {
     const body = await response.json().catch(() => null) as { error?: { message?: string } } | null;
     throw new Error(body?.error?.message ?? `Vercel answered ${response.status}.`);
