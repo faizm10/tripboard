@@ -1,8 +1,9 @@
-import { Activity, Cloud, Database, Rocket } from "lucide-react";
+import { Activity, Cloud, Database, Eye, Rocket } from "lucide-react";
 import { formatUptime } from "@/components/admin/status-board";
 import type { DatabaseStats } from "@/lib/admin";
 import type { GcpAnalytics } from "@/lib/gcp-analytics";
 import type { UptimeReport } from "@/lib/gcp-monitoring";
+import type { AnalyticsRow, WebAnalytics } from "@/lib/vercel-analytics";
 import type { runtimeDeployment, VercelDeployment, VercelReport } from "@/lib/vercel-api";
 
 const number = new Intl.NumberFormat("en-US");
@@ -38,17 +39,17 @@ function shortDate(date: string) {
 }
 
 /** Daily stacked columns: the first series sits on the baseline, the second (errors) on top. */
-function DailyBars({ days, series, label }: { days: { date: string; values: [number, number] }[]; series: [string, string]; label: string }) {
+function DailyBars({ days, series, label }: { days: { date: string; values: [number, number] }[]; series: [string, string?]; label: string }) {
   const maximum = Math.max(1, ...days.map((day) => day.values[0] + day.values[1]));
   return (
     <figure className="platform-chart">
-      <div className="platform-legend" aria-hidden="true"><span><i className="primary" /> {series[0]}</span><span><i className="error" /> {series[1]}</span></div>
+      <div className="platform-legend" aria-hidden="true"><span><i className="primary" /> {series[0]}</span>{series[1] ? <span><i className="error" /> {series[1]}</span> : null}</div>
       <div className="platform-bars" role="img" aria-label={label}>
         {days.map((day, index) => {
           const [first, second] = day.values;
           return (
             <div className="platform-bar-slot" key={day.date}>
-              <span className="platform-tip">{shortDate(day.date)}<br />{series[0]}: {number.format(first)}<br />{series[1]}: {number.format(second)}</span>
+              <span className="platform-tip">{shortDate(day.date)}<br />{series[0]}: {number.format(first)}{series[1] ? <><br />{series[1]}: {number.format(second)}</> : null}</span>
               <div className="platform-bar">
                 {second ? <span className="error" style={{ height: `${(second / maximum) * 100}%` }} /> : null}
                 {first ? <span className="primary" style={{ height: `${(first / maximum) * 100}%` }} /> : null}
@@ -68,14 +69,29 @@ function Setup({ title, children }: { title: string; children: React.ReactNode }
   return <div className="platform-setup"><strong>{title}</strong><p>{children}</p></div>;
 }
 
+function Breakdown({ title, rows, total }: { title: string; rows: AnalyticsRow[]; total: number }) {
+  return (
+    <div className="platform-breakdown">
+      <h3>{title}</h3>
+      {rows.length ? <ul>{rows.map((row) => (
+        <li key={row.label}>
+          <span className="platform-breakdown-fill" style={{ width: `${total ? (row.views / total) * 100 : 0}%` }} aria-hidden="true" />
+          <span>{row.label}</span><strong>{number.format(row.views)}</strong>
+        </li>
+      ))}</ul> : <p className="admin-empty">Nothing yet.</p>}
+    </div>
+  );
+}
+
 function StatePill({ state }: { state: VercelDeployment["state"] }) {
   const tone = state === "READY" ? "operational" : state === "ERROR" ? "down" : state === "CANCELED" ? "not_configured" : "degraded";
   const label = { READY: "Ready", ERROR: "Failed", BUILDING: "Building", QUEUED: "Queued", INITIALIZING: "Starting", CANCELED: "Canceled" }[state];
   return <span className={`status-pill ${tone}`}>{label}</span>;
 }
 
-export function PlatformDashboard({ gcp, uptime, vercel, runtime, database }: {
+export function PlatformDashboard({ gcp, uptime, vercel, analytics, runtime, database }: {
   gcp: GcpAnalytics | null;
+  analytics: WebAnalytics | null;
   uptime: UptimeReport | null;
   vercel: VercelReport | null;
   runtime: ReturnType<typeof runtimeDeployment>;
@@ -87,7 +103,9 @@ export function PlatformDashboard({ gcp, uptime, vercel, runtime, database }: {
   const googleRequests = googleOk ? googleOk.services.reduce((sum, service) => sum + service.requests, 0) : null;
   const googleToday = googleOk ? googleOk.services.reduce((sum, service) => sum + service.today, 0) : null;
 
+  const analyticsOk = analytics?.ok ? analytics : null;
   const tiles = [
+    { icon: Eye, label: "Page views, 30 days", value: analyticsOk ? compact.format(analyticsOk.views) : "—", note: analyticsOk ? `${analyticsOk.visitors === null ? "—" : number.format(analyticsOk.visitors)} visitors · production only` : "Connect Vercel Web Analytics" },
     { icon: Activity, label: "Uptime, 30 days", value: primaryCheck ? formatUptime(primaryCheck.uptime.month) : "—", note: primaryCheck ? `24h ${formatUptime(primaryCheck.uptime.day)} · ${primaryCheck.current === "up" ? "up now" : primaryCheck.current === "down" ? "down now" : "no recent data"}` : "No uptime checks yet" },
     { icon: Cloud, label: "Google API calls, 30 days", value: googleRequests === null ? "—" : compact.format(googleRequests), note: googleToday === null ? "Connect Google Cloud" : `${number.format(googleToday)} in the last 24h` },
     { icon: Rocket, label: "Deploys, 30 days", value: vercelOk ? number.format(vercelOk.summary.total) : "—", note: vercelOk ? `${percent(vercelOk.summary.successRate, 0)} succeeded · median build ${duration(vercelOk.summary.medianBuildMs)}` : "Connect Vercel" },
@@ -96,14 +114,29 @@ export function PlatformDashboard({ gcp, uptime, vercel, runtime, database }: {
 
   return <>
     <header className="admin-heading admin-list-heading">
-      <div><p className="eyebrow">Platform</p><h1>Under the hood.</h1><p>Traffic, quotas, deploys and storage across Vercel, Google Cloud and Neon. Refreshes every minute.</p></div>
+      <div><p className="eyebrow">Platform</p><h1>Under the hood.</h1><p>Visitors, traffic, quotas, deploys and storage across Vercel, Google Cloud and Neon. Refreshes every minute.</p></div>
     </header>
 
-    <section className="admin-metrics" aria-label="Platform summary">
+    <section className="admin-metrics platform-metrics" aria-label="Platform summary">
       {tiles.map(({ icon: Icon, label, value, note }) => <article className="admin-metric" key={label}><Icon size={18} /><p>{label}</p><strong>{value}</strong><small>{note}</small></article>)}
     </section>
 
     <section className="platform-grid">
+      <article className="admin-card platform-wide">
+        <div className="admin-card-heading"><div><p className="eyebrow">Vercel · Web Analytics</p><h2>Who&rsquo;s visiting</h2></div></div>
+        {!analytics ? <Setup title="Not connected">Set VERCEL_API_TOKEN. See docs/gcp-integration.md → Platform analytics.</Setup>
+          : !analytics.ok ? <Setup title="Web Analytics unavailable">{analytics.error === "Forbidden" ? "The Vercel token can’t read Observability data. Create a token with access to this team and set it as VERCEL_API_TOKEN." : analytics.error}</Setup>
+          : <>
+            <DailyBars days={analytics.daily.map((day) => ({ date: day.date, values: [day.views, 0] }))} label={`Daily production page views over ${analytics.daily.length} days`} series={["Page views"]} />
+            <div className="platform-breakdowns">
+              <Breakdown rows={analytics.pages} title="Top pages" total={analytics.views} />
+              <Breakdown rows={analytics.referrers} title="Referrers" total={analytics.views} />
+              <Breakdown rows={analytics.countries} title="Countries" total={analytics.views} />
+              <Breakdown rows={analytics.devices} title="Devices" total={analytics.views} />
+            </div>
+          </>}
+      </article>
+
       <article className="admin-card platform-wide">
         <div className="admin-card-heading"><div><p className="eyebrow">Google Cloud · {gcp?.projectId ?? "not connected"}</p><h2>Google API traffic</h2></div></div>
         {!gcp ? <Setup title="Not connected">Set GCP_PROJECT_ID and GCP_SERVICE_ACCOUNT_KEY. See docs/gcp-integration.md.</Setup>

@@ -16,7 +16,7 @@ export default function PrivacyPage() {
         <li><strong>Assistant chats.</strong> Conversations with the trip assistant are saved to your account so you can come back to them. You can delete them from the assistant&rsquo;s history.</li>
         <li><strong>Your own AI keys</strong>, if you add them. They are encrypted before they are stored and are only used to answer your own assistant requests.</li>
       </ul>
-      <p>We don&rsquo;t sell your data, show ads, or use third-party tracking or analytics cookies. The only cookies are the ones that keep you signed in.</p>
+      <p>We don&rsquo;t sell your data or show ads. To see which pages get used, Tripboard counts page views with Vercel Web Analytics, which sets no cookies and doesn&rsquo;t identify you. The only cookies are the ones that keep you signed in.</p>
 
       <h2>Who else sees it</h2>
       <p>Tripboard relies on a few services to work. Each gets only what it needs:</p>
