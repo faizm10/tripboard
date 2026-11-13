@@ -22,6 +22,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     version: "0.48.0",
     date: "2026-11-12",
     title: "Add all of the assistant's picks, and a roomier board beside it",
+    pr: 50,
     changes: [
       "When the trip assistant suggests several places, an \u201cAdd all\u201d button under the list saves every one of them in a single tap.",
       "Places you already added or saved are skipped, so the button only adds the rest.",
