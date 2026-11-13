@@ -67,7 +67,7 @@ type Props = {
   viewerName?: string;
   signedIn: boolean;
   savedPlaceIds: Set<string>;
-  onAddPlace: (pick: AssistantPick) => void;
+  onAddPlaces: (picks: AssistantPick[]) => void;
   /** Reports every place this chat has suggested, so the trip map can pin them. */
   onSuggestionsChange?: (suggestions: MapSuggestion[]) => void;
   onShowOnMap?: (suggestion: MapSuggestion) => void;
@@ -400,7 +400,7 @@ function ChatSession({
   trip,
   viewerName,
   savedPlaceIds,
-  onAddPlace,
+  onAddPlaces,
   onSuggestionsChange,
   onShowOnMap,
   focusedSuggestionId,
@@ -477,9 +477,10 @@ function ChatSession({
     void regenerate({ body: choice });
   }
 
-  function add(pick: AssistantPick) {
-    onAddPlace(pick);
-    setAdded((current) => new Set(current).add(pick.fsqPlaceId));
+  function add(picks: AssistantPick[]) {
+    if (!picks.length) return;
+    onAddPlaces(picks);
+    setAdded((current) => new Set([...current, ...picks.map((pick) => pick.fsqPlaceId)]));
   }
 
   const last = messages.at(-1);
@@ -557,21 +558,32 @@ function ChatSession({
                       if (part.state !== "output-available") {
                         return part.state === "output-error" ? null : <p className="assistant-step working" key={key}><Sparkles size={13} /><span>Picking the best spots…</span></p>;
                       }
-                      return (
-                        <ul className="assistant-picks" key={key}>
-                          {part.output.places.map((pick) => (
-                            <PickCard
-                              focused={focusedSuggestionId === pick.fsqPlaceId}
-                              key={pick.fsqPlaceId}
-                              label={labels.get(pick.fsqPlaceId)?.label}
-                              onAdd={() => add(pick)}
-                              onShowOnMap={onShowOnMap && labels.has(pick.fsqPlaceId) ? () => onShowOnMap(labels.get(pick.fsqPlaceId)!) : undefined}
-                              pick={pick}
-                              state={added.has(pick.fsqPlaceId) ? "added" : savedPlaceIds.has(pick.fsqPlaceId) ? "saved" : "idle"}
-                            />
-                          ))}
-                        </ul>
-                      );
+                      {
+                        const pickState = (pick: AssistantPick) => added.has(pick.fsqPlaceId) ? "added" : savedPlaceIds.has(pick.fsqPlaceId) ? "saved" : "idle";
+                        const remaining = part.output.places.filter((pick) => pickState(pick) === "idle");
+                        return (
+                          <div className="assistant-pick-group" key={key}>
+                            <ul className="assistant-picks">
+                              {part.output.places.map((pick) => (
+                                <PickCard
+                                  focused={focusedSuggestionId === pick.fsqPlaceId}
+                                  key={pick.fsqPlaceId}
+                                  label={labels.get(pick.fsqPlaceId)?.label}
+                                  onAdd={() => add([pick])}
+                                  onShowOnMap={onShowOnMap && labels.has(pick.fsqPlaceId) ? () => onShowOnMap(labels.get(pick.fsqPlaceId)!) : undefined}
+                                  pick={pick}
+                                  state={pickState(pick)}
+                                />
+                              ))}
+                            </ul>
+                            {part.output.places.length > 1 && remaining.length ? (
+                              <button className="assistant-add assistant-add-all" onClick={() => add(remaining)} type="button">
+                                <Plus size={14} /> {remaining.length === part.output.places.length ? `Add all ${remaining.length}` : `Add the other ${remaining.length}`}
+                              </button>
+                            ) : null}
+                          </div>
+                        );
+                      }
                     default:
                       return null;
                   }

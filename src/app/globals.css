@@ -728,6 +728,12 @@ a { color: inherit; text-decoration: none; }
 .changelog-shell { width: min(100% - 32px, 880px); margin: 0 auto; padding: 32px 0 0; }
 .changelog-shell h1 { margin: 6px 0 10px; font-size: clamp(38px, 6vw, 64px); font-weight: 580; letter-spacing: -.045em; line-height: 1; }
 .changelog-lede { margin: 0 0 36px; color: var(--muted); font-size: 16px; }
+.legal-shell { max-width: 720px; padding-bottom: 48px; }
+.legal-shell h2 { margin: 32px 0 8px; font-size: 20px; font-weight: 650; letter-spacing: -.02em; }
+.legal-shell p, .legal-shell li { color: var(--ink); font-size: 15px; line-height: 1.6; }
+.legal-shell ul { display: grid; gap: 6px; margin: 8px 0; padding-left: 20px; list-style: disc; }
+.legal-shell li::marker { color: var(--accent); }
+.legal-shell a { color: var(--accent-deep); text-decoration: underline; text-underline-offset: 2px; }
 .changelog-lede strong { color: var(--ink); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 14px; }
 .changelog-list { margin: 0; padding: 0; list-style: none; }
 .changelog-entry { display: grid; padding: 22px 0; grid-template-columns: 150px minmax(0, 1fr); gap: 20px; border-top: 1px solid var(--line); scroll-margin-top: 20px; }
@@ -2565,11 +2571,14 @@ html {
 .assistant-trigger-mobile { display: none; }
 
 .assistant-backdrop { display: none; }
-.assistant-panel { position: fixed; top: 68px; right: 0; bottom: 0; z-index: 150; display: flex; width: 400px; min-width: 0; flex-direction: column; overflow: hidden; border-left: 1px solid var(--line); background: var(--paper-raised); box-shadow: -24px 0 48px -36px rgb(26 24 20 / .35); transform: translateX(100%); visibility: hidden; transition: transform var(--dur-slow) var(--ease-out), visibility 0s linear var(--dur-slow); }
+.workspace-page { --assistant-width: 400px; overflow-x: clip; }
+.assistant-panel { position: fixed; top: 0; right: 0; bottom: 0; z-index: 150; display: flex; width: var(--assistant-width, 400px); min-width: 0; flex-direction: column; overflow: hidden; border-left: 1px solid var(--line); background: var(--paper-raised); box-shadow: -24px 0 48px -36px rgb(26 24 20 / .35); transform: translateX(100%); visibility: hidden; transition: transform var(--dur-slow) var(--ease-out), visibility 0s linear var(--dur-slow); }
 .assistant-panel.open { transform: none; visibility: visible; transition: transform var(--dur-slow) var(--ease-out), visibility 0s; }
-.trip-workspace.assistant-open { margin-right: 400px; }
-/* With the assistant open the list keeps enough room; the map gives way first. */
-.trip-workspace.assistant-open { grid-template-columns: min(var(--map-split, 44%), 34%) minmax(0, 1fr); }
+/* The docked assistant runs full height, so the site header and the board both end where it starts. */
+.trip-workspace.assistant-open, .workspace-page:has(> .trip-workspace.assistant-open) > .app-header { margin-right: var(--assistant-width); }
+.app-header { transition: margin-right var(--dur-slow) var(--ease-out); }
+/* With the assistant open the list stops at a readable width and the map keeps the rest. */
+.trip-workspace.assistant-open { grid-template-columns: min(max(var(--map-split, 44%), 100% - 680px), 100% - 460px) minmax(0, 1fr); }
 
 .assistant-header { position: relative; display: flex; box-sizing: border-box; height: 45px; flex: none; align-items: center; gap: 9px; padding: 0 8px 0 16px; border-bottom: 1px solid var(--line); }
 .assistant-grabber { display: none; }
@@ -2623,6 +2632,8 @@ html {
 .assistant-step.working { color: var(--ink); }
 .assistant-step.working svg { color: var(--accent); animation: assistant-pulse 1.2s ease-in-out infinite; }
 
+.assistant-pick-group { display: grid; gap: 8px; }
+.assistant-add-all { justify-self: end; }
 .assistant-picks { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
 .assistant-pick { display: flex; gap: 12px; padding: 12px; border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--paper-raised); animation: assistant-rise var(--dur-slow) var(--ease-out) both; }
 .assistant-pick:nth-child(2) { animation-delay: 50ms; }
@@ -2705,12 +2716,11 @@ html {
 @keyframes assistant-rise { from { opacity: 0; transform: translateY(6px); } }
 
 @media (max-width: 1439px) {
-  .assistant-panel { width: 380px; }
-  .trip-workspace.assistant-open { margin-right: 380px; }
+  .workspace-page { --assistant-width: 360px; }
 }
 
 @media (max-width: 1099px) {
-  .trip-workspace.assistant-open { margin-right: 0; }
+  .trip-workspace.assistant-open, .workspace-page:has(> .trip-workspace.assistant-open) > .app-header { margin-right: 0; }
   .assistant-trigger-mobile { display: inline-flex; min-height: 36px; flex: none; padding: 0 12px 0 10px; }
   .assistant-backdrop { position: fixed; inset: 0; z-index: 180; display: block; background: rgb(17 17 17 / .4); opacity: 0; pointer-events: none; transition: opacity var(--dur-slow) var(--ease-out); }
   .assistant-backdrop.open { opacity: 1; pointer-events: auto; }
@@ -3054,6 +3064,19 @@ ul.itinerary-places { list-style: disc; }
 .assistant-header .assistant-icon-button { width: 32px; height: 32px; }
 .workspace-mode button { white-space: nowrap; }
 .trip-workspace.assistant-open .workspace-mode button { padding: 0 8px; }
+/* Tighter place rows beside the assistant, so the narrower list still shows a good run of stops. */
+@media (min-width: 1100px) {
+  .assistant-header { height: 68px; }
+  .trip-workspace.assistant-open :is(.saved-place, .day-place) { padding: 8px 0; grid-template-columns: 26px 64px minmax(0, 1fr) 36px; gap: 12px; contain-intrinsic-size: auto 96px; }
+  .trip-workspace.assistant-open :is(.saved-place, .day-place) .place-photo { width: 64px; height: 64px; }
+  .trip-workspace.assistant-open :is(.saved-place, .day-place) .place-photo > small { display: none; }
+  .trip-workspace.assistant-open .saved-place-copy h2 { margin: 3px 0 2px; font-size: 16px; }
+  .trip-workspace.assistant-open .saved-place-copy .place-address { font-size: 12.5px; }
+  .trip-workspace.assistant-open .saved-place-copy .place-note { margin-top: 4px; }
+  .trip-workspace.assistant-open .saved-place-copy .place-plan-link { min-height: 28px; margin: 2px 0; }
+  .trip-workspace.assistant-open .saved-place-copy .place-actions { margin-top: 2px; }
+  .trip-workspace.assistant-open .saved-place-copy .place-actions a { min-height: 24px; }
+}
 @media (max-width: 1099px) { .assistant-header { height: auto; min-height: 56px; } }
 
 /* Assistant: drafted trip changes */

@@ -19,6 +19,27 @@ export const REPO_URL = "https://github.com/faizm10/tripboard";
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "0.49.0",
+    date: "2026-11-12",
+    title: "Privacy policy and terms",
+    pr: 50,
+    changes: [
+      "New privacy and terms pages explain what Tripboard stores, which services see it, and how to delete your data. Both are linked in the footer.",
+    ],
+  },
+  {
+    version: "0.48.0",
+    date: "2026-11-12",
+    title: "Add all of the assistant's picks, and a roomier board beside it",
+    pr: 50,
+    changes: [
+      "When the trip assistant suggests several places, an \u201cAdd all\u201d button under the list saves every one of them in a single tap.",
+      "Places you already added or saved are skipped, so the button only adds the rest.",
+      "With the assistant open on a computer, it now runs the full height of the window and the top bar makes room for it instead of sitting over it.",
+      "The map keeps more of the screen while you chat, and the place list switches to tighter rows with smaller photos so you still see plenty of stops.",
+    ],
+  },
+  {
     version: "0.47.0",
     date: "2026-11-09",
     title: "Use your own ChatGPT, Claude or Gemini key",

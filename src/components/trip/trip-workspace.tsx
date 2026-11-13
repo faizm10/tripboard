@@ -472,9 +472,9 @@ export function TripWorkspace({
     return { applied, failed };
   }
 
-  function addAssistantPick(pick: AssistantPick) {
+  function addAssistantPick(pick: AssistantPick, current: Place[] = places) {
     const day = pick.plannedDate;
-    addPlace({
+    return addPlace({
       id: `local-assistant-${(assistantAdds.current += 1)}`,
       fsqPlaceId: pick.fsqPlaceId,
       name: pick.name,
@@ -487,7 +487,16 @@ export function TripWorkspace({
       plannedDate: day,
       daySortOrder: 0,
       addedBy: viewer?.name ?? "",
-    });
+    }, current);
+  }
+
+  function addAssistantPicks(picks: AssistantPick[]) {
+    // Thread the list through so picks on the same day get their own sort order.
+    let current = places;
+    for (const pick of picks) {
+      const next = addAssistantPick(pick, current);
+      if (next) current = [...current, next];
+    }
   }
 
   function savePlaceEdit(id: string, draft: PlaceEditDraft) {
@@ -1050,7 +1059,7 @@ export function TripWorkspace({
       <button className="mobile-add-button" onClick={() => setAddOpen(true)} aria-label="Add a place" type="button"><Plus size={22} /></button>
       <TripAssistant
         focusedSuggestionId={focusedSuggestionId}
-        onAddPlace={addAssistantPick}
+        onAddPlaces={addAssistantPicks}
         onApplyChanges={viewer ? applyAssistantChanges : undefined}
         onClose={closeAssistant}
         onShowOnMap={showSuggestionOnMap}
