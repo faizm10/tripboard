@@ -19,6 +19,15 @@ export const REPO_URL = "https://github.com/faizm10/tripboard";
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "0.49.0",
+    date: "2026-11-12",
+    title: "Privacy policy and terms",
+    pr: 50,
+    changes: [
+      "New privacy and terms pages explain what Tripboard stores, which services see it, and how to delete your data. Both are linked in the footer.",
+    ],
+  },
+  {
     version: "0.48.0",
     date: "2026-11-12",
     title: "Add all of the assistant's picks, and a roomier board beside it",

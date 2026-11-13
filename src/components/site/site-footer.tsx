@@ -10,6 +10,8 @@ export function SiteFooter() {
         <Link className="site-footer-version" href="/changelog" title="What's new">v{APP_VERSION}</Link>
         <Link className="site-footer-link" href="/changelog">Changelog</Link>
         <Link className="site-footer-link" href="/status">Status</Link>
+        <Link className="site-footer-link" href="/privacy">Privacy</Link>
+        <Link className="site-footer-link" href="/terms">Terms</Link>
       </div>
       <a
         aria-label="Tripboard on GitHub"

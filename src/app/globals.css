@@ -728,6 +728,12 @@ a { color: inherit; text-decoration: none; }
 .changelog-shell { width: min(100% - 32px, 880px); margin: 0 auto; padding: 32px 0 0; }
 .changelog-shell h1 { margin: 6px 0 10px; font-size: clamp(38px, 6vw, 64px); font-weight: 580; letter-spacing: -.045em; line-height: 1; }
 .changelog-lede { margin: 0 0 36px; color: var(--muted); font-size: 16px; }
+.legal-shell { max-width: 720px; padding-bottom: 48px; }
+.legal-shell h2 { margin: 32px 0 8px; font-size: 20px; font-weight: 650; letter-spacing: -.02em; }
+.legal-shell p, .legal-shell li { color: var(--ink); font-size: 15px; line-height: 1.6; }
+.legal-shell ul { display: grid; gap: 6px; margin: 8px 0; padding-left: 20px; list-style: disc; }
+.legal-shell li::marker { color: var(--accent); }
+.legal-shell a { color: var(--accent-deep); text-decoration: underline; text-underline-offset: 2px; }
 .changelog-lede strong { color: var(--ink); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 14px; }
 .changelog-list { margin: 0; padding: 0; list-style: none; }
 .changelog-entry { display: grid; padding: 22px 0; grid-template-columns: 150px minmax(0, 1fr); gap: 20px; border-top: 1px solid var(--line); scroll-margin-top: 20px; }
