@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Host_Grotesk } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import { AppProviders } from "@/components/site/app-providers";
 import { OfflineBanner } from "@/components/site/offline-banner";
 import { PwaRegister } from "@/components/site/pwa-register";
@@ -35,6 +36,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           {children}
           <PwaRegister />
         </AppProviders>
+        <Analytics />
       </body>
     </html>
   );
