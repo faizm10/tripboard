@@ -22,6 +22,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     version: "0.50.1",
     date: "2026-11-18",
     title: "ChatGPT keys work in the trip assistant",
+    pr: 53,
     changes: [
       "The trip assistant now answers with your own ChatGPT key. Every GPT model was failing with \u201cChatGPT hit a snag\u201d.",
       "Chats sent with your ChatGPT key are no longer saved on your OpenAI account.",
