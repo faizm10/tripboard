@@ -6,8 +6,9 @@ import type { OwnKeyProvider } from "@/lib/assistant/providers";
 
 export function ownKeyModel(provider: OwnKeyProvider, apiKey: string, modelId: string) {
   switch (provider) {
+    // GPT-6 models only call tools through the Responses API; Chat Completions answers 400.
     case "openai":
-      return createOpenAI({ apiKey }).chat(modelId);
+      return createOpenAI({ apiKey }).responses(modelId);
     case "anthropic":
       return createAnthropic({ apiKey })(modelId);
     case "google":
@@ -34,6 +35,18 @@ export async function isKeyAccepted(provider: OwnKeyProvider, apiKey: string) {
   } catch {
     return true;
   }
+}
+
+/**
+ * OpenAI stores responses by default and then refers back to them by id, which
+ * breaks once portableHistory drops reasoning. Sending each turn in full also
+ * keeps people's chats off their OpenAI account.
+ */
+export const ownKeyProviderOptions = { openai: { store: false } };
+
+/** Provider error text can echo part of a key, so anything key-shaped is masked before logging. */
+export function redactKeys(text: string) {
+  return text.replace(/\b(sk-|AIza)[\w-]{8,}/g, "$1…");
 }
 
 /**

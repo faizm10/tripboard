@@ -2,7 +2,7 @@ import { streamText, toUIMessageStream, type ModelMessage, type UIMessageChunk }
 import { MockLanguageModelV4 } from "ai/test";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { decryptApiKey, encryptApiKey } from "@/lib/assistant/key-crypto";
-import { isKeyAccepted, portableHistory } from "@/lib/assistant/own-key-model";
+import { isKeyAccepted, ownKeyModel, portableHistory, redactKeys } from "@/lib/assistant/own-key-model";
 import { timeoutsAsErrors } from "@/lib/assistant/stream-timeouts";
 import { choiceValue, parseChoice, PROVIDER_INFO, resolveModel } from "@/lib/assistant/providers";
 
@@ -64,6 +64,19 @@ describe("key check", () => {
     const [url, init] = fetchMock.mock.calls[0];
     expect(url).not.toContain("secret-key");
     expect(init.headers).toEqual({ "x-goog-api-key": "secret-key" });
+  });
+});
+
+describe("own key models", () => {
+  it("sends ChatGPT through the Responses API, which GPT-6 needs for tool calls", () => {
+    expect(ownKeyModel("openai", "sk-test", "gpt-6.1-sol").provider).toBe("openai.responses");
+  });
+
+  it("masks keys in provider errors before they're logged", () => {
+    const logged = redactKeys('{"error":{"message":"Incorrect API key provided: sk-proj-abcdefghijkl1234","type":"invalid_request_error"}}');
+    expect(logged).not.toContain("abcdefghijkl1234");
+    expect(logged).toContain("invalid_request_error");
+    expect(redactKeys("key AIzaSyA1234567890abcdef rejected")).toBe("key AIza… rejected");
   });
 });
 

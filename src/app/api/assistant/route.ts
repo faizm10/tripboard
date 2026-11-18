@@ -13,7 +13,7 @@ import { z } from "zod";
 import { assistantInstructions } from "@/lib/assistant/context";
 import { getApiKey } from "@/lib/assistant/api-keys";
 import { assistantModels } from "@/lib/assistant/models";
-import { ownKeyModel, portableHistory } from "@/lib/assistant/own-key-model";
+import { ownKeyModel, ownKeyProviderOptions, portableHistory, redactKeys } from "@/lib/assistant/own-key-model";
 import { timeoutsAsErrors } from "@/lib/assistant/stream-timeouts";
 import { ASSISTANT_PROVIDERS, PROVIDER_INFO, resolveModel, type AssistantProvider, type OwnKeyProvider } from "@/lib/assistant/providers";
 import { getSaveConversations, recordUsage, saveConversation } from "@/lib/assistant/store";
@@ -123,6 +123,7 @@ export async function POST(request: Request) {
     instructions: assistantInstructions(trip, new Date().toISOString().slice(0, 10)),
     messages: portableHistory(await convertToModelMessages(messages.slice(-MAX_HISTORY), { ignoreIncompleteToolCalls: true })),
     tools,
+    providerOptions: ownKeyProviderOptions,
     // Pasted itineraries need a search per venue before the draft, so allow a few more steps.
     stopWhen: isStepCount(10),
     // Free models sometimes stall mid-answer, so they fail fast. Paid models can think for a while
@@ -149,9 +150,10 @@ export async function POST(request: Request) {
         return undefined;
       },
       onError: (error) => {
-        // Provider responses can echo part of a user's key, so own-key failures log the status only.
+        // Provider responses can echo part of a user's key, so own-key failures log a redacted message.
         const cause = underlyingError(error);
-        console.error("[assistant]", provider === "free" ? error : `${provider} request failed: ${APICallError.isInstance(cause) ? cause.statusCode : "no status"}`);
+        const detail = APICallError.isInstance(cause) ? `${cause.statusCode} ${redactKeys(cause.responseBody ?? cause.message).slice(0, 500)}` : "no status";
+        console.error("[assistant]", provider === "free" ? error : `${provider} request failed: ${detail}`);
         return friendlyError(error, provider, modelId);
       },
       onEnd: async ({ messages: updated, isAborted }) => {
