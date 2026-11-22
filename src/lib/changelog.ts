@@ -22,6 +22,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     version: "0.51.0",
     date: "2026-11-21",
     title: "A welcome for new accounts and a new home screen",
+    pr: 54,
     changes: [
       "New accounts start with a short welcome: pick where you're going, add dates or skip them, name the trip, and your board opens. A preview of the board fills in as you answer.",
       "A new board opens with a getting-started list: save the first place, invite your group, ask the assistant. Each step ticks itself off.",
