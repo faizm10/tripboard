@@ -64,6 +64,7 @@ import {
 } from "@/app/trips/actions";
 import { unwrap } from "@/lib/action-result";
 import { AddPlaceDialog } from "@/components/trip/add-place-dialog";
+import { BoardWelcome } from "@/components/trip/board-welcome";
 import { AgendaPanel } from "@/components/trip/agenda-panel";
 import { TripAssistant, type ApplyResult } from "@/components/trip/trip-assistant";
 import { AGENDA_MAX_LENGTH } from "@/lib/agenda";
@@ -902,6 +903,14 @@ export function TripWorkspace({
         </div>
 
         <div className="place-list">
+          <BoardWelcome
+            onAddPlace={() => setAddOpen(true)}
+            onAsk={() => setAssistantOpen(true)}
+            onInvite={() => setInviteOpen(true)}
+            people={trip.collaborators.length}
+            places={places.length}
+            tripId={trip.id}
+          />
           {workspaceMode === "money" || workspaceMode === "day" ? null : <JourneyBoard
             flights={flights}
             onAdd={(mode) => setFlightEditor({ mode, flight: null })}

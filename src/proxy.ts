@@ -36,6 +36,7 @@ export const config = {
     "/",
     "/trips",
     "/trips/new",
+    "/welcome",
     "/trips/:path*",
     "/account",
     "/account/:path*",
