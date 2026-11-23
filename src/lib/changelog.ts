@@ -22,6 +22,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     version: "0.52.0",
     date: "2026-11-23",
     title: "Map pins that show what each place is",
+    pr: 55,
     changes: [
       "Places on the map are now little stickers for their category: noodles for food, bubble tea for drinks, a camera for sights, a bag for shops, a bed for stays and a train for transit.",
       "The day order sits on a small tag on each sticker, and places that still need a day show a faded, dashed sticker with a question mark.",
