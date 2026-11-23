@@ -19,6 +19,16 @@ export const REPO_URL = "https://github.com/faizm10/tripboard";
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "0.52.0",
+    date: "2026-11-23",
+    title: "Map pins that show what each place is",
+    changes: [
+      "Places on the map are now little stickers for their category: noodles for food, bubble tea for drinks, a camera for sights, a bag for shops, a bed for stays and a train for transit.",
+      "The day order sits on a small tag on each sticker, and places that still need a day show a faded, dashed sticker with a question mark.",
+      "The place you pick hops up and turns orange so it's easy to spot.",
+    ],
+  },
+  {
     version: "0.51.0",
     date: "2026-11-21",
     title: "A welcome for new accounts and a new home screen",
