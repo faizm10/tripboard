@@ -1,13 +1,13 @@
 "use client";
 
 import { CalendarDays, LocateFixed, MapPin, Minus, Plus, Sparkles, X } from "lucide-react";
-import { useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
+import { useEffect, useEffectEvent, useMemo, useRef, useState, type CSSProperties } from "react";
 import { hotelDistanceLabel, type MapSuggestion } from "@/lib/assistant/suggestions";
 import type { CityLocation } from "@/lib/cities";
 import { formatWeekdayDate } from "@/lib/dates";
 import { nameNeedsAddressLookup } from "@/lib/google-maps";
 import { buildGoogleMapsPlaceUrl } from "@/lib/navigation";
-import type { HotelStay, Place } from "@/lib/types";
+import { categoryClass, type HotelStay, type Place, type PlaceCategory } from "@/lib/types";
 
 const FALLBACK_CENTER: [number, number] = [-9.1393, 38.7139];
 const previewNameLookups = new Map<string, Promise<string | null>>();
@@ -87,17 +87,51 @@ function isTransitPlace(place: Place) {
   return place.category === "Transit";
 }
 
-function mapPlaceLabel(place: Place, index: number) {
-  if (isTransitPlace(place)) return "TR";
+/** Each pin is a little sticker for its category, so the map reads at a glance. */
+const CATEGORY_STICKERS: Record<PlaceCategory, string> = {
+  Eat: "🍜",
+  Drink: "🧋",
+  See: "📸",
+  Shop: "🛍️",
+  Stay: "🛌",
+  Transit: "🚇",
+  Other: "⭐",
+};
+
+/** A slightly different tilt per pin so they look stuck on by hand. */
+const PIN_TILTS = [-7, 5, -3, 8, -5, 3];
+
+function mapPlaceTag(place: Place, index: number) {
   return place.plannedDate ? String(index + 1).padStart(2, "0") : "?";
 }
 
-function mapPlacePinClass(place: Place, selectedId: string) {
-  return `mapbox-place-pin${isTransitPlace(place) ? " transit" : ""}${!place.plannedDate ? " unplanned" : ""}${place.id === selectedId ? " selected" : ""}`;
+function placePinTilt(index: number) {
+  return `${PIN_TILTS[index % PIN_TILTS.length]}deg`;
 }
 
-function workspacePlacePinClass(place: Place, selectedId: string) {
-  return `workspace-pin${isTransitPlace(place) ? " transit" : ""}${!place.plannedDate ? " unplanned" : ""}${selectedId === place.id ? " selected" : ""}`;
+function placePinClass(place: Place, selectedId: string) {
+  return `place-pin${!place.plannedDate ? " unplanned" : ""}${place.id === selectedId ? " selected" : ""}`;
+}
+
+function appendPlacePinFace(element: HTMLElement, place: Place, index: number) {
+  const sticker = document.createElement("span");
+  sticker.className = `place-pin-sticker ${categoryClass(place.category)}`;
+  sticker.ariaHidden = "true";
+  sticker.textContent = CATEGORY_STICKERS[place.category];
+  const tag = document.createElement("span");
+  tag.className = "place-pin-tag";
+  tag.ariaHidden = "true";
+  tag.textContent = mapPlaceTag(place, index);
+  element.append(sticker, tag);
+}
+
+function PlacePinFace({ place, index }: { place: Place; index: number }) {
+  return (
+    <>
+      <span className={`place-pin-sticker ${categoryClass(place.category)}`} aria-hidden="true">{CATEGORY_STICKERS[place.category]}</span>
+      <span className="place-pin-tag" aria-hidden="true">{mapPlaceTag(place, index)}</span>
+    </>
+  );
 }
 
 function createPreviewCard(place: Place) {
@@ -385,10 +419,11 @@ export function TripMap({
       wrapper.className = "mapbox-marker-with-preview";
       const element = document.createElement("button");
       const unplanned = !place.plannedDate;
-      element.className = mapPlacePinClass(place, selectedId);
+      element.className = placePinClass(place, selectedId);
+      element.style.setProperty("--tilt", placePinTilt(index));
       element.type = "button";
       element.ariaLabel = `Select ${place.name}, ${unplanned ? "needs a day" : `planned for ${place.plannedDate}`}, ${place.category}, ${previewSubtitle(place)}`;
-      element.textContent = mapPlaceLabel(place, index);
+      appendPlacePinFace(element, place, index);
       element.addEventListener("click", () => onSelect(place.id));
       wrapper.append(element);
       const previewCard = createPreviewCard(place);
@@ -572,17 +607,18 @@ export function TripMap({
       {places.map((place, index) => {
         return (
           <div
-            className={workspacePlacePinClass(place, selectedId)}
+            className="workspace-pin"
             style={positions[index % positions.length]}
             key={place.id}
           >
             <button
-              className="workspace-pin-button"
+              className={placePinClass(place, selectedId)}
               onClick={() => onSelect(place.id)}
+              style={{ "--tilt": placePinTilt(index) } as CSSProperties}
               aria-label={`Select ${place.name}, ${place.plannedDate ? `planned for ${place.plannedDate}` : "needs a day"}, ${place.category}, ${previewSubtitle(place)}`}
               type="button"
             >
-              {mapPlaceLabel(place, index)}
+              <PlacePinFace place={place} index={index} />
             </button>
             <MapPlacePreview place={place} />
           </div>
@@ -645,7 +681,7 @@ function MapLegend({ transitCount, unplannedCount }: { transitCount: number; unp
     <aside className="map-legend" aria-label="Map legend">
       <span className="map-legend-key planned">01</span>
       <span>Assigned to a day</span>
-      {transitCount ? <><span className="map-legend-key transit">TR</span><span>{transitCount} transit {transitCount === 1 ? "stop" : "stops"}</span></> : null}
+      {transitCount ? <><span className="map-legend-key transit" aria-hidden="true">{CATEGORY_STICKERS.Transit}</span><span>{transitCount} transit {transitCount === 1 ? "stop" : "stops"}</span></> : null}
       {unplannedCount ? <><span className="map-legend-key unplanned">?</span><span>{unplannedCount} needs a day</span></> : null}
     </aside>
   );
