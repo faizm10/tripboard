@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { authFailureMessage } from "@/lib/auth-errors";
 import {
   GOOGLE_AUTH_CHANNEL,
   GOOGLE_AUTH_MESSAGE,
@@ -48,9 +49,14 @@ async function requestGoogleUrl(returnTo: string) {
       disableRedirect: true,
     }),
   });
-  const body = (await response.json()) as { url?: string; error?: string };
+  const body = (await response.json().catch(() => ({}))) as {
+    url?: string;
+    error?: string;
+    message?: string;
+    code?: string;
+  };
   if (!response.ok || !body.url) {
-    throw new Error(body.error ?? "Google sign-in could not start.");
+    throw new Error(authFailureMessage({ ...body, status: response.status }, "Google sign-in could not start."));
   }
   return body.url;
 }

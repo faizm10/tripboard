@@ -35,6 +35,22 @@ describe("runHealthChecks", () => {
 });
 
 describe("auth probe", () => {
+  it("reports sign-in as down when Neon pauses the project over quota", async () => {
+    const env = { NEON_AUTH_BASE_URL: process.env.NEON_AUTH_BASE_URL, NEON_AUTH_COOKIE_SECRET: process.env.NEON_AUTH_COOKIE_SECRET, DATABASE_URL: process.env.DATABASE_URL };
+    process.env.NEON_AUTH_BASE_URL = "https://auth.example.test";
+    process.env.NEON_AUTH_COOKIE_SECRET = "x".repeat(32);
+    delete process.env.DATABASE_URL;
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementation(async () => new Response('{"code":"GENERIC_QUOTA_EXCEEDED"}', { status: 402 }));
+    try {
+      const report = await runHealthChecks();
+      expect(report.checks.find((check) => check.id === "auth")?.status).toBe("down");
+      expect(report.status).toBe("down");
+    } finally {
+      fetchMock.mockRestore();
+      for (const [key, value] of Object.entries(env)) if (value === undefined) delete process.env[key]; else process.env[key] = value;
+    }
+  });
+
   it("retries once so a cold start isn't reported as an outage", async () => {
     const env = { NEON_AUTH_BASE_URL: process.env.NEON_AUTH_BASE_URL, NEON_AUTH_COOKIE_SECRET: process.env.NEON_AUTH_COOKIE_SECRET, DATABASE_URL: process.env.DATABASE_URL };
     process.env.NEON_AUTH_BASE_URL = "https://auth.example.test";

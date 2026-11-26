@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { getNeonAuth } from "@/lib/auth";
+import { authFailureMessage } from "@/lib/auth-errors";
 import { safeReturnTo } from "@/lib/invitations";
 import { accountNameSchema, signInSchema, signUpSchema } from "@/lib/validators";
 
@@ -49,7 +50,7 @@ export async function signInWithEmail(
     callbackURL: returnTo,
   });
   if (error) {
-    return { error: error.message || "Those details did not match an account.", returnTo, values };
+    return { error: authFailureMessage(error, "Those details did not match an account."), returnTo, values };
   }
 
   return { ok: true, returnTo };
@@ -82,7 +83,7 @@ export async function signUpWithEmail(
     callbackURL: returnTo,
   });
   if (error) {
-    return { error: error.message || "The account could not be created.", returnTo, values };
+    return { error: authFailureMessage(error, "The account could not be created."), returnTo, values };
   }
 
   return { ok: true, returnTo };

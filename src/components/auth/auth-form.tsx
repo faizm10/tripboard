@@ -53,16 +53,31 @@ function PasswordField({
   );
 }
 
+function OutageNotice() {
+  return (
+    <div className="auth-outage" role="status">
+      <strong>Sign-in is paused for now.</strong>
+      <p>
+        Tripboard can&apos;t sign anyone in at the moment. Your trips and places are safe, and nothing has been lost.
+        Check back soon, or follow along on the <Link href="/status">status page</Link>.
+      </p>
+    </div>
+  );
+}
+
 export function AuthForm({
   authEnabled,
   mode,
   restricted = false,
   returnTo = "/trips",
+  unavailable = false,
 }: {
   authEnabled: boolean;
   mode: AuthMode;
   restricted?: boolean;
   returnTo?: string;
+  /** Sign-in is configured but the provider is refusing requests (paused over quota or down). */
+  unavailable?: boolean;
 }) {
   const action = mode === "sign-in" ? signInWithEmail : signUpWithEmail;
   const [state, formAction, pending] = useActionState<AuthFormState, FormData>(
@@ -85,72 +100,76 @@ export function AuthForm({
           : "Open your boards, pick up a shared trip, and keep planning from where you left off."}
       </p>
 
+      {unavailable ? <OutageNotice /> : null}
+
       {restricted ? <p className="form-error" role="alert">Your account has been restricted. Contact Tripboard support if you believe this is a mistake.</p> : null}
 
       <form action={formAction} className="auth-form" key={state?.error ?? "ready"}>
-        <input name="returnTo" type="hidden" value={state?.returnTo ?? returnTo} />
-        {isSignUp ? (
-          <label className="field-label" htmlFor="name">
-            <span>Name</span>
+        <fieldset className="auth-fields" disabled={unavailable}>
+          <input name="returnTo" type="hidden" value={state?.returnTo ?? returnTo} />
+          {isSignUp ? (
+            <label className="field-label" htmlFor="name">
+              <span>Name</span>
+              <input
+                autoComplete="name"
+                defaultValue={state?.values?.name}
+                id="name"
+                name="name"
+                placeholder="Your name"
+                required
+                type="text"
+              />
+            </label>
+          ) : null}
+
+          <label className="field-label" htmlFor="email">
+            <span>Email</span>
             <input
-              autoComplete="name"
-              defaultValue={state?.values?.name}
-              id="name"
-              name="name"
-              placeholder="Your name"
+              autoComplete="email"
+              defaultValue={state?.values?.email}
+              id="email"
+              inputMode="email"
+              name="email"
+              placeholder="you@email.com"
               required
-              type="text"
+              spellCheck={false}
+              type="email"
             />
           </label>
-        ) : null}
 
-        <label className="field-label" htmlFor="email">
-          <span>Email</span>
-          <input
-            autoComplete="email"
-            defaultValue={state?.values?.email}
-            id="email"
-            inputMode="email"
-            name="email"
-            placeholder="you@email.com"
-            required
-            spellCheck={false}
-            type="email"
-          />
-        </label>
-
-        <PasswordField
-          autoComplete={isSignUp ? "new-password" : "current-password"}
-          hint={isSignUp ? "At least 8 characters." : undefined}
-          id="password"
-          label="Password"
-          name="password"
-        />
-
-        {isSignUp ? (
           <PasswordField
-            autoComplete="new-password"
-            id="confirmPassword"
-            label="Confirm password"
-            name="confirmPassword"
+            autoComplete={isSignUp ? "new-password" : "current-password"}
+            hint={isSignUp ? "At least 8 characters." : undefined}
+            id="password"
+            label="Password"
+            name="password"
           />
-        ) : null}
 
-        {state?.error ? (
-          <p className="form-error" role="alert">
-            {state.error}
-          </p>
-        ) : null}
+          {isSignUp ? (
+            <PasswordField
+              autoComplete="new-password"
+              id="confirmPassword"
+              label="Confirm password"
+              name="confirmPassword"
+            />
+          ) : null}
 
-        <button className="button button-ink button-full" disabled={pending || Boolean(state?.ok)} type="submit">
-          {pending || state?.ok
-            ? isSignUp
-              ? "Creating account…"
-              : "Signing in…"
-            : isSignUp
-              ? "Create account"
-              : "Sign in"}
-        </button>
+          {state?.error ? (
+            <p className="form-error" role="alert">
+              {state.error}
+            </p>
+          ) : null}
+
+          <button className="button button-ink button-full" disabled={pending || Boolean(state?.ok)} type="submit">
+            {pending || state?.ok
+              ? isSignUp
+                ? "Creating account…"
+                : "Signing in…"
+              : isSignUp
+                ? "Create account"
+                : "Sign in"}
+          </button>
+        </fieldset>
       </form>
 
       <p className="auth-divider" role="separator">
@@ -158,7 +177,7 @@ export function AuthForm({
       </p>
 
       <GoogleSignInButton
-        authEnabled={authEnabled}
+        authEnabled={authEnabled && !unavailable}
         label={isSignUp ? "Continue with Google" : "Sign in with Google"}
         returnTo={returnTo}
       />

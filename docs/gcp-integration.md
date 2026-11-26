@@ -89,7 +89,7 @@ gcloud monitoring uptime create tripboard-full \
 
 Google needs at least three regions per check. Valid regions are `usa-oregon`, `usa-iowa`, `usa-virginia`, `europe`, `south-america` and `asia-pacific`.
 
-> **Why the full check runs every 15 minutes:** each full probe runs `select 1` against Neon. Neon suspends idle compute after about 5 minutes, so probing the database every 1–5 minutes from several regions keeps it awake around the clock and you pay for those compute hours. 15 minutes still catches a broken database quickly, and the `scope=app` check covers reachability every minute.
+> **Why the full check runs every 15 minutes, and why that still isn't enough on Neon's free plan:** each full probe runs `select 1` against Neon, and Neon suspends idle compute after about 5 minutes. Google runs the check from every selected region on its own schedule, so three regions at 15 minutes means a probe roughly every 5 minutes, which is just often enough to keep the compute awake almost all the time. In November 2026 that used up the free plan's compute hours by the 23rd, and Neon answered every database and sign-in call with `402 GENERIC_QUOTA_EXCEEDED` until the reset. 15 minutes is the longest period Google allows and three regions is the minimum, so on the free plan leave `tripboard-full` out (or pause it) and rely on `tripboard-app` plus the `/status` page. Turn it on once Neon is on a paid plan.
 
 Both checks pass on any 2xx response. `/api/health` returns 503 only on a real outage, so a degraded state (slow database, missing migration) won't page you. To be alerted on degraded too, add `--matcher-content='"status":"operational"' --matcher-type=contains-string` to the full check.
 
