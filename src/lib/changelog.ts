@@ -19,6 +19,17 @@ export const REPO_URL = "https://github.com/faizm10/tripboard";
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "0.53.0",
+    date: "2026-11-25",
+    title: "A clear notice when sign-in is down",
+    changes: [
+      "When sign-in is temporarily unavailable, the sign-in and sign-up pages now say so up front, explain that your trips are safe, and link to the status page, instead of letting you try and fail.",
+      "Google and email sign-in errors now read plainly instead of a vague \"could not start\" or a billing message from our provider.",
+      "If a page can't load, you now get a friendly page with a Try again button and a link to the status page.",
+      "The status page now shows sign-in as down when our sign-in provider pauses the service, instead of reporting it as working.",
+    ],
+  },
+  {
     version: "0.52.0",
     date: "2026-11-23",
     title: "Map pins that show what each place is",

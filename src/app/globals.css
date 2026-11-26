@@ -1190,6 +1190,17 @@ input[type="date"]:invalid::-webkit-datetime-edit, input[type="time"]:invalid::-
 .auth-form, .auth-google { width: min(100%, 420px); }
 .auth-form .field-label { margin-bottom: 14px; }
 .auth-form .form-error { margin-top: 4px; }
+.auth-fields { min-width: 0; margin: 0; padding: 0; border: 0; }
+.auth-fields:disabled { opacity: 0.55; }
+.auth-outage { width: min(100%, 420px); margin: 0 0 18px; padding: 12px 14px; border-left: 2px solid var(--accent); border-radius: var(--radius-sm); background: var(--accent-soft); font-size: 13px; line-height: 1.5; }
+.auth-outage strong { display: block; margin-bottom: 2px; color: var(--ink); }
+.auth-outage p { margin: 0; color: var(--muted); }
+.auth-outage a { color: var(--accent-deep); border-bottom: 1px solid currentColor; }
+.app-error { display: grid; min-height: 100svh; padding: 24px 16px; place-items: center; background: var(--paper); }
+.app-error > div { max-width: 440px; }
+.app-error h1 { margin: 0 0 10px; font-size: 28px; line-height: 1.15; }
+.app-error p { margin: 0 0 20px; color: var(--muted); font-size: 14px; line-height: 1.5; }
+.app-error-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
 .password-field { position: relative; display: block; }
 .password-field input { padding-right: 48px; }
 .password-toggle {

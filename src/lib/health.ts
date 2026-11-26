@@ -94,8 +94,10 @@ async function authCheck(): Promise<HealthCheck> {
   if (!settings) return { ...base, status: "not_configured", detail: "Neon Auth isn't set up, so everyone uses the demo account." };
   try {
     // Any answer below 500 means the auth server is up and routing requests; a 5xx throws so it gets one retry.
+    // 402 means Neon has paused the project for going over its plan quota, so every sign-in fails.
     const { latencyMs } = await withRetry(async () => {
       const response = await fetch(`${settings.baseUrl.replace(/\/$/, "")}/ok`, { cache: "no-store" });
+      if (response.status === 402) throw new Error("Neon Auth is over its plan quota (402), so sign-in is paused.");
       if (response.status >= 500) throw new Error(`Neon Auth answered ${response.status}.`);
     });
     return { ...base, status: latencyMs > SLOW_MS ? "degraded" : "operational", latencyMs, detail: "Neon Auth answered." };
